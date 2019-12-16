@@ -232,9 +232,12 @@ void DataLoaderShapeNetPartSeg::read_data(){
             cloud->m_vis.m_color_type=+MeshColorType::SemanticGT;
             
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
-            cloud->m_label_mngr=m_label_mngr->shared_from_this();
+            // cloud->m_label_mngr=m_label_mngr->shared_from_this();
+            cloud->m_label_mngr=m_label_mngr;
 
-            m_clouds_buffer.enqueue(cloud);;
+            // VLOG(1) << "Label uindx is " << cloud->m_label_mngr->get_idx_unlabeled();
+
+            m_clouds_buffer.enqueue(cloud);
 
         }
 
