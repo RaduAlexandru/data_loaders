@@ -1,0 +1,9 @@
+[submodule "deps/readerwriterqueue"]
+	path = deps/readerwriterqueue
+	url = https://github.com/cameron314/readerwriterqueue.git
+[submodule "deps/pybind11"]
+	path = deps/pybind11
+	url = https://github.com/pybind/pybind11.git
+[submodule "deps/json11"]
+	path = deps/json11
+	url = https://github.com/dropbox/json11.git
