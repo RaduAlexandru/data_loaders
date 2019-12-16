@@ -3,9 +3,11 @@
 #include <vector>
 
 
+#include "RandGenerator.h"
 
 //eigen 
 #include <Eigen/Core>
+#include <Eigen/Geometry>
 #include <Eigen/StdVector>
 
 //readerwriterqueue
@@ -16,12 +18,12 @@
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
 
-#include "easy_pbr/Mesh.h"
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 class LabelMngr;
 class DataTransformer;
+class Mesh;
 
 class DataLoaderShapeNetPartSeg
 {
@@ -30,7 +32,7 @@ public:
     DataLoaderShapeNetPartSeg(const std::string config_file);
     ~DataLoaderShapeNetPartSeg();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
-    Mesh get_cloud();
+    std::shared_ptr<Mesh> get_cloud();
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
@@ -83,7 +85,7 @@ private:
     std::vector<fs::path> m_pts_filenames; //contains all the pts filenames from all the classes
     std::vector<fs::path> m_labels_filenames; //contains all the labels for the correspinding pts files
     // std::unordered_map<std::string, std::string> m_synsetoffset2category; //mapping from the filename which a bunch of number to the class name;
-    moodycamel::ReaderWriterQueue<Mesh> m_clouds_buffer;
+    moodycamel::ReaderWriterQueue<std::shared_ptr<Mesh> > m_clouds_buffer;
     Eigen::Affine3d m_tf_worldGL_worldROS;
 
     //label mngr to link to all the meshes that will have a semantic information

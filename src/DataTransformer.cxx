@@ -18,6 +18,8 @@ using namespace configuru;
 //my stuff 
 #include "easy_pbr/Mesh.h"
 // #include "data_loaders/utils/MiscUtils.h"
+#include "RandGenerator.h"
+#include "numerical_utils.h"
 
 // using namespace er::utils;
 using namespace easy_pbr::utils;
@@ -90,7 +92,7 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         tf.translation().x()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
         tf.translation().y()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
         tf.translation().z()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
-        transformed_mesh.apply_transform(tf);
+        transformed_mesh.transform_vertices_cpu(tf);
     }
 
     if(m_random_translation_xz_magnitude!=0.0){
@@ -99,7 +101,7 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         tf.setIdentity();
         tf.translation().x()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
         tf.translation().z()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
-        transformed_mesh.apply_transform(tf);
+        transformed_mesh.transform_vertices_cpu(tf);
     }
 
 
@@ -124,7 +126,7 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         float rand_angle_radians=rand_angle_degrees * M_PI / 180.0;
         tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitY());
         tf.matrix().block<3,3>(0,0)=tf_rot;
-        transformed_mesh.apply_transform(tf);
+        transformed_mesh.transform_vertices_cpu(tf);
     }
 
     //random mirror along the yz plane will negate the x coordinate
@@ -152,7 +154,7 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         float rand_angle_radians=rand_angle_degrees * M_PI / 180.0;
         tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitY());
         tf.matrix().block<3,3>(0,0)=tf_rot;
-        transformed_mesh.apply_transform(tf);
+        transformed_mesh.transform_vertices_cpu(tf);
     }
 
 

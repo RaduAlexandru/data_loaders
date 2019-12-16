@@ -21,7 +21,6 @@ using namespace configuru;
 #include "easy_pbr/Mesh.h"
 // #include "data_loaders/utils/MiscUtils.h"
 #include "Profiler.h"
-#include "RandGenerator.h"
 #include "string_utils.h"
 #include "eigen_utils.h"
 #include "easy_pbr/LabelMngr.h"
@@ -65,7 +64,14 @@ void DataLoaderShapeNetPartSeg::init_params(const std::string config_file){
     // std::string config_file= "config.cfg";
 
     //read all the parameters
-    Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+    // Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+    std::string config_file_abs;
+    if (fs::path(config_file).is_relative()){
+        config_file_abs=(fs::path(PROJECT_SOURCE_DIR) / config_file).string();
+    }else{
+        config_file_abs=config_file;
+    }
+    Config cfg = configuru::parse_file(config_file_abs, CFG);
     Config loader_config=cfg["loader_shapenet_partseg"];
 
     // m_nr_clouds_to_skip=loader_config["nr_clouds_to_skip"];
@@ -187,44 +193,46 @@ void DataLoaderShapeNetPartSeg::read_data(){
                 m_idx_cloud_to_read++;
             }
 
-            VLOG(1) << "Reading from object" << m_restrict_to_object;
+            // VLOG(1) << "Reading from object" << m_restrict_to_object;
 
             //read pts
-            Mesh cloud;
-            cloud.V=read_pts(pts_filename.string());
-            cloud.L_gt=read_labels(labels_filename.string());
-            cloud.D=cloud.V.rowwise().norm();
+            MeshSharedPtr cloud=Mesh::create();
+            cloud->V=read_pts(pts_filename.string());
+            cloud->L_gt=read_labels(labels_filename.string());
+            cloud->D=cloud->V.rowwise().norm();
             if(m_normalize){
-                cloud.normalize_size();
-                cloud.normalize_position();
+                cloud->normalize_size();
+                cloud->normalize_position();
             }
+
+            // VLOG(1) << "cloud->v is " << cloud->V;
 
             //transform
             // cloud.apply_transform(m_tf_worldGL_worldROS); // from worldROS to worldGL
 
-            if(m_mode=="train"){
-                cloud=m_transformer->transform(cloud);
-            }
+            // if(m_mode=="train"){
+                // cloud=m_transformer->transform(cloud);
+            // }
 
             if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
                 // https://stackoverflow.com/a/15866196
-                Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud.V.rows());
+                Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud->V.rows());
                 perm.setIdentity();
                 std::shuffle(perm.indices().data(), perm.indices().data()+perm.indices().size(), m_rand_gen->generator());
                 // VLOG(1) << "permutation matrix is " << perm.indices();
                 // A_perm = A * perm; // permute columns
-                cloud.V = perm * cloud.V; // permute rows
-                cloud.L_gt = perm * cloud.L_gt; // permute rows
-                cloud.D = perm * cloud.D; // permute rows
+                cloud->V = perm * cloud->V; // permute rows
+                cloud->L_gt = perm * cloud->L_gt; // permute rows
+                cloud->D = perm * cloud->D; // permute rows
             }
 
             //some sensible visualization options
-            cloud.m_vis.m_show_mesh=false;
-            cloud.m_vis.m_show_points=true;
-            cloud.m_vis.m_color_type=+MeshColorType::SemanticGT;
+            cloud->m_vis.m_show_mesh=false;
+            cloud->m_vis.m_show_points=true;
+            cloud->m_vis.m_color_type=+MeshColorType::SemanticGT;
             
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
-            cloud.m_label_mngr=m_label_mngr->shared_from_this();
+            cloud->m_label_mngr=m_label_mngr->shared_from_this();
 
             m_clouds_buffer.enqueue(cloud);;
 
@@ -319,9 +327,9 @@ bool DataLoaderShapeNetPartSeg::has_data(){
 }
 
 
-Mesh DataLoaderShapeNetPartSeg::get_cloud(){
+std::shared_ptr<Mesh> DataLoaderShapeNetPartSeg::get_cloud(){
 
-    Mesh cloud;
+    std::shared_ptr<Mesh> cloud;
     m_clouds_buffer.try_dequeue(cloud);
 
     return cloud;
@@ -402,7 +410,7 @@ void DataLoaderShapeNetPartSeg::set_object_name(const std::string object_name){
     // m_clouds_buffer.clear();
     //deque until ihe cloud buffer is empty 
     bool has_data=true;
-    Mesh dummy_cloud;
+    MeshSharedPtr dummy_cloud;
     while(has_data){
         has_data=m_clouds_buffer.try_dequeue(dummy_cloud);
     }
