@@ -52,37 +52,37 @@ void DataTransformer::init_params(const Config& transformer_config){
 
 }
 
-Mesh DataTransformer::transform(const Mesh& mesh){
+MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
 
-    Mesh transformed_mesh=mesh;
+    // Mesh transformed_mesh=mesh;
 
     //adaptive subsampling
     if(m_adaptive_subsampling_falloff_end!=0.0){
         CHECK(m_adaptive_subsampling_falloff_start<m_adaptive_subsampling_falloff_end) << " The falloff for the adaptive subsampling start should be lower than the end. For example we start at 0 meters and we end at 60m. The start is " << m_adaptive_subsampling_falloff_start << " adn the end is " << m_adaptive_subsampling_falloff_end;
-        std::vector<bool> marked_to_be_removed(transformed_mesh.V.rows(), false);
-        for(int i=0; i<transformed_mesh.V.rows(); i++){
-            float dist=transformed_mesh.V.row(i).norm();
+        std::vector<bool> marked_to_be_removed(mesh->V.rows(), false);
+        for(int i=0; i<mesh->V.rows(); i++){
+            float dist=mesh->V.row(i).norm();
             float prob_to_remove= map(dist, m_adaptive_subsampling_falloff_start, m_adaptive_subsampling_falloff_end, 0.5, 0.0 ); //the closer verts have a high prob to be removed and the further away ones have one that is close to 0
             float r_val = m_rand_gen->rand_float(0.0, 1.0);
             if(r_val < prob_to_remove) { //the r_val will have no chance in going very low so it will not remove the points with prob_to_remove close to 0.0
                 marked_to_be_removed[i]=true;
             }
         }
-        transformed_mesh.remove_marked_vertices(marked_to_be_removed, false);
+        mesh->remove_marked_vertices(marked_to_be_removed, false);
     }
 
     if(m_random_subsample_percentage!=0.0){
         float prob_of_death=m_random_subsample_percentage;
         int vertices_marked_for_removal=0;
-        std::vector<bool> is_vertex_to_be_removed(transformed_mesh.V.rows(), false);
-        for(int i = 0; i < transformed_mesh.V.rows(); i++){
+        std::vector<bool> is_vertex_to_be_removed(mesh->V.rows(), false);
+        for(int i = 0; i < mesh->V.rows(); i++){
             float random= m_rand_gen->rand_float(0.0, 1.0);
             if(random<prob_of_death){
                 is_vertex_to_be_removed[i]=true;
                 vertices_marked_for_removal++;
             }
         }
-        transformed_mesh.remove_marked_vertices(is_vertex_to_be_removed, false);
+        mesh->remove_marked_vertices(is_vertex_to_be_removed, false);
     }
 
     if(m_random_translation_xyz_magnitude!=0.0){
@@ -92,7 +92,7 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         tf.translation().x()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
         tf.translation().y()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
         tf.translation().z()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
-        transformed_mesh.transform_vertices_cpu(tf);
+        mesh->transform_vertices_cpu(tf);
     }
 
     if(m_random_translation_xz_magnitude!=0.0){
@@ -101,7 +101,7 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         tf.setIdentity();
         tf.translation().x()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
         tf.translation().z()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
-        transformed_mesh.transform_vertices_cpu(tf);
+        mesh->transform_vertices_cpu(tf);
     }
 
 
@@ -111,9 +111,9 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         float stretch_factor_x=1.0 + m_rand_gen->rand_float(-s, s);
         float stretch_factor_y=1.0 + m_rand_gen->rand_float(-s, s);
         float stretch_factor_z=1.0 + m_rand_gen->rand_float(-s, s);
-        transformed_mesh.V.col(0)*=stretch_factor_x;
-        transformed_mesh.V.col(1)*=stretch_factor_y;
-        transformed_mesh.V.col(2)*=stretch_factor_z;
+        mesh->V.col(0)*=stretch_factor_x;
+        mesh->V.col(1)*=stretch_factor_y;
+        mesh->V.col(2)*=stretch_factor_z;
     }
 
     //random rotation in y
@@ -126,21 +126,21 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         float rand_angle_radians=rand_angle_degrees * M_PI / 180.0;
         tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitY());
         tf.matrix().block<3,3>(0,0)=tf_rot;
-        transformed_mesh.transform_vertices_cpu(tf);
+        mesh->transform_vertices_cpu(tf);
     }
 
     //random mirror along the yz plane will negate the x coordinate
     if(m_random_mirror_x){
         bool do_flip=m_rand_gen->rand_bool(0.5); //50/50 will do a flip
         if(do_flip){
-            transformed_mesh.V.col(0)=-transformed_mesh.V.col(0);
+            mesh->V.col(0)=-mesh->V.col(0);
         }
     }
     //random mirror along the xy plane will negate the z coordinate
     if(m_random_mirror_z){
         bool do_flip=m_rand_gen->rand_bool(0.5); //50/50 will do a flip
         if(do_flip){
-            transformed_mesh.V.col(2)=-transformed_mesh.V.col(2);
+            mesh->V.col(2)=-mesh->V.col(2);
         }
     }
 
@@ -154,11 +154,11 @@ Mesh DataTransformer::transform(const Mesh& mesh){
         float rand_angle_radians=rand_angle_degrees * M_PI / 180.0;
         tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitY());
         tf.matrix().block<3,3>(0,0)=tf_rot;
-        transformed_mesh.transform_vertices_cpu(tf);
+        mesh->transform_vertices_cpu(tf);
     }
 
 
-    return transformed_mesh;
+    return mesh;
 
 }
 

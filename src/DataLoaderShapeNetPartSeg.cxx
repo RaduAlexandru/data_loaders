@@ -210,9 +210,9 @@ void DataLoaderShapeNetPartSeg::read_data(){
             //transform
             // cloud.apply_transform(m_tf_worldGL_worldROS); // from worldROS to worldGL
 
-            // if(m_mode=="train"){
-                // cloud=m_transformer->transform(cloud);
-            // }
+            if(m_mode=="train"){
+                cloud=m_transformer->transform(cloud);
+            }
 
             if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
                 // https://stackoverflow.com/a/15866196

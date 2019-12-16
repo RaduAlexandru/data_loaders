@@ -1,12 +1,13 @@
 //eigen 
 #include <Eigen/Core>
 
-#include "easy_pbr/Mesh.h"
+#include <memory>
 
 #include <configuru.hpp>
 
 
 class RandGenerator;
+class Mesh;
 
 class DataTransformer
 {
@@ -14,7 +15,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     DataTransformer(const configuru::Config& config_file);
 
-    Mesh transform(const Mesh& mesh);
+    std::shared_ptr<Mesh> transform(std::shared_ptr<Mesh>& mesh);
 
 private:
 
