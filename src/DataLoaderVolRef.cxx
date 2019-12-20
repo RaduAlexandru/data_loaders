@@ -16,12 +16,15 @@ using namespace configuru;
 
 //boost
 #include <boost/range.hpp>
+#include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
 
 
 //my stuff 
-#include "data_loaders/utils/MiscUtils.h"
+#include "RandGenerator.h"
 
-using namespace er::utils;
+// using namespace easy_pbr::utils;
 
 
 DataLoaderVolRef::DataLoaderVolRef(const std::string config_file):
@@ -52,9 +55,16 @@ DataLoaderVolRef::~DataLoaderVolRef(){
 void DataLoaderVolRef::init_params(const std::string config_file){
   
     //read all the parameters
-    Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
-    Config loader_config=cfg["loader_vol_ref"];
+    // Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+    std::string config_file_abs;
+    if (fs::path(config_file).is_relative()){
+        config_file_abs=(fs::path(PROJECT_SOURCE_DIR) / config_file).string();
+    }else{
+        config_file_abs=config_file;
+    }
+    Config cfg = configuru::parse_file(config_file_abs, CFG);
 
+    Config loader_config=cfg["loader_vol_ref"];
     m_autostart=loader_config["autostart"];
     m_nr_samples_to_skip=loader_config["nr_samples_to_skip"];
     m_nr_samples_to_read=loader_config["nr_samples_to_read"];

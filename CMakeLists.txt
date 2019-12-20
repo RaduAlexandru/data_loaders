@@ -54,6 +54,8 @@ find_package(catkin REQUIRED COMPONENTS roscpp std_msgs cv_bridge pcl_ros image_
 include_directories(${catkin_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/deps)
+include_directories(${CMAKE_SOURCE_DIR}/extern)
+# include_directories(${CMAKE_SOURCE_DIR}/deps/pybind11/include)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${EASYPBR_INCLUDE_DIR})
 catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport )
@@ -62,7 +64,7 @@ catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge p
 ###   SOURCES   #################################################################
 set(MY_SRC  
     # ${PROJECT_SOURCE_DIR}/src/Frame.cxx
-    # ${PROJECT_SOURCE_DIR}/src/DataLoaderVolRef.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderVolRef.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderImgRos.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderScanNet.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderShapeNetPartSeg.cxx
@@ -78,6 +80,7 @@ set(MY_SRC
 )
 set(DEPS_SRC 
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp
+    # ${PROJECT_SOURCE_DIR}/extern/pybind_casters/ndarray_converter.cpp
     )
 
 

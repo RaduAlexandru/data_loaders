@@ -28,6 +28,9 @@ using namespace configuru;
 //json 
 #include "json11/json11.hpp"
 
+//boost
+namespace fs = boost::filesystem;
+
 
 // using namespace er::utils;
 using namespace easy_pbr::utils;

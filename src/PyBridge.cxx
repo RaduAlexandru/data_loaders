@@ -4,8 +4,12 @@
 // #include "torch/torch.h"
 // #include "torch/csrc/utils/pybind.h"
 
+// #include "pybind_casters/pybind11_opencv.hpp"
+// #include "pybind_casters/ndarray_converter.h"
+
 //my stuff 
 #include "data_loaders/DataLoaderShapeNetPartSeg.h"
+#include "data_loaders/DataLoaderVolRef.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -21,10 +25,30 @@ namespace py = pybind11;
 
 PYBIND11_MODULE(dataloaders, m) {
 
+    // NDArrayConverter::init_numpy();
+
     // py::module::import("easypbr");
     // py::object mesh_py = (py::object) py::module::import("easypbr").attr("Mesh");
     // py::print(Mesh.attr("path"));
     // py::object mesh=py::module::import("easypbr").attr("Mesh");;
+    // py::class_<cv::Mat> (m, "Mat")
+    // ;
+
+    // //Frame
+    // py::class_<Frame> (m, "Frame")
+    // .def(py::init<>())
+    // // .def_readwrite("rgb_32f", &Frame::rgb_32f) //not possible in pybind. You would need to wrap the opencv into a matrix type or soemthing like that
+    // .def("create_frustum_mesh", &Frame::create_frustum_mesh, py::arg("scale_multiplier") = 1.0)
+    // .def("rotate_y_axis", &Frame::rotate_y_axis )
+    // .def("backproject_depth", &Frame::backproject_depth )
+    // .def("assign_color", &Frame::assign_color )
+    // .def_readwrite("rgb_8u", &Frame::rgb_8u )
+    // .def_readwrite("rgb_32f", &Frame::rgb_32f )
+    // // #ifdef WITH_TORCH
+    //     // .def("rgb2tensor", &Frame::rgb2tensor )
+    //     // .def("tensor2rgb", &Frame::tensor2rgb )
+    // // #endif
+    // ;
  
     //DataLoader ShapeNetPartSeg
     py::class_<DataLoaderShapeNetPartSeg> (m, "DataLoaderShapeNetPartSeg")
@@ -41,14 +65,18 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_validation", &DataLoaderShapeNetPartSeg::set_mode_validation ) 
     .def("get_object_name", &DataLoaderShapeNetPartSeg::get_object_name ) 
     .def("set_object_name", &DataLoaderShapeNetPartSeg::set_object_name ) 
-    // .def("get_cloud", [mesh_py](DataLoaderShapeNetPartSeg& loader ) { 
-    //     MeshSharedPtr mesh=loader.get_cloud();
-    //     return mesh;
-    //     // return static_cast<Mesh *>(mesh);
-    //     // return py::cast(mesh);
-    //     // mesh_py=py::cast(mesh);
-    //     // return mesh_py;
-    // } )
+    ;
+
+    py::class_<DataLoaderVolRef> (m, "DataLoaderVolRef")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderVolRef::start )
+    .def("get_color_frame", &DataLoaderVolRef::get_color_frame )
+    .def("get_depth_frame", &DataLoaderVolRef::get_depth_frame )
+    .def("has_data", &DataLoaderVolRef::has_data ) 
+    .def("is_finished", &DataLoaderVolRef::is_finished ) 
+    .def("is_finished_reading", &DataLoaderVolRef::is_finished_reading ) 
+    .def("reset", &DataLoaderVolRef::reset ) 
+    .def("nr_samples", &DataLoaderVolRef::nr_samples ) 
     ;
 
     //  py::class_<Mesh, std::shared_ptr<Mesh>> (m, "Mesh")

@@ -16,7 +16,6 @@
 //boost
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
-namespace fs = boost::filesystem;
 
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
@@ -71,7 +70,7 @@ private:
     bool m_shuffle;
     bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
     std::string m_restrict_to_object;  //makes it load clouds only from a specific object
-    fs::path m_dataset_path;  //get the path where all the off files are 
+    boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
     // int m_nr_clouds_to_skip;
     // int m_nr_clouds_to_read;
     std::thread m_loader_thread;
@@ -82,8 +81,8 @@ private:
 
 
     //internal
-    std::vector<fs::path> m_pts_filenames; //contains all the pts filenames from all the classes
-    std::vector<fs::path> m_labels_filenames; //contains all the labels for the correspinding pts files
+    std::vector<boost::filesystem::path> m_pts_filenames; //contains all the pts filenames from all the classes
+    std::vector<boost::filesystem::path> m_labels_filenames; //contains all the labels for the correspinding pts files
     // std::unordered_map<std::string, std::string> m_synsetoffset2category; //mapping from the filename which a bunch of number to the class name;
     moodycamel::ReaderWriterQueue<std::shared_ptr<Mesh> > m_clouds_buffer;
     Eigen::Affine3d m_tf_worldGL_worldROS;
