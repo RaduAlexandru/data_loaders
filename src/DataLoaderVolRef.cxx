@@ -161,7 +161,7 @@ void DataLoaderVolRef::read_data(){
             if(!m_do_overfit){
                 m_idx_sample_to_read++;
             }
-            VLOG(1) << "reading " << sample_filename;
+            // VLOG(1) << "reading " << sample_filename;
 
 
             //read color img
@@ -183,7 +183,7 @@ void DataLoaderVolRef::read_data(){
             //read pose file
             std::string pose_file=name+"pose.txt";
             Eigen::Affine3d tf_world_cam=read_pose_file(pose_file);
-            VLOG(1) << "pose from tf_world_cam" << pose_file << " is " << tf_world_cam.matrix();
+            // VLOG(1) << "pose from tf_world_cam" << pose_file << " is " << tf_world_cam.matrix();
             // frame_color.tf_cam_world=tf_world_cam.inverse().cast<float>();
             // frame_depth.tf_cam_world=tf_world_cam.inverse().cast<float>();
             // frame_color.tf_cam_world=tf_world_cam.cast<float>();
@@ -201,7 +201,7 @@ void DataLoaderVolRef::read_data(){
             frame_color.K=m_K_color.cast<float>();
             frame_depth.K=m_K_depth.cast<float>();
 
-            VLOG(1) << "frame color has K " << frame_color.K;
+            // VLOG(1) << "frame color has K " << frame_color.K;
 
 
 
