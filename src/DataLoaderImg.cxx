@@ -1,10 +1,11 @@
-#include "data_loaders/DataLoaderPNG.h"
+#include "data_loaders/DataLoaderImg.h"
 
 //c++
 #include <iostream>
 #include <fstream>
 #include <algorithm>
 #include <string>
+#include <random>
 
 
 //loguru
@@ -12,14 +13,14 @@
 #include <loguru.hpp>
 
 //My stuff
-#include "data_loaders/utils/Profiler.h"
-#include "data_loaders/utils/MiscUtils.h"
+#include "Profiler.h"
+#include "string_utils.h"
 
 //cv
 #include <cv_bridge/cv_bridge.h>
 
 //ros
-#include "data_loaders/utils/RosTools.h"
+// #include "data_loaders/utils/RosTools.h"
 
 
 //configuru
@@ -29,19 +30,19 @@
 using namespace configuru;
 
 
-using namespace er::utils;
+using namespace easy_pbr::utils;
 
 
 
-DataLoaderPNG::DataLoaderPNG(const std::string config_file)
+DataLoaderImg::DataLoaderImg(const std::string config_file):
+    m_nr_resets(0)
     {
 
     init_params(config_file);
 
 
-    LOG(FATAL) << "DO NOT USE THIS CLASS! At the moment this class has a really big issue with loading which may lead to even bigger issues down the line. The problem is that the frames are stored in a ringbuffer, however the ringbuffer has not Eigen::aligned_alocator as te DataLoaderImgRos or the DataLoaderCloudRos has. This means that it can fail in very nasty ways down the line. The solution would be to implement my own ringbuffer with an aligned alocator the same way it is down in the other two DataLoaders. However I don't have time for this right now..";
+    // LOG(FATAL) << "DO NOT USE THIS CLASS! At the moment this class has a really big issue with loading which may lead to even bigger issues down the line. The problem is that the frames are stored in a ringbuffer, however the ringbuffer has not Eigen::aligned_alocator as te DataLoaderImgRos or the DataLoaderCloudRos has. This means that it can fail in very nasty ways down the line. The solution would be to implement my own ringbuffer with an aligned alocator the same way it is down in the other two DataLoaders. However I don't have time for this right now..";
 
-    init_data_reading();
     create_transformation_matrices();
     if(!m_only_rgb){
         if(m_dataset_type==DatasetType::ETH){
@@ -55,39 +56,54 @@ DataLoaderPNG::DataLoaderPNG(const std::string config_file)
 
 
     //start reading
-    m_loader_threads.resize(m_nr_cams);
-    for (size_t i = 0; i < m_nr_cams; i++) {
-        m_loader_threads[i]=std::thread(&DataLoaderPNG::read_data_for_cam, this, i);
+    // m_loader_threads.resize(m_nr_cams);
+    // for (size_t i = 0; i < m_nr_cams; i++) {
+        // m_loader_threads[i]=std::thread(&DataLoaderImg::read_data_for_cam, this, i);
+    // }
+
+    if(m_autostart){
+        start();
     }
+    
 
 
 }
 
-DataLoaderPNG::~DataLoaderPNG(){
+DataLoaderImg::~DataLoaderImg(){
 
+    m_is_running=false;
     for (size_t i = 0; i < m_nr_cams; i++) {
         m_loader_threads[i].join();
     }
 }
 
-void DataLoaderPNG::init_params(const std::string config_file){
+void DataLoaderImg::init_params(const std::string config_file){
     //get the config filename
     // ros::NodeHandle private_nh("~");
     // std::string config_file= getParamElseThrow<std::string>(private_nh, "config_file");
     // std::string config_file="config.cfg";
 
     //read all the parameters
-    Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
-    Config loader_config=cfg["loader_png"];
+    // Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+    std::string config_file_abs;
+    if (fs::path(config_file).is_relative()){
+        config_file_abs=(fs::path(PROJECT_SOURCE_DIR) / config_file).string();
+    }else{
+        config_file_abs=config_file;
+    }
+    Config cfg = configuru::parse_file(config_file_abs, CFG);
+
+    Config loader_config=cfg["loader_img"];
+    m_autostart=loader_config["autostart"];
     m_nr_cams = loader_config["nr_cams"];
     m_imgs_to_skip=loader_config["imgs_to_skip"];
     m_nr_images_to_read=loader_config["nr_images_to_read"];
+    m_shuffle=loader_config["shuffle"];
+    m_sort_by_filename=loader_config["sort_by_filename"];
 
-    Config paths_config=cfg["paths"];
-    m_data_path=(std::string)paths_config["data_path"];
 
     for (size_t i = 0; i < m_nr_cams; i++) {
-        m_rgb_imgs_path_per_cam.push_back( m_data_path / (std::string)loader_config["rgb_path_cam_"+std::to_string(i)] );
+        m_rgb_imgs_path_per_cam.push_back( fs::path( (std::string)loader_config["rgb_path_cam_"+std::to_string(i)]) );
         m_frames_buffer_per_cam.push_back( moodycamel::ReaderWriterQueue<Frame>(BUFFER_SIZE));
     }
 
@@ -99,21 +115,35 @@ void DataLoaderPNG::init_params(const std::string config_file){
         else if(dataset_type_string=="icl") m_dataset_type=DatasetType::ICL;
         else if(dataset_type_string=="nts") m_dataset_type=DatasetType::NTS;
         else LOG(FATAL) << " Dataset type is not known " << dataset_type_string;
-        m_pose_file= (m_data_path / (std::string)loader_config["pose_file"]).string();
+        m_pose_file= (std::string)loader_config["pose_file"];
     }
 
 
 
-    Config vis_config=cfg["visualization"];
-    m_tf_worldGL_worldROS_angle=vis_config["tf_worldGL_worldROS_angle"];
-    m_tf_worldGL_worldROS_axis=(std::string)vis_config["tf_worldGL_worldROS_axis"];
+    // Config vis_config=cfg["visualization"];
+    // m_tf_worldGL_worldROS_angle=vis_config["tf_worldGL_worldROS_angle"];
+    // m_tf_worldGL_worldROS_axis=(std::string)vis_config["tf_worldGL_worldROS_axis"];
 
     // //input for the images
     m_rgb_subsample_factor=loader_config["rgb_subsample_factor"];
 
 }
 
-void DataLoaderPNG::init_data_reading(){
+void DataLoaderImg::start(){
+    CHECK(m_is_running==false) << "The loader thread is already running. Please check in the config file that autostart is not already set to true. Or just don't call start()";
+
+    init_data_reading();
+
+    m_is_running=true;
+    m_loader_threads.resize(m_nr_cams);
+    for (size_t i = 0; i < m_nr_cams; i++) {
+        VLOG(1) <<"starting thread for cam " << i;
+        m_loader_threads[i]=std::thread(&DataLoaderImg::read_data_for_cam, this, i);
+    }
+    
+}
+
+void DataLoaderImg::init_data_reading(){
     std::cout << "init data reading" << '\n';
 
     m_idx_img_to_read_per_cam.resize(m_nr_cams,0);
@@ -132,18 +162,29 @@ void DataLoaderPNG::init_data_reading(){
         //see how many images we have and read the files paths into a vector
         std::vector<fs::path> rgb_filenames_all;
         for (fs::directory_iterator itr(m_rgb_imgs_path_per_cam[i]); itr!=fs::directory_iterator(); ++itr){
-            rgb_filenames_all.push_back(itr->path());
+            if(fs::is_regular_file( itr->path()) ){
+                rgb_filenames_all.push_back(itr->path());
+                // VLOG(1) << "pushed" << itr->path();
+            }
         }
 
 
         //TODO sort by name so that we process the frames in the correct order
-
-        if(m_dataset_type==DatasetType::NTS){
-            std::sort(rgb_filenames_all.begin(), rgb_filenames_all.end(), nts_file_comparator());
-        }else{
-            std::sort(rgb_filenames_all.begin(), rgb_filenames_all.end(), file_timestamp_comparator());
+        //sorting assumes that the filename is a numericla value eg 35.png Check that it is so.
+        if (m_sort_by_filename && !m_shuffle){ //we don't sort if we arre shuffling afterwards as it makes no difference
+            for (size_t i = 0; i < rgb_filenames_all.size(); i++){
+                try {
+                    double d = std::stod(rgb_filenames_all[i].stem().string() );
+                } catch (const std::invalid_argument&) {
+                    LOG(FATAL) << "We are assuming that the filename is a numerical value like 45.png. However for this file it is not so for file: " << rgb_filenames_all[i] << " at index: " << i;
+                }
+            }
+            if(m_dataset_type==DatasetType::NTS){
+                std::sort(rgb_filenames_all.begin(), rgb_filenames_all.end(), nts_file_comparator());
+            }else{
+                std::sort(rgb_filenames_all.begin(), rgb_filenames_all.end(), file_timestamp_comparator());
+            }
         }
-
 
 
 
@@ -153,6 +194,16 @@ void DataLoaderPNG::init_data_reading(){
                 m_rgb_filenames_per_cam[i].push_back(rgb_filenames_all[img_idx]);
             }
         }
+
+        //shuffle the filles to be read if necessary
+        if(m_shuffle){
+            unsigned seed = m_nr_resets;
+            for (size_t i = 0; i < m_nr_cams; i++){
+                auto rng = std::default_random_engine(seed); //create engines with the same states so the vector are randomized in the same way
+                std::shuffle(std::begin(m_rgb_filenames_per_cam[i]), std::end(m_rgb_filenames_per_cam[i]), rng);
+            }
+        }
+
         std::cout << "Nr rgb images on cam " << i << ": " << rgb_filenames_all.size() << std::endl;
         // std::cout << "Nr rgb images on cam resized  " << i << ": " << m_rgb_filenames_per_cam[i].size() << std::endl;
 
@@ -172,12 +223,12 @@ void DataLoaderPNG::init_data_reading(){
 
 
 
-void DataLoaderPNG::read_data_for_cam(const int cam_id){
+void DataLoaderImg::read_data_for_cam(const int cam_id){
     std::cout << "----------READING DATA for cam " << cam_id << '\n';
-    loguru::set_thread_name(("loader_thread_"+std::to_string(cam_id)).c_str());
+    // loguru::set_thread_name(("loader_thread_"+std::to_string(cam_id)).c_str());
 
     int nr_frames_read_for_cam=0;
-    while (ros::ok()) {
+    while (m_is_running) {
 
         //we finished reading so we wait here for a reset
         if(m_idx_img_to_read_per_cam[cam_id]>=(int)m_rgb_filenames_per_cam[cam_id].size()){
@@ -194,6 +245,7 @@ void DataLoaderPNG::read_data_for_cam(const int cam_id){
             Frame frame;
             frame.cam_id=cam_id;
             frame.frame_idx=nr_frames_read_for_cam;
+            // VLOG(1) <<"Created frame";
 
             if(m_dataset_type==DatasetType::NTS){
                 //because the very last frame of new tsukuba acually has a bad pose for some reason we set the penultima one to be the last
@@ -315,7 +367,7 @@ void DataLoaderPNG::read_data_for_cam(const int cam_id){
     VLOG(1) << "Finished reading all the images";
 }
 
-bool DataLoaderPNG::is_finished(){
+bool DataLoaderImg::is_finished(){
     //check if this loader has loaded everything for every camera
     for (size_t cam_id = 0; cam_id < m_nr_cams; cam_id++) {
         if(m_idx_img_to_read_per_cam[cam_id]<(int)m_rgb_filenames_per_cam[cam_id].size()){
@@ -337,7 +389,7 @@ bool DataLoaderPNG::is_finished(){
 }
 
 
-bool DataLoaderPNG::is_finished_reading(){
+bool DataLoaderImg::is_finished_reading(){
     //check if this loader has loaded everything for every camera
     for (size_t cam_id = 0; cam_id < m_nr_cams; cam_id++) {
         if(m_idx_img_to_read_per_cam[cam_id]<(int)m_rgb_filenames_per_cam[cam_id].size()){
@@ -349,7 +401,7 @@ bool DataLoaderPNG::is_finished_reading(){
 
 }
 
-bool DataLoaderPNG::has_data_for_cam(const int cam_id){
+bool DataLoaderImg::has_data_for_cam(const int cam_id){
     // return !m_queue.empty();
     if(m_frames_buffer_per_cam[cam_id].peek()==nullptr){
         return false;
@@ -358,7 +410,7 @@ bool DataLoaderPNG::has_data_for_cam(const int cam_id){
     }
 }
 
-bool DataLoaderPNG::has_data_for_all_cams(){
+bool DataLoaderImg::has_data_for_all_cams(){
     for (size_t i = 0; i < m_nr_cams; i++) {
         if(!has_data_for_cam(i)){
             return false;
@@ -367,7 +419,7 @@ bool DataLoaderPNG::has_data_for_all_cams(){
     return true;
 }
 
-Frame DataLoaderPNG::get_next_frame_for_cam(const int cam_id){
+Frame DataLoaderImg::get_frame_for_cam(const int cam_id){
     // TIME_SCOPE("get_next_frame");
 
     if(m_get_last_published_frame_for_cam[cam_id] && m_last_frame_per_cam[cam_id].rgb_8u.data){
@@ -391,7 +443,22 @@ Frame DataLoaderPNG::get_next_frame_for_cam(const int cam_id){
 
 }
 
-void DataLoaderPNG::reset(){
+
+void DataLoaderImg::reset(){
+
+
+    m_nr_resets++;
+
+    //reshuffle for the next epoch
+    if(m_shuffle){
+        unsigned seed = m_nr_resets;
+        for (size_t i = 0; i < m_nr_cams; i++){
+            auto rng = std::default_random_engine(seed); //create engines with the same states so the vector are randomized in the same way
+            std::shuffle(std::begin(m_rgb_filenames_per_cam[i]), std::end(m_rgb_filenames_per_cam[i]), rng);
+        }
+    }
+
+    //restarts the indexes for reading
     for (size_t i = 0; i < m_nr_cams; i++) {
         m_idx_img_to_read_per_cam[i]=0;
         //deque everything (we can do it safely from here because while this is running, the core is not reading since the Core and GUI share thread)
@@ -400,7 +467,7 @@ void DataLoaderPNG::reset(){
 
 }
 
-void DataLoaderPNG::clear_buffers(){
+void DataLoaderImg::clear_buffers(){
     for (size_t i = 0; i < m_nr_cams; i++) {
         //deque everything (we can do it safely from here because while this is running, the core is not reading since the Core and GUI share thread)
         m_frames_buffer_per_cam[i]=moodycamel::ReaderWriterQueue<Frame>(BUFFER_SIZE);
@@ -411,7 +478,7 @@ void DataLoaderPNG::clear_buffers(){
 
 
 
-void DataLoaderPNG::read_pose_file_eth(){
+void DataLoaderImg::read_pose_file_eth(){
     std::ifstream infile( m_pose_file );
     if(!infile.is_open()){
         LOG(FATAL) << "Could not open pose file " << m_pose_file;
@@ -455,7 +522,7 @@ void DataLoaderPNG::read_pose_file_eth(){
 
 }
 
-void DataLoaderPNG::read_pose_file_icl(){
+void DataLoaderImg::read_pose_file_icl(){
     std::ifstream infile( m_pose_file );
     if(!infile.is_open()){
         LOG(FATAL) << "Could not open pose file " << m_pose_file;
@@ -494,7 +561,7 @@ void DataLoaderPNG::read_pose_file_icl(){
 
 }
 
-void DataLoaderPNG::read_pose_file_nts(){
+void DataLoaderImg::read_pose_file_nts(){
 
     std::ifstream infile( m_pose_file );
     if(!infile.is_open()){
@@ -538,7 +605,7 @@ void DataLoaderPNG::read_pose_file_nts(){
 
 }
 
-bool DataLoaderPNG::get_pose_at_timestamp(Eigen::Affine3f& pose, const uint64_t timestamp, const uint64_t cam_id){
+bool DataLoaderImg::get_pose_at_timestamp(Eigen::Affine3f& pose, const uint64_t timestamp, const uint64_t cam_id){
 
 
     //return the closest one
@@ -647,7 +714,7 @@ bool DataLoaderPNG::get_pose_at_timestamp(Eigen::Affine3f& pose, const uint64_t 
 
 }
 
-void DataLoaderPNG::get_intrinsics(Eigen::Matrix3f& K, Eigen::Matrix<float, 5, 1>& distort_coeffs, const uint64_t cam_id){
+void DataLoaderImg::get_intrinsics(Eigen::Matrix3f& K, Eigen::Matrix<float, 5, 1>& distort_coeffs, const uint64_t cam_id){
     K.setIdentity();
 
     if(m_dataset_type==DatasetType::ETH){
@@ -716,7 +783,7 @@ void DataLoaderPNG::get_intrinsics(Eigen::Matrix3f& K, Eigen::Matrix<float, 5, 1
 
 
 
-void DataLoaderPNG::create_transformation_matrices(){
+void DataLoaderImg::create_transformation_matrices(){
 
 
 
@@ -738,28 +805,32 @@ void DataLoaderPNG::create_transformation_matrices(){
      * */
 
 
-    m_tf_worldGL_worldROS.setIdentity();
-    Eigen::Matrix3f worldGL_worldROS_rot;
-    Eigen::Vector3f axis;
-    axis.setZero();
-    if(m_tf_worldGL_worldROS_axis=="x"){
-        axis=Eigen::Vector3f::UnitX();
-    }else if(m_tf_worldGL_worldROS_axis=="y"){
-        axis=Eigen::Vector3f::UnitY();
-    }else if(m_tf_worldGL_worldROS_axis=="z"){
-        axis=Eigen::Vector3f::UnitZ();
-    }else{
-        LOG(FATAL) << "No valid m_tf_worldGL_worldROS_axis. Need to be either x,y or z";
-    }
-    worldGL_worldROS_rot = Eigen::AngleAxisf(m_tf_worldGL_worldROS_angle, axis);
-    m_tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
+    // m_tf_worldGL_worldROS.setIdentity();
+    // Eigen::Matrix3f worldGL_worldROS_rot;
+    // Eigen::Vector3f axis;
+    // axis.setZero();
+    // if(m_tf_worldGL_worldROS_axis=="x"){
+    //     axis=Eigen::Vector3f::UnitX();
+    // }else if(m_tf_worldGL_worldROS_axis=="y"){
+    //     axis=Eigen::Vector3f::UnitY();
+    // }else if(m_tf_worldGL_worldROS_axis=="z"){
+    //     axis=Eigen::Vector3f::UnitZ();
+    // }else{
+    //     LOG(FATAL) << "No valid m_tf_worldGL_worldROS_axis. Need to be either x,y or z";
+    // }
+    // worldGL_worldROS_rot = Eigen::AngleAxisf(m_tf_worldGL_worldROS_angle, axis);
+    // m_tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
 
+    m_tf_worldGL_worldROS.setIdentity();
+    Eigen::Matrix3d worldGL_worldROS_rot;
+    worldGL_worldROS_rot = Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitX());
+    m_tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
 
 
 
 }
 
-void DataLoaderPNG::republish_last_frame_from_cam(const int cam_id){
+void DataLoaderImg::republish_last_frame_from_cam(const int cam_id){
     m_get_last_published_frame_for_cam[cam_id]=true;
     // std::cout << "republish check" << '\n';
     // if(m_last_frame_per_cam[cam_id].rgb.data){
@@ -771,7 +842,7 @@ void DataLoaderPNG::republish_last_frame_from_cam(const int cam_id){
 
 }
 
-void DataLoaderPNG::republish_last_frame_all_cams(){
+void DataLoaderImg::republish_last_frame_all_cams(){
     for (size_t i = 0; i < m_nr_cams; i++) {
         m_get_last_published_frame_for_cam[i]=true;
     }

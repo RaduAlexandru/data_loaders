@@ -10,6 +10,7 @@
 //my stuff 
 #include "data_loaders/DataLoaderShapeNetPartSeg.h"
 #include "data_loaders/DataLoaderVolRef.h"
+#include "data_loaders/DataLoaderImg.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -77,6 +78,19 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished_reading", &DataLoaderVolRef::is_finished_reading ) 
     .def("reset", &DataLoaderVolRef::reset ) 
     .def("nr_samples", &DataLoaderVolRef::nr_samples ) 
+    ;
+
+    py::class_<DataLoaderImg> (m, "DataLoaderImg")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderImg::start )
+    .def("get_frame_for_cam", &DataLoaderImg::get_frame_for_cam )
+    .def("get_nr_cams", &DataLoaderImg::get_nr_cams )
+    .def("has_data_for_cam", &DataLoaderImg::has_data_for_cam ) 
+    .def("has_data_for_all_cams", &DataLoaderImg::has_data_for_all_cams ) 
+    .def("is_finished", &DataLoaderImg::is_finished ) 
+    .def("is_finished_reading", &DataLoaderImg::is_finished_reading ) 
+    .def("reset", &DataLoaderImg::reset ) 
+    // .def("nr_samples", &DataLoaderImg::nr_samples ) 
     ;
 
     //  py::class_<Mesh, std::shared_ptr<Mesh>> (m, "Mesh")

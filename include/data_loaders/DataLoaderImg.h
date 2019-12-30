@@ -12,14 +12,14 @@
 #include <opencv2/highgui/highgui.hpp>
 
 //My stuff
-#include "data_loaders/Frame.h"
-#include "data_loaders/core/MeshCore.h"
+#include "easy_pbr/Frame.h"
+// #include "core/MeshCore.h"
 
 //ros
-#include <ros/ros.h>
+// #include <ros/ros.h>
 
 //Eigen
-#include<Eigen/StdVector>
+// #include<Eigen/StdVector>
 
 
 //readerwriterqueue
@@ -70,17 +70,18 @@ enum DatasetType
 
 
 
-class DataLoaderPNG{
+class DataLoaderImg{
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    DataLoaderPNG(const std::string config_file);
-    ~DataLoaderPNG();
+    DataLoaderImg(const std::string config_file);
+    ~DataLoaderImg();
 
+    void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
     bool has_data_for_cam(const int cam_id);
     bool has_data_for_all_cams();
-    Frame get_next_frame_for_cam(const int cam_id);
+    Frame get_frame_for_cam(const int cam_id);
     int get_nr_cams(){return m_nr_cams; };
     void set_mask_for_cam(const std::string mask_filename, const int cam_id); //set a mask which will cause parts of the rgb, classes and probs images to be ignored
     void republish_last_frame_from_cam(const int cam_id); //put the last frame back into the ringbuffer so we cna read it from the core
@@ -95,7 +96,7 @@ public:
  
 
     //transforms
-    Eigen::Affine3f m_tf_worldGL_worldROS;
+    Eigen::Affine3d m_tf_worldGL_worldROS;
     std::vector<std::pair<uint64_t, Eigen::Affine3f>,  Eigen::aligned_allocator<std::pair<uint64_t, Eigen::Affine3f>>   >m_worldROS_baselink_vec;
 
     std::vector< std::vector<fs::path> > m_rgb_filenames_per_cam; //list of images paths for each cam to read
@@ -121,10 +122,13 @@ private:
 
 
     //params
+    bool m_autostart;
+    bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-
     bool m_only_rgb;
-    fs::path m_data_path; //path of the global datasets like the mappilary and the new tsukuba
-    float m_tf_worldGL_worldROS_angle;
-    std::string m_tf_worldGL_worldROS_axis;
+    bool m_shuffle;
+    bool m_sort_by_filename;
+    // float m_tf_worldGL_worldROS_angle;
+    // std::string m_tf_worldGL_worldROS_axis;
     // std::string m_dataset_type;
     DatasetType m_dataset_type;
     std::string m_pose_file;
@@ -134,6 +138,7 @@ private:
     float m_rgb_subsample_factor;
     int m_imgs_to_skip;
     int m_nr_images_to_read; //nr images to read starting from m_imgs_to_skip
+    int m_nr_resets;
 
 
     void init_params(const std::string config_file);

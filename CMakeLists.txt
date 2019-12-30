@@ -75,7 +75,7 @@ set(MY_SRC
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderCloudRos.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderRueMonge.cxx
     # ${PROJECT_SOURCE_DIR}/src/RosBagPlayer.cxx
-    # ${PROJECT_SOURCE_DIR}/src/DataLoaderPNG.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderImg.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderModelNet40.cxx
 )
 set(DEPS_SRC 

@@ -97,6 +97,9 @@ void DataLoaderShapeNetPartSeg::init_params(const std::string config_file){
 
 void DataLoaderShapeNetPartSeg::start(){
     CHECK(m_is_running==false) << "The loader thread is already running. Please check in the config file that autostart is not already set to true. Or just don't call start()";
+
+    init_data_reading();
+
     m_is_running=true;
     m_loader_thread=std::thread(&DataLoaderShapeNetPartSeg::read_data, this);  //starts the spin in another thread
 }
@@ -174,7 +177,6 @@ void DataLoaderShapeNetPartSeg::read_data(){
 
     loguru::set_thread_name("loader_thread_shapenet");
 
-    init_data_reading();
 
     while (m_is_running) {
 
