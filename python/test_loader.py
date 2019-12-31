@@ -3,9 +3,13 @@
 import os
 import numpy as np
 import sys
+try:
+  import torch
+except ImportError:
+    pass
 from easypbr  import *
 from dataloaders import *
-np.set_printoptions(threshold=sys.maxsize)
+# np.set_printoptions(threshold=sys.maxsize)
 
 config_file="test_loader.cfg"
 
@@ -62,6 +66,9 @@ def test_img():
                 # print("data")
                 frame=loader.get_frame_for_cam(cam_idx)
                 Gui.show(frame.rgb_32f, "rgb")
+                #get tensor
+                rgb_tensor=frame.rgb2tensor()
+                rgb_tensor=rgb_tensor.to("cuda")
 
            
         view.update()
