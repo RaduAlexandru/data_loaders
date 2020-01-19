@@ -98,6 +98,7 @@ void DataLoaderImg::init_params(const std::string config_file){
     m_nr_cams = loader_config["nr_cams"];
     m_imgs_to_skip=loader_config["imgs_to_skip"];
     m_nr_images_to_read=loader_config["nr_images_to_read"];
+    m_do_overfit=loader_config["do_overfit"];
     m_shuffle=loader_config["shuffle"];
     m_sort_by_filename=loader_config["sort_by_filename"];
 
@@ -260,7 +261,9 @@ void DataLoaderImg::read_data_for_cam(const int cam_id){
 
 
             fs::path rgb_filename=m_rgb_filenames_per_cam[cam_id][ m_idx_img_to_read_per_cam[cam_id] ];
-            m_idx_img_to_read_per_cam[cam_id]++;
+            if(!m_do_overfit){
+                m_idx_img_to_read_per_cam[cam_id]++;
+            }
             uint64_t timestamp=-1;
             if(m_dataset_type==DatasetType::NTS){
                 std::string filename=rgb_filename.stem().string();

@@ -138,6 +138,7 @@ private:
     float m_rgb_subsample_factor;
     int m_imgs_to_skip;
     int m_nr_images_to_read; //nr images to read starting from m_imgs_to_skip
+    bool m_do_overfit;
     int m_nr_resets;
 
 

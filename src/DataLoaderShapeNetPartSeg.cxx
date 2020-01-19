@@ -390,6 +390,11 @@ int DataLoaderShapeNetPartSeg::nr_samples(){
     return m_pts_filenames.size();
 }
 
+std::shared_ptr<LabelMngr> DataLoaderShapeNetPartSeg::label_mngr(){
+    CHECK(m_label_mngr) << "label_mngr was not created";
+    return m_label_mngr;
+}
+
 void DataLoaderShapeNetPartSeg::set_mode_train(){
     m_mode="train";
 }

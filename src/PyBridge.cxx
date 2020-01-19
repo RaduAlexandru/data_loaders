@@ -61,6 +61,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished_reading", &DataLoaderShapeNetPartSeg::is_finished_reading ) 
     .def("reset", &DataLoaderShapeNetPartSeg::reset ) 
     .def("nr_samples", &DataLoaderShapeNetPartSeg::nr_samples ) 
+    .def("label_mngr", &DataLoaderShapeNetPartSeg::label_mngr ) 
     .def("set_mode_train", &DataLoaderShapeNetPartSeg::set_mode_train ) 
     .def("set_mode_test", &DataLoaderShapeNetPartSeg::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderShapeNetPartSeg::set_mode_validation ) 

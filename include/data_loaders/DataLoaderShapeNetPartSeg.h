@@ -37,11 +37,13 @@ public:
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of samples/examples that this loader will iterate over
+    std::shared_ptr<LabelMngr> label_mngr();
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
     std::string get_object_name();
     void set_object_name(const std::string object_name);
+
 
 
 
