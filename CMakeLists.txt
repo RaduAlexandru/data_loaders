@@ -31,11 +31,6 @@ set(CMAKE_CXX_STANDARD 17) #needed also by the pybind so it can build itself in 
 # set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "" FORCE) 
 # message("PYBIND11_PYTHON_VERSION is" , ${PYBIND11_PYTHON_VERSION})
 
-add_subdirectory( ${CMAKE_SOURCE_DIR}/deps/pybind11)
-
-#pybind attempt 3
-# pybind11_add_module(DataLoaderTest ${CMAKE_SOURCE_DIR}/src/pycom/PyCom.cxx )
-pybind11_add_module(dataloaders ${PROJECT_SOURCE_DIR}/src/PyBridge.cxx )
 
 
 ####   GLOBAL OPTIONS   ###https://stackoverflow.com/questions/15201064/cmake-conditional-preprocessor-define-on-code
@@ -49,6 +44,10 @@ find_package(EasyPBR REQUIRED)
 # add_subdirectory(${PROJECT_SOURCE_DIR}/deps/pybind11)
 find_package(catkin REQUIRED COMPONENTS roscpp std_msgs cv_bridge pcl_ros image_transport )
 
+message("--------------------------------------EASYPBR_SRC_PATH is ", ${EASYPBR_SRC_PATH})
+add_subdirectory( ${EASYPBR_SRC_PATH}/deps/pybind11 ./../../build/pybind11 EXCLUDE_FROM_ALL)
+#pybind attempt 3
+pybind11_add_module(dataloaders ${PROJECT_SOURCE_DIR}/src/PyBridge.cxx )
 
 ###   INCLUDES   #########################################################
 include_directories(${catkin_INCLUDE_DIRS})
@@ -99,6 +98,7 @@ add_library( dataloaders_cpp SHARED ${MY_SRC}  ${DEPS_SRC}  )
 
 
 ###   LIBS   ###############################################
+message("easypbr lib is ", ${EASYPBR_LIBRARY})
 set(LIBS ${LIBS} ${catkin_LIBRARIES} ${EASYPBR_LIBRARY} ${OpenCV_LIBS})
 
 
