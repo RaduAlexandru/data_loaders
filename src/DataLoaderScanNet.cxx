@@ -252,7 +252,7 @@ void DataLoaderScanNet::read_data(){
 
 
             fs::path alignment_file=fs::absolute(ply_filename).parent_path()/ (fs::absolute(ply_filename).parent_path().filename().string()+".txt");
-            VLOG(1) << "reading alignment file from " << alignment_file;
+            // VLOG(1) << "reading alignment file from " << alignment_file;
             Eigen::Affine3d alignment;
             alignment=read_alignment_matrix(alignment_file.string());
 
