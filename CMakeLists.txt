@@ -53,6 +53,7 @@ pybind11_add_module(dataloaders ${PROJECT_SOURCE_DIR}/src/PyBridge.cxx )
 include_directories(${catkin_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/deps)
+include_directories(${CMAKE_SOURCE_DIR}/deps/cnpy)
 include_directories(${CMAKE_SOURCE_DIR}/extern)
 # include_directories(${CMAKE_SOURCE_DIR}/deps/pybind11/include)
 include_directories(${EIGEN3_INCLUDE_DIR})
@@ -68,7 +69,7 @@ set(MY_SRC
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderScanNet.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderShapeNetPartSeg.cxx
     ${PROJECT_SOURCE_DIR}/src/DataTransformer.cxx
-    # ${PROJECT_SOURCE_DIR}/src/DataLoaderSemanticKitti.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderSemanticKitti.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderStanfordIndoor.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderToyExample.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderCloudRos.cxx
@@ -79,6 +80,7 @@ set(MY_SRC
 )
 set(DEPS_SRC 
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp
+    ${PROJECT_SOURCE_DIR}/deps/cnpy/cnpy.cpp
     # ${PROJECT_SOURCE_DIR}/extern/pybind_casters/ndarray_converter.cpp
     )
 

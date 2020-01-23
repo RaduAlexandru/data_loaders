@@ -4,3 +4,6 @@
 [submodule "deps/json11"]
 	path = deps/json11
 	url = https://github.com/dropbox/json11.git
+[submodule "deps/cnpy"]
+	path = deps/cnpy
+	url = https://github.com/rogersce/cnpy.git

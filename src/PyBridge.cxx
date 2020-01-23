@@ -11,6 +11,7 @@
 #include "data_loaders/DataLoaderShapeNetPartSeg.h"
 #include "data_loaders/DataLoaderVolRef.h"
 #include "data_loaders/DataLoaderImg.h"
+#include "data_loaders/DataLoaderSemanticKitti.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -92,6 +93,24 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished_reading", &DataLoaderImg::is_finished_reading ) 
     .def("reset", &DataLoaderImg::reset ) 
     // .def("nr_samples", &DataLoaderImg::nr_samples ) 
+    ;
+
+    //DataLoaderSemanticKitti
+    py::class_<DataLoaderSemanticKitti> (m, "DataLoaderSemanticKitti")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderSemanticKitti::start )
+    .def("get_cloud", &DataLoaderSemanticKitti::get_cloud, R"EOS( get_cloud. )EOS" )
+    .def("has_data", &DataLoaderSemanticKitti::has_data )
+    .def("is_finished", &DataLoaderSemanticKitti::is_finished ) 
+    .def("is_finished_reading", &DataLoaderSemanticKitti::is_finished_reading ) 
+    .def("reset", &DataLoaderSemanticKitti::reset ) 
+    .def("nr_samples", &DataLoaderSemanticKitti::nr_samples ) 
+    .def("label_mngr", &DataLoaderSemanticKitti::label_mngr ) 
+    .def("set_mode_train", &DataLoaderSemanticKitti::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderSemanticKitti::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderSemanticKitti::set_mode_validation ) 
+    .def("set_sequence", &DataLoaderSemanticKitti::set_sequence ) 
+    // .def("set_adaptive_subsampling", &DataLoaderSemanticKitti::set_adaptive_subsampling ) 
     ;
 
     //  py::class_<Mesh, std::shared_ptr<Mesh>> (m, "Mesh")

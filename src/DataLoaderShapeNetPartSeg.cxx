@@ -23,6 +23,7 @@ using namespace configuru;
 #include "Profiler.h"
 #include "string_utils.h"
 #include "eigen_utils.h"
+#include "RandGenerator.h"
 #include "easy_pbr/LabelMngr.h"
 
 //json 

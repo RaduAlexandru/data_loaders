@@ -15,9 +15,6 @@ config_file="test_loader.cfg"
 
 config_path=os.path.join( os.path.dirname( os.path.realpath(__file__) ) , '../config', config_file)
 view=Viewer.create(config_path) #first because it needs to init context
-# loader=DataLoaderShapeNetPartSeg(config_path)
-# loader=DataLoaderVolRef(config_path)
-# loader.start()
 
 
 
@@ -73,11 +70,21 @@ def test_img():
            
         view.update()
 
+def test_semantickitti():
+    loader=DataLoaderSemanticKitti(config_path)
+    loader.start()
 
+    while True:
+        if(loader.has_data()): 
+            cloud=loader.get_cloud()
+            Scene.show(cloud, "cloud")
 
+           
+        view.update()
 
 # test_volref()
-test_img()
+# test_img()
+test_semantickitti()
 
 
 

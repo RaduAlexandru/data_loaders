@@ -14,26 +14,22 @@
 #include <configuru.hpp>
 using namespace configuru;
 
-//ros
-#include "data_loaders/utils/RosTools.h"
-#include <pcl/conversions.h>
-#include <pcl_ros/transforms.h>
-#include <pcl/PCLPointCloud2.h>
-
 //cnpy
 #include "cnpy.h"
 
-//pybind so you can read the cloud from python
-#include <pybind11/pybind11.h>
-#include <pybind11/stl.h>
+//boos
+#include <boost/range/iterator_range.hpp>
 
 //my stuff 
+#include "easy_pbr/Mesh.h"
+#include "easy_pbr/LabelMngr.h"
 #include "data_loaders/DataTransformer.h"
-#include "data_loaders/core/MeshCore.h"
-#include "data_loaders/LabelMngr.h"
-#include "data_loaders/utils/MiscUtils.h"
+#include "Profiler.h"
+#include "string_utils.h"
+#include "eigen_utils.h"
+#include "RandGenerator.h"
 
-using namespace er::utils;
+using namespace easy_pbr::utils;
 
 
 DataLoaderSemanticKitti::DataLoaderSemanticKitti(const std::string config_file):
@@ -72,7 +68,13 @@ void DataLoaderSemanticKitti::init_params(const std::string config_file){
     // std::string config_file="config.cfg";
 
     //read all the parameters
-    Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+    std::string config_file_abs;
+    if (fs::path(config_file).is_relative()){
+        config_file_abs=(fs::path(PROJECT_SOURCE_DIR) / config_file).string();
+    }else{
+        config_file_abs=config_file;
+    }
+    Config cfg = configuru::parse_file(config_file_abs, CFG);
     Config loader_config=cfg["loader_semantic_kitti"];
 
     m_autostart=loader_config["autostart"];
@@ -237,7 +239,7 @@ void DataLoaderSemanticKitti::read_data(){
             if(!m_do_overfit){
                 m_idx_cloud_to_read++;
             }
-            VLOG(1) << "reading " << npz_filename;
+            // VLOG(1) << "reading " << npz_filename;
 
             //read npz 
             cnpy::npz_t npz_file = cnpy::npz_load(npz_filename.string());
@@ -248,23 +250,23 @@ void DataLoaderSemanticKitti::read_data(){
             //read intensity
             fs::path absolute_path=fs::absolute(npz_filename).parent_path();
             fs::path file_name=npz_filename.stem();
-            fs::path npz_intensity_path=absolute_path/(file_name.string()+"_i"+".npz");
-            cnpy::npz_t npz_intensity_file = cnpy::npz_load(npz_intensity_path.string());
-            cnpy::NpyArray arr_intensity = npz_intensity_file["arr_0"]; //one can obtain the keys with https://stackoverflow.com/a/53901903
-            CHECK(arr_intensity.shape.size()==1) << "arr should have 1 dimensions and it has " << arr.shape.size();
+            // fs::path npz_intensity_path=absolute_path/(file_name.string()+"_i"+".npz");
+            // cnpy::npz_t npz_intensity_file = cnpy::npz_load(npz_intensity_path.string());
+            // cnpy::NpyArray arr_intensity = npz_intensity_file["arr_0"]; //one can obtain the keys with https://stackoverflow.com/a/53901903
+            // CHECK(arr_intensity.shape.size()==1) << "arr should have 1 dimensions and it has " << arr.shape.size();
 
 
             //copy into EigenMatrix 
             int nr_points=arr.shape[0];
-            MeshCore cloud;
-            cloud.V.resize(nr_points,3);
-            cloud.V.setZero();
-            cloud.L_gt.resize(nr_points,1);
-            cloud.L_gt.setZero();
-            cloud.I.resize(nr_points,1);
-            cloud.I.setZero();
+            MeshSharedPtr cloud=Mesh::create();
+            cloud->V.resize(nr_points,3);
+            cloud->V.setZero();
+            cloud->L_gt.resize(nr_points,1);
+            cloud->L_gt.setZero();
+            // cloud->I.resize(nr_points,1);
+            // cloud->I.setZero();
             double* arr_data = arr.data<double>();
-            float* arr_intensity_data = arr_intensity.data<float>(); //the intensities are as floats while xyz is double. You can check by reading the npz in python
+            // float* arr_intensity_data = arr_intensity.data<float>(); //the intensities are as floats while xyz is double. You can check by reading the npz in python
             for(int i=0; i<nr_points*4; i=i+4){
                 int row_insert=i/4;
 
@@ -272,18 +274,18 @@ void DataLoaderSemanticKitti::read_data(){
                 double y=arr_data[i+1];
                 double z=arr_data[i+2];
                 int label=arr_data[i+3];
-                double intensity=arr_intensity_data[row_insert];
+                // double intensity=arr_intensity_data[row_insert];
 
-                cloud.V.row(row_insert) << x,y,z;
-                cloud.L_gt.row(row_insert) << label;
-                cloud.I.row(row_insert) << intensity;
+                cloud->V.row(row_insert) << x,y,z;
+                cloud->L_gt.row(row_insert) << label;
+                // cloud->I.row(row_insert) << intensity;
 
 
                 // VLOG(1) << "xyz is " << x << " " << y << " " << z << " " << label;
                 // exit(1);
             
             }
-            cloud.D=cloud.V.rowwise().norm();
+            cloud->D=cloud->V.rowwise().norm();
 
             // if(m_do_adaptive_subsampling){
             //     std::vector<bool> marked_to_be_removed(cloud.V.rows(), false);
@@ -301,32 +303,32 @@ void DataLoaderSemanticKitti::read_data(){
             //get pose 
             int scan_nr=std::stoull( npz_filename.stem().string() ); //scan_nr corresponds to the file name (without the extension of course)
             std::string sequence= npz_filename.parent_path().stem().string();
-            VLOG(1) << "sequence is " << sequence;
+            // VLOG(1) << "sequence is " << sequence;
             Eigen::Affine3d tf_worldROS_cam;
             if(m_do_pose){
                     tf_worldROS_cam=get_pose_for_scan_nr_and_sequence(scan_nr, sequence);
             }
-            cloud.t=scan_nr;
+            cloud->t=scan_nr;
 
 
             if(m_cap_distance>0.0){
-                std::vector<bool> is_too_far(cloud.V.rows(),false);
-                for(int i=0; i<cloud.V.rows(); i++){
-                    float dist=cloud.V.row(i).norm();
+                std::vector<bool> is_too_far(cloud->V.rows(),false);
+                for(int i=0; i<cloud->V.rows(); i++){
+                    float dist=cloud->V.row(i).norm();
                     if(dist>m_cap_distance){
                         is_too_far[i]=true;
                     }
                 }
-                cloud.remove_marked_vertices(is_too_far, false);
+                cloud->remove_marked_vertices(is_too_far, false);
             }
 
             //transform
             if(m_do_pose){
                 LOG(FATAL) << "Doing poses is at the moment disabled because the poses are wrong. I thought the matrix m_tf_cam_velodyne is the same for all sequences, however that is not the case.";
-                cloud.apply_transform(m_tf_cam_velodyne); //from velodyne frame to the camera frame
-                cloud.apply_transform(tf_worldROS_cam); // from camera to worldROS
+                cloud->transform_vertices_cpu(m_tf_cam_velodyne); //from velodyne frame to the camera frame
+                cloud->transform_vertices_cpu(tf_worldROS_cam); // from camera to worldROS
             }
-            cloud.apply_transform(m_tf_worldGL_worldROS); // from worldROS to worldGL
+            cloud->transform_vertices_cpu(m_tf_worldGL_worldROS); // from worldROS to worldGL
 
 
             if(m_mode=="train"){
@@ -335,29 +337,29 @@ void DataLoaderSemanticKitti::read_data(){
 
 
             if(m_normalize){
-                cloud.normalize_size();
-                cloud.normalize_position();
+                cloud->normalize_size();
+                cloud->normalize_position();
             }
 
             if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
                 // https://stackoverflow.com/a/15866196
-                Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud.V.rows());
+                Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud->V.rows());
                 perm.setIdentity();
                 std::shuffle(perm.indices().data(), perm.indices().data()+perm.indices().size(), m_rand_gen->generator());
                 // VLOG(1) << "permutation matrix is " << perm.indices();
                 // A_perm = A * perm; // permute columns
-                cloud.V = perm * cloud.V; // permute rows
-                cloud.L_gt = perm * cloud.L_gt; // permute rows
-                cloud.D = perm * cloud.D; // permute rows
+                cloud->V = perm * cloud->V; // permute rows
+                cloud->L_gt = perm * cloud->L_gt; // permute rows
+                cloud->D = perm * cloud->D; // permute rows
             }
 
             //some sensible visualization options
-            cloud.m_vis.m_show_mesh=false;
-            cloud.m_vis.m_show_points=true;
-            cloud.m_vis.m_color_type=+MeshColorType::SemanticGT;
+            cloud->m_vis.m_show_mesh=false;
+            cloud->m_vis.m_show_points=true;
+            cloud->m_vis.m_color_type=+MeshColorType::SemanticGT;
 
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
-            cloud.m_label_mngr=m_label_mngr->shared_from_this();
+            cloud->m_label_mngr=m_label_mngr->shared_from_this();
             
 
             m_clouds_buffer.enqueue(cloud);;
@@ -377,9 +379,9 @@ bool DataLoaderSemanticKitti::has_data(){
 }
 
 
-MeshCore DataLoaderSemanticKitti::get_cloud(){
+std::shared_ptr<Mesh> DataLoaderSemanticKitti::get_cloud(){
 
-    MeshCore cloud;
+    std::shared_ptr<Mesh> cloud;
     m_clouds_buffer.try_dequeue(cloud);
 
     return cloud;
@@ -427,6 +429,10 @@ void DataLoaderSemanticKitti::reset(){
 
 int DataLoaderSemanticKitti::nr_samples(){
     return m_npz_filenames.size();
+}
+std::shared_ptr<LabelMngr> DataLoaderSemanticKitti::label_mngr(){
+    CHECK(m_label_mngr) << "label_mngr was not created";
+    return m_label_mngr;
 }
 void DataLoaderSemanticKitti::set_mode_train(){
     m_mode="train";
