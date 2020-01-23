@@ -1,8 +1,5 @@
 #include "data_loaders/DataLoaderShapeNetPartSeg.h"
 
-//ros
-#include <ros/ros.h>
-
 //loguru
 #define LOGURU_REPLACE_GLOG 1
 #include <loguru.hpp>
@@ -13,8 +10,6 @@
 #include <configuru.hpp>
 using namespace configuru;
 
-//ros
-#include "ros_utils.h"
 
 //my stuff 
 #include "data_loaders/DataTransformer.h"

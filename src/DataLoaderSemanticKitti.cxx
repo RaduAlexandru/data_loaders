@@ -17,7 +17,7 @@ using namespace configuru;
 //cnpy
 #include "cnpy.h"
 
-//boos
+//boost
 #include <boost/range/iterator_range.hpp>
 
 //my stuff 

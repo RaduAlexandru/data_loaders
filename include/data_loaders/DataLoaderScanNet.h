@@ -2,14 +2,11 @@
 #include <unordered_map>
 #include <vector>
 
-//ros
-#include <ros/ros.h>
-#include <sensor_msgs/PointCloud2.h>
-#include <pcl_ros/point_cloud.h>
-
 //eigen 
 #include <Eigen/Core>
-#include<Eigen/StdVector>
+#include <Eigen/Geometry>
+#include <Eigen/StdVector>
+
 
 //readerwriterqueue
 #include "readerwriterqueue/readerwriterqueue.h"
@@ -19,13 +16,13 @@
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
 
-#include "data_loaders/core/MeshCore.h"
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 class LabelMngr;
 class RandGenerator;
 class DataTransformer;
+class Mesh;
 
 class DataLoaderScanNet
 {
@@ -34,16 +31,17 @@ public:
     DataLoaderScanNet(const std::string config_file);
     ~DataLoaderScanNet();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
-    MeshCore get_cloud();
+    std::shared_ptr<Mesh> get_cloud();
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of samples/examples that this loader will iterate over
+    std::shared_ptr<LabelMngr> label_mngr();
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
-    void write_for_evaluating_on_scannet_server(MeshCore& cloud, const std::string path_for_eval); //the test set need to be evaluated on the their server so we write it in the format they want
+    void write_for_evaluating_on_scannet_server(std::shared_ptr<Mesh>& cloud, const std::string path_for_eval); //the test set need to be evaluated on the their server so we write it in the format they want
 
 private:
 
@@ -84,7 +82,7 @@ private:
     std::unordered_map<std::string, bool> m_files_train; 
     std::unordered_map<std::string, bool> m_files_test; 
     std::unordered_map<std::string, bool> m_files_validation; 
-    moodycamel::ReaderWriterQueue<MeshCore> m_clouds_buffer;
+    moodycamel::ReaderWriterQueue<std::shared_ptr<Mesh> > m_clouds_buffer;
     // std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >m_worldROS_cam_vec; //actually the semantic kitti expressed the clouds in the left camera coordinate so it should be m_worldRos_cam_vec 
     Eigen::Affine3d m_tf_worldGL_worldROS;
 

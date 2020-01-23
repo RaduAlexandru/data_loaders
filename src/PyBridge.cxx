@@ -12,6 +12,7 @@
 #include "data_loaders/DataLoaderVolRef.h"
 #include "data_loaders/DataLoaderImg.h"
 #include "data_loaders/DataLoaderSemanticKitti.h"
+#include "data_loaders/DataLoaderScanNet.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -111,6 +112,22 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_validation", &DataLoaderSemanticKitti::set_mode_validation ) 
     .def("set_sequence", &DataLoaderSemanticKitti::set_sequence ) 
     // .def("set_adaptive_subsampling", &DataLoaderSemanticKitti::set_adaptive_subsampling ) 
+    ;
+
+    py::class_<DataLoaderScanNet> (m, "DataLoaderScanNet")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderScanNet::start )
+    .def("get_cloud", &DataLoaderScanNet::get_cloud )
+    .def("has_data", &DataLoaderScanNet::has_data ) 
+    .def("is_finished", &DataLoaderScanNet::is_finished ) 
+    .def("is_finished_reading", &DataLoaderScanNet::is_finished_reading ) 
+    .def("reset", &DataLoaderScanNet::reset ) 
+    .def("nr_samples", &DataLoaderScanNet::nr_samples ) 
+    .def("label_mngr", &DataLoaderScanNet::label_mngr ) 
+    .def("set_mode_train", &DataLoaderScanNet::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderScanNet::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderScanNet::set_mode_validation ) 
+    .def("write_for_evaluating_on_scannet_server", &DataLoaderScanNet::write_for_evaluating_on_scannet_server ) 
     ;
 
     //  py::class_<Mesh, std::shared_ptr<Mesh>> (m, "Mesh")

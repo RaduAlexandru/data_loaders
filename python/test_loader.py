@@ -82,9 +82,22 @@ def test_semantickitti():
            
         view.update()
 
+def test_scannet():
+    loader=DataLoaderScanNet(config_path)
+    loader.start()
+
+    while True:
+        if(loader.has_data()): 
+            cloud=loader.get_cloud()
+            Scene.show(cloud, "cloud")
+
+           
+        view.update()
+
 # test_volref()
 # test_img()
-test_semantickitti()
+# test_semantickitti()
+test_scannet()
 
 
 

@@ -17,15 +17,19 @@ using namespace configuru;
 // #include "igl/ply.h"
 #include "tinyply.h"
 
-
+//boost
+#include <boost/range/iterator_range.hpp>
 
 //my stuff 
 #include "data_loaders/DataTransformer.h"
-#include "data_loaders/core/MeshCore.h"
-#include "data_loaders/LabelMngr.h"
-#include "data_loaders/utils/MiscUtils.h"
+#include "easy_pbr/Mesh.h"
+#include "Profiler.h"
+#include "string_utils.h"
+#include "eigen_utils.h"
+#include "RandGenerator.h"
+#include "easy_pbr/LabelMngr.h"
 
-using namespace er::utils;
+using namespace easy_pbr::utils;
 
 
 DataLoaderScanNet::DataLoaderScanNet(const std::string config_file):
@@ -66,7 +70,13 @@ void DataLoaderScanNet::init_params(const std::string config_file){
     // std::string config_file="config.cfg";
 
     //read all the parameters
-    Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+    std::string config_file_abs;
+    if (fs::path(config_file).is_relative()){
+        config_file_abs=(fs::path(PROJECT_SOURCE_DIR) / config_file).string();
+    }else{
+        config_file_abs=config_file;
+    }
+    Config cfg = configuru::parse_file(config_file_abs, CFG);
     Config loader_config=cfg["loader_scannet"];
 
     m_autostart=loader_config["autostart"];
@@ -191,41 +201,41 @@ void DataLoaderScanNet::read_data(){
             if(!m_do_overfit){
                 m_idx_cloud_to_read++;
             }
-            VLOG(1) << "reading " << ply_filename;
+            // VLOG(1) << "reading " << ply_filename;
             // VLOG(1) << "nr of classes is " << m_label_mngr->nr_classes();
 
 
-            MeshCore cloud;
+            MeshSharedPtr cloud=Mesh::create();
 
             //put the name of the scene (eg: scene0707_00) as the name of the mesh. This will help with writing the predictions afterwards
-            cloud.name=fs::absolute(ply_filename).parent_path().filename().string();
+            cloud->name=fs::absolute(ply_filename).parent_path().filename().string();
 
             //read xyz positions
-            cloud.load_from_file(ply_filename.string());
-            cloud.C.array()/=255.0;
-            cloud.D=cloud.V.rowwise().norm();
-            cloud.recalculate_normals();
-            cloud.I.resize(cloud.V.rows(),1);
-            for(int i=0; i<cloud.V.rows(); i++){
-                cloud.I(i) = 0.3*cloud.C(i,0) + 0.59*cloud.C(i,1) + 0.11*cloud.C(i,2);
+            cloud->load_from_file(ply_filename.string());
+            cloud->C.array()/=255.0;
+            cloud->D=cloud->V.rowwise().norm();
+            cloud->recalculate_normals();
+            cloud->I.resize(cloud->V.rows(),1);
+            for(int i=0; i<cloud->V.rows(); i++){
+                cloud->I(i) = 0.3*cloud->C(i,0) + 0.59*cloud->C(i,1) + 0.11*cloud->C(i,2);
             }
 
             if(m_mode!="test"){
                 // read labels 
                 fs::path labels_file=fs::absolute(ply_filename).parent_path()/ (ply_filename.stem().string()+".labels.ply");
-                VLOG(1)<< "Reading labels from " << labels_file;
-                cloud.L_gt=read_labels(labels_file.string());
+                // VLOG(1)<< "Reading labels from " << labels_file;
+                cloud->L_gt=read_labels(labels_file.string());
 
                 //the labels indices have to be reindexed because the label_manager compacted the labels so that their indices are conscutive
-                m_label_mngr->reindex_into_compacted_labels(cloud.L_gt);
+                m_label_mngr->reindex_into_compacted_labels(cloud->L_gt);
 
                 // CHECK(cloud.L_gt.maxCoeff()<m_label_mngr->nr_classes()) << "We have read a cloud which have a label idx higher than the nr of classes. The max label is " << cloud.L_gt.maxCoeff() << " and the nr of classes is m_label_mngr->nr_classes()";
                 //some clouds are messed up and have a label idx higher that the nr of classes. Set those vertices to unlabeled
-                if(cloud.L_gt.maxCoeff()>=m_label_mngr->nr_classes()){
+                if(cloud->L_gt.maxCoeff()>=m_label_mngr->nr_classes()){
                     int nr_wrong_labels=0;
-                    for(int i=0; i<cloud.L_gt.rows(); i++){
-                        if(cloud.L_gt(i)>=m_label_mngr->nr_classes()){
-                            cloud.L_gt(i)=m_label_mngr->get_idx_unlabeled();
+                    for(int i=0; i<cloud->L_gt.rows(); i++){
+                        if(cloud->L_gt(i)>=m_label_mngr->nr_classes()){
+                            cloud->L_gt(i)=m_label_mngr->get_idx_unlabeled();
                             nr_wrong_labels++;
                         }
                     }
@@ -247,27 +257,27 @@ void DataLoaderScanNet::read_data(){
             alignment=read_alignment_matrix(alignment_file.string());
 
             //the scannet dataset is gigantic and sometimes we can't process all points, we establish a maximum amount of points we can process and drop the rest
-            int nr_points=cloud.V.rows();
+            int nr_points=cloud->V.rows();
             if (nr_points>m_max_nr_points_per_cloud && m_max_nr_points_per_cloud>0){
                 LOG(WARNING)<< "Overstepping theshold of max nr of points of " << m_max_nr_points_per_cloud << " because we have nr of points " << nr_points << ". Dropping points until we only are left with the maximum we can process." ; 
                 //percentage of points we have to drop 
                 float percentage_to_drop=1.0-(float)m_max_nr_points_per_cloud/(float)nr_points;
                 float prob_of_death=percentage_to_drop;
-                std::vector<bool> is_vertex_to_be_removed(cloud.V.rows(), false);
-                for(int i = 0; i < cloud.V.rows(); i++){
+                std::vector<bool> is_vertex_to_be_removed(cloud->V.rows(), false);
+                for(int i = 0; i < cloud->V.rows(); i++){
                     float random= m_rand_gen->rand_float(0.0, 1.0);
                     if(random<prob_of_death){
                         is_vertex_to_be_removed[i]=true;
                     }
                 }
-                cloud.remove_marked_vertices(is_vertex_to_be_removed, false);
+                cloud->remove_marked_vertices(is_vertex_to_be_removed, false);
             }
 
 
 
 
-            cloud.apply_transform(alignment);
-            cloud.apply_transform(m_tf_worldGL_worldROS); // from worldROS to worldGL
+            cloud->transform_vertices_cpu(alignment);
+            cloud->transform_vertices_cpu(m_tf_worldGL_worldROS); // from worldROS to worldGL
 
 
             if(m_mode=="train"){
@@ -277,23 +287,23 @@ void DataLoaderScanNet::read_data(){
 
             if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
                 // https://stackoverflow.com/a/15866196
-                Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud.V.rows());
+                Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud->V.rows());
                 perm.setIdentity();
                 std::shuffle(perm.indices().data(), perm.indices().data()+perm.indices().size(), m_rand_gen->generator());
                 // VLOG(1) << "permutation matrix is " << perm.indices();
                 // A_perm = A * perm; // permute columns
-                cloud.V = perm * cloud.V; // permute rows
-                cloud.L_gt = perm * cloud.L_gt; // permute rows
-                cloud.D = perm * cloud.D; // permute rows
+                cloud->V = perm * cloud->V; // permute rows
+                cloud->L_gt = perm * cloud->L_gt; // permute rows
+                cloud->D = perm * cloud->D; // permute rows
             }
 
             //some sensible visualization options
-            cloud.m_vis.m_show_mesh=false;
-            cloud.m_vis.m_show_points=true;
-            cloud.m_vis.m_color_type=+MeshColorType::SemanticGT;
+            cloud->m_vis.m_show_mesh=false;
+            cloud->m_vis.m_show_points=true;
+            cloud->m_vis.m_color_type=+MeshColorType::SemanticGT;
 
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
-            cloud.m_label_mngr=m_label_mngr->shared_from_this();
+            cloud->m_label_mngr=m_label_mngr->shared_from_this();
             
 
             m_clouds_buffer.enqueue(cloud);;
@@ -349,7 +359,7 @@ Eigen::Affine3d DataLoaderScanNet::read_alignment_matrix(const std::string align
     Eigen::Affine3d mat;
     mat.setIdentity();
     while( std::getline(infile, line)){
-        std::vector<std::string> tokens=er::utils::split(line, " ");
+        std::vector<std::string> tokens=split(line, " ");
 
         if(tokens[0]=="axisAlignment"){
             //Put the values into an eigen matrix
@@ -394,24 +404,24 @@ Eigen::Affine3d DataLoaderScanNet::read_alignment_matrix(const std::string align
 // }
 
 //the test set need to be evaluated on the their server so we write it in the format they want
-void DataLoaderScanNet::write_for_evaluating_on_scannet_server(MeshCore& cloud, const std::string path_for_eval){
+void DataLoaderScanNet::write_for_evaluating_on_scannet_server( std::shared_ptr<Mesh>& cloud, const std::string path_for_eval){
     //the predictions for each vertex need to be decompacted
 
     std::ofstream pred_file;
-    std::string full_path= (fs::path(path_for_eval)/ fs::path(cloud.name+".txt")).string() ;
+    std::string full_path= (fs::path(path_for_eval)/ fs::path(cloud->name+".txt")).string() ;
     VLOG(1) << "writing prediction to full_path" << full_path;
     pred_file.open (full_path);
     CHECK(pred_file.is_open()) << "Could not open for writing into file " << full_path;
 
     //sanity checking
-    VLOG(1) << "max class compacted is " << cloud.L_pred.maxCoeff();
-    VLOG(1) << "min class compacted is " << cloud.L_pred.minCoeff();
+    VLOG(1) << "max class compacted is " << cloud->L_pred.maxCoeff();
+    VLOG(1) << "min class compacted is " << cloud->L_pred.minCoeff();
 
-    Eigen::MatrixXi L_compacted=cloud.L_pred; //we save the compacted one for future reference
-    cloud.m_label_mngr->reindex_into_uncompacted_labels(cloud.L_pred);
+    Eigen::MatrixXi L_compacted=cloud->L_pred; //we save the compacted one for future reference
+    cloud->m_label_mngr->reindex_into_uncompacted_labels(cloud->L_pred);
 
-    for(int i=0; i<cloud.V.rows(); i++){
-        int label_uncompacted=cloud.L_pred(i,0);
+    for(int i=0; i<cloud->V.rows(); i++){
+        int label_uncompacted=cloud->L_pred(i,0);
         pred_file << label_uncompacted << "\n";
 
         // for sanity checking, we check that we write only labels between 1 and 39 inclusive
@@ -430,7 +440,7 @@ void DataLoaderScanNet::write_for_evaluating_on_scannet_server(MeshCore& cloud, 
     VLOG(1) << "the min and the max ever written should be 1 and 39, It is: " << m_min_label_written << " " << m_max_label_written;
 
     //resestablish back the compacted predictions
-    cloud.L_pred=L_compacted;
+    cloud->L_pred=L_compacted;
 
     pred_file.close();
 
@@ -446,9 +456,9 @@ bool DataLoaderScanNet::has_data(){
 }
 
 
-MeshCore DataLoaderScanNet::get_cloud(){
+std::shared_ptr<Mesh> DataLoaderScanNet::get_cloud(){
 
-    MeshCore cloud;
+    std::shared_ptr<Mesh> cloud;
     m_clouds_buffer.try_dequeue(cloud);
 
     return cloud;
@@ -497,6 +507,13 @@ void DataLoaderScanNet::reset(){
 int DataLoaderScanNet::nr_samples(){
     return m_ply_filenames.size();
 }
+
+std::shared_ptr<LabelMngr> DataLoaderScanNet::label_mngr(){
+    CHECK(m_label_mngr) << "label_mngr was not created";
+    return m_label_mngr;
+}
+
+
 void DataLoaderScanNet::set_mode_train(){
     m_mode="train";
 }
