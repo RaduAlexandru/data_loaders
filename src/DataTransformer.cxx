@@ -19,6 +19,7 @@ using namespace configuru;
 #include "easy_pbr/Mesh.h"
 // #include "data_loaders/utils/MiscUtils.h"
 #include "RandGenerator.h"
+#include "ColorMngr.h"
 #include "numerical_utils.h"
 
 // using namespace er::utils;
@@ -49,6 +50,8 @@ void DataTransformer::init_params(const Config& transformer_config){
     m_random_mirror_x=transformer_config["random_mirror_x"];
     m_random_mirror_z=transformer_config["random_mirror_z"];
     m_random_rotation_90_degrees_y=transformer_config["random_rotation_90_degrees_y"];
+
+    m_hsv_jitter=transformer_config["hsv_jitter"];
 
 }
 
@@ -155,6 +158,22 @@ MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
         tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitY());
         tf.matrix().block<3,3>(0,0)=tf_rot;
         mesh->transform_vertices_cpu(tf);
+    }
+
+    if (!m_hsv_jitter.isZero() && mesh->C.size()){
+        //get a random jitter with those params
+        Eigen::Vector3d hsv_noise;
+        hsv_noise << m_rand_gen->rand_float(-m_hsv_jitter.x(), m_hsv_jitter.x() ), m_rand_gen->rand_float( -m_hsv_jitter.y(), m_hsv_jitter.y()  ), m_rand_gen->rand_float( -m_hsv_jitter.z(), m_hsv_jitter.z()  );
+        for(int i=0; i<mesh->C.rows(); i++){
+            Eigen::Vector3d color_rgb=mesh->C.row(i);
+            Eigen::Vector3d hsv=rgb2hsv(color_rgb );
+            hsv+=hsv_noise;
+            hsv.x()= wrap(hsv.x(), 360.0); //hue is a 360 degree circle so a wrap is better than a clamp
+            hsv.y()= clamp(hsv.y(), 0.0, 1.0);
+            hsv.z()= clamp(hsv.z(), 0.0, 1.0);
+            Eigen::Vector3d rgb= hsv2rgb(hsv);
+            mesh->C.row(i)=rgb;       
+        }
     }
 
 

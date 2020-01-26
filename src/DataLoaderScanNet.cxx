@@ -212,7 +212,7 @@ void DataLoaderScanNet::read_data(){
 
             //read xyz positions
             cloud->load_from_file(ply_filename.string());
-            cloud->C.array()/=255.0;
+            // cloud->C.array()/=255.0;
             cloud->D=cloud->V.rowwise().norm();
             cloud->recalculate_normals();
             cloud->I.resize(cloud->V.rows(),1);
@@ -295,6 +295,7 @@ void DataLoaderScanNet::read_data(){
                 cloud->V = perm * cloud->V; // permute rows
                 cloud->L_gt = perm * cloud->L_gt; // permute rows
                 cloud->D = perm * cloud->D; // permute rows
+                cloud->C = perm * cloud->C; // permute rows
             }
 
             //some sensible visualization options
