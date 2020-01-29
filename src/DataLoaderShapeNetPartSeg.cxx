@@ -237,6 +237,7 @@ void DataLoaderShapeNetPartSeg::read_data(){
             cloud->m_label_mngr=m_label_mngr;
 
             // VLOG(1) << "Label uindx is " << cloud->m_label_mngr->get_idx_unlabeled();
+            cloud->m_disk_path=pts_filename.string();
 
             m_clouds_buffer.enqueue(cloud);
 

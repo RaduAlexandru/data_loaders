@@ -306,6 +306,7 @@ void DataLoaderScanNet::read_data(){
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
             cloud->m_label_mngr=m_label_mngr->shared_from_this();
             
+            cloud->m_disk_path=ply_filename.string();
 
             m_clouds_buffer.enqueue(cloud);;
 
