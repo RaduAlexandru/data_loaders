@@ -167,61 +167,11 @@ void DataLoaderVolRef::read_data(){
             if(!m_do_overfit){
                 m_idx_sample_to_read++;
             }
-            // VLOG(1) << "reading " << sample_filename;
 
-
-            //read color img
+            //read frame color and frame depth
             Frame frame_color;
-            frame_color.rgb_8u=cv::imread(sample_filename.string());
-            if(m_rgb_subsample_factor>1){
-                cv::Mat resized;
-                cv::resize(frame_color.rgb_8u, resized, cv::Size(), 1.0/m_rgb_subsample_factor, 1.0/m_rgb_subsample_factor);
-                // frame.rgb_8u=resized.clone();
-                frame_color.rgb_8u=resized;
-            }
-            frame_color.rgb_8u.convertTo(frame_color.rgb_32f, CV_32FC3, 1.0/255.0);
-            frame_color.width=frame_color.rgb_32f.cols;
-            frame_color.height=frame_color.rgb_32f.rows;
-
-            //read depth
             Frame frame_depth;
-            std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
-            cv::Mat depth=cv::imread(name+"depth.png", CV_LOAD_IMAGE_ANYDEPTH);
-            if(m_depth_subsample_factor>1){
-                cv::Mat resized;
-                cv::resize(depth, resized, cv::Size(), 1.0/m_depth_subsample_factor, 1.0/m_depth_subsample_factor, cv::INTER_NEAREST);
-                depth=resized;
-            }
-            depth.convertTo(frame_depth.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
-            // depth.convertTo(frame_depth.depth, CV_32FC1 ); //the depth was stored in mm but we want it in meters
-            frame_depth.width=frame_depth.depth.cols;
-            frame_depth.height=frame_depth.depth.rows;
-
-            //read pose file
-            std::string pose_file=name+"pose.txt";
-            Eigen::Affine3d tf_world_cam=read_pose_file(pose_file);
-            // VLOG(1) << "pose from tf_world_cam" << pose_file << " is " << tf_world_cam.matrix();
-            // frame_color.tf_cam_world=tf_world_cam.inverse().cast<float>();
-            // frame_depth.tf_cam_world=tf_world_cam.inverse().cast<float>();
-            // frame_color.tf_cam_world=tf_world_cam.cast<float>();
-            // frame_depth.tf_cam_world=tf_world_cam.cast<float>();
-
-            Eigen::Affine3d m_tf_worldGL_world;
-            m_tf_worldGL_world.setIdentity();
-            Eigen::Matrix3d worldGL_world_rot;
-            worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
-            m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
-            frame_color.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
-            frame_depth.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
-
-            //assign K matrix
-            frame_color.K=m_K_color.cast<float>()/m_rgb_subsample_factor;
-            frame_depth.K=m_K_depth.cast<float>()/m_depth_subsample_factor;
-            frame_color.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
-            frame_depth.K(2,2)=1.0;
-
-
-            // VLOG(1) << "frame color has K " << frame_color.K;
+            read_sample(frame_color, frame_depth, sample_filename);
 
 
 
@@ -233,6 +183,163 @@ void DataLoaderVolRef::read_data(){
     }
 
 }
+
+
+void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const boost::filesystem::path& sample_filename){
+    //read color img
+    frame_color.rgb_8u=cv::imread(sample_filename.string());
+    if(m_rgb_subsample_factor>1){
+        cv::Mat resized;
+        cv::resize(frame_color.rgb_8u, resized, cv::Size(), 1.0/m_rgb_subsample_factor, 1.0/m_rgb_subsample_factor);
+        // frame.rgb_8u=resized.clone();
+        frame_color.rgb_8u=resized;
+    }
+    frame_color.rgb_8u.convertTo(frame_color.rgb_32f, CV_32FC3, 1.0/255.0);
+    frame_color.width=frame_color.rgb_32f.cols;
+    frame_color.height=frame_color.rgb_32f.rows;
+
+    //read depth
+    std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
+    cv::Mat depth=cv::imread(name+"depth.png", CV_LOAD_IMAGE_ANYDEPTH);
+    if(m_depth_subsample_factor>1){
+        cv::Mat resized;
+        cv::resize(depth, resized, cv::Size(), 1.0/m_depth_subsample_factor, 1.0/m_depth_subsample_factor, cv::INTER_NEAREST);
+        depth=resized;
+    }
+    depth.convertTo(frame_depth.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
+    // depth.convertTo(frame_depth.depth, CV_32FC1 ); //the depth was stored in mm but we want it in meters
+    frame_depth.width=frame_depth.depth.cols;
+    frame_depth.height=frame_depth.depth.rows;
+
+    //read pose file
+    std::string pose_file=name+"pose.txt";
+    Eigen::Affine3d tf_world_cam=read_pose_file(pose_file);
+    // VLOG(1) << "pose from tf_world_cam" << pose_file << " is " << tf_world_cam.matrix();
+    // frame_color.tf_cam_world=tf_world_cam.inverse().cast<float>();
+    // frame_depth.tf_cam_world=tf_world_cam.inverse().cast<float>();
+    // frame_color.tf_cam_world=tf_world_cam.cast<float>();
+    // frame_depth.tf_cam_world=tf_world_cam.cast<float>();
+
+    Eigen::Affine3d m_tf_worldGL_world;
+    m_tf_worldGL_world.setIdentity();
+    Eigen::Matrix3d worldGL_world_rot;
+    worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
+    m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
+    frame_color.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
+    frame_depth.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
+
+    //assign K matrix
+    frame_color.K=m_K_color.cast<float>()/m_rgb_subsample_factor;
+    frame_depth.K=m_K_depth.cast<float>()/m_depth_subsample_factor;
+    frame_color.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+    frame_depth.K(2,2)=1.0;
+}
+
+Frame DataLoaderVolRef::closest_color_frame(const Frame& frame){
+
+    double lowest_score=std::numeric_limits<double>::max();
+    fs::path best_path;
+
+    for(int i=0; i<m_samples_filenames.size(); i++){
+        fs::path sample_filename=m_samples_filenames[i];
+
+        std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
+        std::string pose_file=name+"pose.txt";
+        Eigen::Affine3d tf_worldros_cam=read_pose_file(pose_file);
+
+        //get the difference in transaltion and difference in angle of looking at
+        Eigen::Affine3d m_tf_worldGL_world;
+        m_tf_worldGL_world.setIdentity();
+        Eigen::Matrix3d worldGL_world_rot;
+        worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
+        m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
+        Eigen::Affine3d other_tf_cam_world= tf_worldros_cam.cast<double>().inverse() * m_tf_worldGL_world.inverse(); //from worldgl to world ros, from world ros to cam 
+
+        double diff_translation= (frame.tf_cam_world.cast<double>().inverse().translation() - other_tf_cam_world.inverse().translation()).norm();
+
+        //diff in angle 
+        double diff_angle= 1.0- frame.tf_cam_world.cast<double>().inverse().linear().col(2).dot( other_tf_cam_world.inverse().linear().col(2) );
+
+        double score= 0.5*diff_translation + 0.5*diff_angle;
+
+        if (score<0.00001){
+            //if the score is exactly zero then we are just comparing with the same frame
+            continue;
+        }
+
+        if (score<lowest_score){
+            best_path=sample_filename;
+            lowest_score=score;
+        }
+
+
+    
+    }
+
+
+    //read frame color and frame depth
+    Frame frame_color;
+    Frame frame_depth;
+    read_sample(frame_color, frame_depth, best_path);
+
+    return frame_color;
+    
+}
+
+
+Frame DataLoaderVolRef::closest_depth_frame(const Frame& frame){
+
+    double lowest_score=std::numeric_limits<double>::max();
+    fs::path best_path;
+
+    for(int i=0; i<m_samples_filenames.size(); i++){
+        fs::path sample_filename=m_samples_filenames[i];
+
+        std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
+        std::string pose_file=name+"pose.txt";
+        Eigen::Affine3d tf_worldros_cam=read_pose_file(pose_file);
+
+        //get the difference in transaltion and difference in angle of looking at
+        Eigen::Affine3d m_tf_worldGL_world;
+        m_tf_worldGL_world.setIdentity();
+        Eigen::Matrix3d worldGL_world_rot;
+        worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
+        m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
+        Eigen::Affine3d other_tf_cam_world= tf_worldros_cam.cast<double>().inverse() * m_tf_worldGL_world.inverse(); //from worldgl to world ros, from world ros to cam 
+
+        double diff_translation= (frame.tf_cam_world.cast<double>().inverse().translation() - other_tf_cam_world.inverse().translation()).norm();
+
+        //diff in angle 
+        double diff_angle= 1.0- frame.tf_cam_world.cast<double>().inverse().linear().col(2).dot( other_tf_cam_world.inverse().linear().col(2) );
+
+        double score= 0.5*diff_translation + 0.5*diff_angle;
+
+        if (score<0.00001){
+            //if the score is exactly zero then we are just comparing with the same frame
+            continue;
+        }
+
+        if (score<lowest_score){
+            best_path=sample_filename;
+            lowest_score=score;
+        }
+
+
+    
+    }
+
+    VLOG(1) << "Best depth frame has score " << lowest_score;
+    //read frame color and frame depth
+    Frame frame_color;
+    Frame frame_depth;
+    read_sample(frame_color, frame_depth, best_path);
+
+    return frame_depth;
+    
+}
+
+
+
 
 Eigen::Affine3d DataLoaderVolRef::read_pose_file(std::string pose_file){
     std::ifstream infile( pose_file );

@@ -81,6 +81,8 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished_reading", &DataLoaderVolRef::is_finished_reading ) 
     .def("reset", &DataLoaderVolRef::reset ) 
     .def("nr_samples", &DataLoaderVolRef::nr_samples ) 
+    .def("closest_color_frame", &DataLoaderVolRef::closest_color_frame ) 
+    .def("closest_depth_frame", &DataLoaderVolRef::closest_depth_frame ) 
     ;
 
     py::class_<DataLoaderImg> (m, "DataLoaderImg")

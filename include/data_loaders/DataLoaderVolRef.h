@@ -35,6 +35,9 @@ public:
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of samples/examples that this loader will iterate over
 
+    Frame closest_color_frame(const Frame& frame); //returns the frame color that is closest to the current one and also looks in a similar direction
+    Frame closest_depth_frame(const Frame& frame); //returns the frame depth that is closest to the current one and looks in a similar direction
+
 private:
 
     void init_params(const std::string config_file);
@@ -42,6 +45,7 @@ private:
     Eigen::Affine3d read_pose_file(std::string pose_file);
     Eigen::Matrix3d read_intrinsics_file(std::string intrinsics_file);
     void read_data();
+    void read_sample(Frame& frame_color, Frame& frame_depth, const boost::filesystem::path& sample_filename); //reads one data sample
 
     //objects 
     std::shared_ptr<RandGenerator> m_rand_gen;
