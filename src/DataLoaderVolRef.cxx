@@ -34,7 +34,9 @@ DataLoaderVolRef::DataLoaderVolRef(const std::string config_file):
     m_frames_depth_buffer(BUFFER_SIZE),
     m_idx_sample_to_read(0),
     m_nr_resets(0),
-    m_rand_gen(new RandGenerator)
+    m_rand_gen(new RandGenerator),
+    m_rgb_subsample_factor(1),
+    m_depth_subsample_factor(1)
 {
 
     init_params(config_file);
@@ -71,6 +73,8 @@ void DataLoaderVolRef::init_params(const std::string config_file){
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_dataset_path=(std::string)loader_config["dataset_path"];
+    m_rgb_subsample_factor=loader_config["rgb_subsample_factor"];
+    m_depth_subsample_factor=loader_config["depth_subsample_factor"];
 
 }
 
@@ -169,6 +173,12 @@ void DataLoaderVolRef::read_data(){
             //read color img
             Frame frame_color;
             frame_color.rgb_8u=cv::imread(sample_filename.string());
+            if(m_rgb_subsample_factor>1){
+                cv::Mat resized;
+                cv::resize(frame_color.rgb_8u, resized, cv::Size(), 1.0/m_rgb_subsample_factor, 1.0/m_rgb_subsample_factor);
+                // frame.rgb_8u=resized.clone();
+                frame_color.rgb_8u=resized;
+            }
             frame_color.rgb_8u.convertTo(frame_color.rgb_32f, CV_32FC3, 1.0/255.0);
             frame_color.width=frame_color.rgb_32f.cols;
             frame_color.height=frame_color.rgb_32f.rows;
@@ -177,6 +187,11 @@ void DataLoaderVolRef::read_data(){
             Frame frame_depth;
             std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
             cv::Mat depth=cv::imread(name+"depth.png", CV_LOAD_IMAGE_ANYDEPTH);
+            if(m_depth_subsample_factor>1){
+                cv::Mat resized;
+                cv::resize(depth, resized, cv::Size(), 1.0/m_depth_subsample_factor, 1.0/m_depth_subsample_factor, cv::INTER_NEAREST);
+                depth=resized;
+            }
             depth.convertTo(frame_depth.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
             // depth.convertTo(frame_depth.depth, CV_32FC1 ); //the depth was stored in mm but we want it in meters
             frame_depth.width=frame_depth.depth.cols;
@@ -200,8 +215,11 @@ void DataLoaderVolRef::read_data(){
             frame_depth.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
 
             //assign K matrix
-            frame_color.K=m_K_color.cast<float>();
-            frame_depth.K=m_K_depth.cast<float>();
+            frame_color.K=m_K_color.cast<float>()/m_rgb_subsample_factor;
+            frame_depth.K=m_K_depth.cast<float>()/m_depth_subsample_factor;
+            frame_color.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+            frame_depth.K(2,2)=1.0;
+
 
             // VLOG(1) << "frame color has K " << frame_color.K;
 

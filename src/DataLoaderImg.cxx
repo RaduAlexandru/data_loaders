@@ -283,6 +283,8 @@ void DataLoaderImg::read_data_for_cam(const int cam_id){
             //intrinsics
             if(!m_only_rgb){
                 get_intrinsics(frame.K, frame.distort_coeffs, cam_id);
+                frame.K/=m_rgb_subsample_factor;
+                frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
             }
 
 
@@ -301,9 +303,11 @@ void DataLoaderImg::read_data_for_cam(const int cam_id){
             if(m_rgb_subsample_factor>1){
                 cv::Mat resized;
                 cv::resize(frame.rgb_8u, resized, cv::Size(), 1.0/m_rgb_subsample_factor, 1.0/m_rgb_subsample_factor);
-                frame.rgb_8u=resized.clone();
+                frame.rgb_8u=resized;
             }
             frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
+            frame.width=frame.rgb_32f.cols;
+            frame.height=frame.rgb_32f.rows;
 
 
             // create_alpha_mat(frame.rgb, frame.rgba_8u); //because gpus like rgba otherwise the driver might copy back to system memory the add the 4th channel

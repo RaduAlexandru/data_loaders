@@ -57,6 +57,8 @@ private:
     std::thread m_loader_thread;
     uint32_t m_idx_sample_to_read;
     int m_nr_resets;
+    int m_rgb_subsample_factor; //reduces the size of the color frames
+    int m_depth_subsample_factor; //reduces the size of the depth frames
 
 
     //internal
