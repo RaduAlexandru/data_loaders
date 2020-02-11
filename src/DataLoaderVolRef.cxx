@@ -328,7 +328,7 @@ Frame DataLoaderVolRef::closest_depth_frame(const Frame& frame){
     
     }
 
-    VLOG(1) << "Best depth frame has score " << lowest_score;
+    // VLOG(1) << "Best depth frame has score " << lowest_score;
     //read frame color and frame depth
     Frame frame_color;
     Frame frame_depth;
