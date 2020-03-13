@@ -52,6 +52,8 @@ void DataTransformer::init_params(const Config& transformer_config){
     m_random_rotation_90_degrees_y=transformer_config["random_rotation_90_degrees_y"];
 
     m_hsv_jitter=transformer_config["hsv_jitter"];
+    m_chance_of_xyz_noise = transformer_config["chance_of_xyz_noise"];
+    m_xyz_noise_stddev=transformer_config["xyz_noise_stddev"];
 
 }
 
@@ -173,6 +175,17 @@ MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
             hsv.z()= clamp(hsv.z(), 0.0, 1.0);
             Eigen::Vector3d rgb= hsv2rgb(hsv);
             mesh->C.row(i)=rgb;       
+        }
+    }
+
+    bool do_xyz_noise=m_rand_gen->rand_bool(m_chance_of_xyz_noise);
+    if(do_xyz_noise){
+        if (!m_xyz_noise_stddev.isZero()){
+            for(int i = 0; i < mesh->V.rows(); i++){
+                mesh->V(i,0)+=m_rand_gen->rand_normal_float(0.0, m_xyz_noise_stddev(0));
+                mesh->V(i,1)+=m_rand_gen->rand_normal_float(0.0, m_xyz_noise_stddev(1));
+                mesh->V(i,2)+=m_rand_gen->rand_normal_float(0.0, m_xyz_noise_stddev(2));
+            }
         }
     }
 

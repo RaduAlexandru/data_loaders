@@ -37,6 +37,8 @@ private:
     bool m_random_rotation_90_degrees_y;
 
     Eigen::Vector3f m_hsv_jitter;
+    float m_chance_of_xyz_noise;
+    Eigen::Vector3f m_xyz_noise_stddev;
 
 
     //internal

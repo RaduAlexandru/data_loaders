@@ -164,7 +164,8 @@ void DataLoaderShapeNetPartSeg::init_data_reading(){
     //label file and colormap
     fs::path labels_file = fs::path(m_dataset_path).parent_path().parent_path() / "colorscheme_and_labels" / m_restrict_to_object/"labels.txt";
     fs::path colorscheme_file = fs::path(m_dataset_path).parent_path().parent_path() / "colorscheme_and_labels" / m_restrict_to_object/"color_scheme.txt";
-    fs::path frequency_file = fs::path(m_dataset_path).parent_path().parent_path() / "colorscheme_and_labels" / m_restrict_to_object/"frequency_uniform.txt";
+    fs::path frequency_file = fs::path(m_dataset_path).parent_path().parent_path() / "colorscheme_and_labels" / m_restrict_to_object/"frequency.txt";
+    // fs::path frequency_file = fs::path(m_dataset_path).parent_path().parent_path() / "colorscheme_and_labels" / m_restrict_to_object/"frequency_uniform.txt";
     int unlabeled_idx=0;
     m_label_mngr=std::make_shared<LabelMngr>(labels_file.string(), colorscheme_file.string(), frequency_file.string(), unlabeled_idx );
 }
