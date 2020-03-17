@@ -79,8 +79,8 @@ def test_semantickitti():
             cloud=loader.get_cloud()
             Scene.show(cloud, "cloud")
 
-            if cloud.V.size(0)==125620:
-                print("found")
+            # if cloud.V.size(0)==125620:
+                # print("found")
 
            
         view.update()
