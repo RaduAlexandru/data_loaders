@@ -9,9 +9,16 @@ This contains various data loaders for a series of datasets:
 
 Example of usage and loading of the data can be found in python/test_loader.py
 
+### Build and install: 
+To build and install the example, you must have first installed [EasyPBR]. Afterwards the dataloader can be build with 
+```sh
+$ make
+```
+
 
 
    [ScanNet]: <http://www.scan-net.org/>
    [SemanticKitti]: <http://semantic-kitti.org/>
    [ShapeNetSem]: <https://www.shapenet.org/>
    [VolumetricRefinement]: <http://graphics.stanford.edu/projects/vsfs/>
+   [EasyPBR]: <https://github.com/RaduAlexandru/easy_pbr>
