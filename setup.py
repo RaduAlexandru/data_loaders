@@ -114,8 +114,8 @@ class CMakeBuild(build_ext):
 
        
 
-with open("README.md", "r") as fh:
-    long_description = fh.read()
+#with open("README.md", "r") as fh:
+long_description = "long_description"
 
 #install headers while retaining the structure of the tree folder https://stackoverflow.com/a/50114715
 class install_headers(install_headers_orig):
