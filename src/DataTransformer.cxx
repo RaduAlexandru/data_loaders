@@ -126,7 +126,7 @@ MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
         Eigen::Affine3d tf;
         tf.setIdentity();
         Eigen::Matrix3d tf_rot;
-        float rand_angle_degrees=m_rand_gen->rand_float(0.0, m_rotation_y_max_angle);
+        float rand_angle_degrees=m_rand_gen->rand_float(-m_rotation_y_max_angle/2, m_rotation_y_max_angle/2);
         // float rand_angle_radians=degrees2radians(rand_angle_degrees);
         float rand_angle_radians=rand_angle_degrees * M_PI / 180.0;
         tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitY());
