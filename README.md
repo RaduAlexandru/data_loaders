@@ -10,8 +10,9 @@ This contains various data loaders for a series of datasets:
 Example of usage and loading of the data can be found in python/test_loader.py
 
 ### Build and install: 
-To build and install the example, you must have first installed [EasyPBR]. Afterwards the dataloader can be build with 
+To build and install the example, you must have first installed [EasyPBR]. Afterwards the dataloader requires to be cloned and build inside a ROS workspace
 ```sh
+$ cd YOUR_ROS_WORKSPACE/src
 $ git clone --recursive https://github.com/RaduAlexandru/data_loaders
 $ cd data_loaders
 $ make
