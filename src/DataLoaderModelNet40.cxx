@@ -17,6 +17,7 @@ using namespace configuru;
 #include "data_loaders/core/MeshCore.h"
 
 
+using namespace easy_pbr;
 
 DataLoaderModelNet40::DataLoaderModelNet40(const std::string config_file):
     m_clouds_buffer(BUFFER_SIZE),

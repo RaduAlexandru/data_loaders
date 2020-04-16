@@ -26,8 +26,8 @@ using namespace configuru;
 #include "json11.hpp"
 
 
-using namespace er::utils;
-
+using namespace rady::utils;
+using namespace easy_pbr;
 
 DataLoaderToyExample::DataLoaderToyExample(const std::string config_file):
     m_clouds_buffer(BUFFER_SIZE),

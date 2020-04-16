@@ -19,10 +19,16 @@
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
-class LabelMngr;
-class RandGenerator;
+namespace radu { namespace utils{
+    class RandGenerator;
+}}
+
+namespace easy_pbr{
+    class LabelMngr;
+    class Mesh;
+}
 class DataTransformer;
-class Mesh;
+
 
 class DataLoaderShapeNetPartSeg
 {
@@ -31,13 +37,13 @@ public:
     DataLoaderShapeNetPartSeg(const std::string config_file);
     ~DataLoaderShapeNetPartSeg();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
-    std::shared_ptr<Mesh> get_cloud();
+    std::shared_ptr<easy_pbr::Mesh> get_cloud();
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of samples/examples that this loader will iterate over
-    std::shared_ptr<LabelMngr> label_mngr();
+    std::shared_ptr<easy_pbr::LabelMngr> label_mngr();
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
@@ -60,7 +66,7 @@ private:
     // void compute_normals(Eigen::MatrixXd& NV, const Eigen::MatrixXd& V);
 
     //objects
-    std::shared_ptr<RandGenerator> m_rand_gen;
+    std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
     std::shared_ptr<DataTransformer> m_transformer;
 
     //params
@@ -86,10 +92,10 @@ private:
     std::vector<boost::filesystem::path> m_pts_filenames; //contains all the pts filenames from all the classes
     std::vector<boost::filesystem::path> m_labels_filenames; //contains all the labels for the correspinding pts files
     // std::unordered_map<std::string, std::string> m_synsetoffset2category; //mapping from the filename which a bunch of number to the class name;
-    moodycamel::ReaderWriterQueue<std::shared_ptr<Mesh> > m_clouds_buffer;
+    moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
     Eigen::Affine3d m_tf_worldGL_worldROS;
 
     //label mngr to link to all the meshes that will have a semantic information
-    std::shared_ptr<LabelMngr> m_label_mngr;
+    std::shared_ptr<easy_pbr::LabelMngr> m_label_mngr;
 
 };

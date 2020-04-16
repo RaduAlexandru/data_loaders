@@ -19,7 +19,9 @@
 
 #define NUM_CLOUDS_BUFFER 5
 
-class RandGenerator;
+namespace radu { namespace utils{
+    class RandGenerator;
+}}
 
 class DataLoaderCloudRos
 {
@@ -46,7 +48,7 @@ private:
     void apply_transform(Eigen::MatrixXd& V, const Eigen::Affine3d& trans);
 
     //objects 
-    std::shared_ptr<RandGenerator> m_rand_gen;
+    std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
 
     //params
     std::thread m_loader_thread;

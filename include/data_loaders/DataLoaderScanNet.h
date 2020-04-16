@@ -19,10 +19,16 @@ namespace fs = boost::filesystem;
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
-class LabelMngr;
-class RandGenerator;
+namespace radu { namespace utils{
+    class RandGenerator;
+}}
+
+namespace easy_pbr{
+    class LabelMngr;
+    class Mesh;
+}
 class DataTransformer;
-class Mesh;
+
 
 class DataLoaderScanNet
 {
@@ -31,17 +37,17 @@ public:
     DataLoaderScanNet(const std::string config_file);
     ~DataLoaderScanNet();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
-    std::shared_ptr<Mesh> get_cloud();
+    std::shared_ptr<easy_pbr::Mesh> get_cloud();
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of samples/examples that this loader will iterate over
-    std::shared_ptr<LabelMngr> label_mngr();
+    std::shared_ptr<easy_pbr::LabelMngr> label_mngr();
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
-    void write_for_evaluating_on_scannet_server(std::shared_ptr<Mesh>& cloud, const std::string path_for_eval); //the test set need to be evaluated on the their server so we write it in the format they want
+    void write_for_evaluating_on_scannet_server(std::shared_ptr<easy_pbr::Mesh>& cloud, const std::string path_for_eval); //the test set need to be evaluated on the their server so we write it in the format they want
 
 private:
 
@@ -54,7 +60,7 @@ private:
     void create_transformation_matrices();
 
     //objects 
-    std::shared_ptr<RandGenerator> m_rand_gen;
+    std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
     std::shared_ptr<DataTransformer> m_transformer;
 
     //params
@@ -82,12 +88,12 @@ private:
     std::unordered_map<std::string, bool> m_files_train; 
     std::unordered_map<std::string, bool> m_files_test; 
     std::unordered_map<std::string, bool> m_files_validation; 
-    moodycamel::ReaderWriterQueue<std::shared_ptr<Mesh> > m_clouds_buffer;
+    moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
     // std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >m_worldROS_cam_vec; //actually the semantic kitti expressed the clouds in the left camera coordinate so it should be m_worldRos_cam_vec 
     Eigen::Affine3d m_tf_worldGL_worldROS;
 
     //label mngr to link to all the meshes that will have a semantic information
-    std::shared_ptr<LabelMngr> m_label_mngr;
+    std::shared_ptr<easy_pbr::LabelMngr> m_label_mngr;
 
     //for sanity checking
     int m_min_label_written;

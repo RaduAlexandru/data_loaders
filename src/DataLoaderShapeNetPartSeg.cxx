@@ -29,7 +29,8 @@ namespace fs = boost::filesystem;
 
 
 // using namespace er::utils;
-using namespace easy_pbr::utils;
+using namespace radu::utils;
+using namespace easy_pbr;
 
 
 DataLoaderShapeNetPartSeg::DataLoaderShapeNetPartSeg(const std::string config_file):

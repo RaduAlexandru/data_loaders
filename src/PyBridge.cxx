@@ -23,7 +23,7 @@
 
 namespace py = pybind11;
 
-
+using namespace easy_pbr;
 
 
 PYBIND11_MODULE(dataloaders, m) {

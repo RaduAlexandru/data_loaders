@@ -24,7 +24,8 @@ namespace fs = boost::filesystem;
 //my stuff 
 #include "RandGenerator.h"
 
-// using namespace easy_pbr::utils;
+using namespace radu::utils;
+using namespace easy_pbr;
 
 
 DataLoaderVolRef::DataLoaderVolRef(const std::string config_file):

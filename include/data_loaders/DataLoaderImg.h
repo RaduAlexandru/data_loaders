@@ -81,7 +81,7 @@ public:
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
     bool has_data_for_cam(const int cam_id);
     bool has_data_for_all_cams();
-    Frame get_frame_for_cam(const int cam_id);
+    easy_pbr::Frame get_frame_for_cam(const int cam_id);
     int get_nr_cams(){return m_nr_cams; };
     void set_mask_for_cam(const std::string mask_filename, const int cam_id); //set a mask which will cause parts of the rgb, classes and probs images to be ignored
     void republish_last_frame_from_cam(const int cam_id); //put the last frame back into the ringbuffer so we cna read it from the core
@@ -109,7 +109,7 @@ public:
 
 private:
 
-    std::vector< moodycamel::ReaderWriterQueue<Frame> , Eigen::aligned_allocator< moodycamel::ReaderWriterQueue<Frame>>   > m_frames_buffer_per_cam;
+    std::vector< moodycamel::ReaderWriterQueue<easy_pbr::Frame> , Eigen::aligned_allocator< moodycamel::ReaderWriterQueue<easy_pbr::Frame>>   > m_frames_buffer_per_cam;
 
 
 
@@ -132,7 +132,7 @@ private:
     // std::string m_dataset_type;
     DatasetType m_dataset_type;
     std::string m_pose_file;
-    std::vector<Frame, Eigen::aligned_allocator<Frame>> m_last_frame_per_cam; //stores the last frame for each of the cameras
+    std::vector<easy_pbr::Frame, Eigen::aligned_allocator<easy_pbr::Frame>> m_last_frame_per_cam; //stores the last frame for each of the cameras
     std::vector<bool> m_get_last_published_frame_for_cam; //if we shoudl return the last published frame or not
 
     float m_rgb_subsample_factor;

@@ -18,7 +18,9 @@ namespace fs = boost::filesystem;
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
-class RandGenerator;
+namespace radu { namespace utils{
+    class RandGenerator;
+}}
 
 class DataLoaderVolRef
 {
@@ -27,16 +29,16 @@ public:
     DataLoaderVolRef(const std::string config_file);
     ~DataLoaderVolRef();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
-    Frame get_color_frame();
-    Frame get_depth_frame();
+    easy_pbr::Frame get_color_frame();
+    easy_pbr::Frame get_depth_frame();
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of samples/examples that this loader will iterate over
 
-    Frame closest_color_frame(const Frame& frame); //returns the frame color that is closest to the current one and also looks in a similar direction
-    Frame closest_depth_frame(const Frame& frame); //returns the frame depth that is closest to the current one and looks in a similar direction
+    easy_pbr::Frame closest_color_frame(const easy_pbr::Frame& frame); //returns the frame color that is closest to the current one and also looks in a similar direction
+    easy_pbr::Frame closest_depth_frame(const easy_pbr::Frame& frame); //returns the frame depth that is closest to the current one and looks in a similar direction
 
 private:
 
@@ -45,10 +47,10 @@ private:
     Eigen::Affine3d read_pose_file(std::string pose_file);
     Eigen::Matrix3d read_intrinsics_file(std::string intrinsics_file);
     void read_data();
-    void read_sample(Frame& frame_color, Frame& frame_depth, const boost::filesystem::path& sample_filename); //reads one data sample
+    void read_sample(easy_pbr::Frame& frame_color, easy_pbr::Frame& frame_depth, const boost::filesystem::path& sample_filename); //reads one data sample
 
     //objects 
-    std::shared_ptr<RandGenerator> m_rand_gen;
+    std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
 
     //params
     bool m_autostart;
@@ -68,8 +70,8 @@ private:
     //internal
     bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
     std::vector<fs::path> m_samples_filenames;
-    moodycamel::ReaderWriterQueue<Frame> m_frames_color_buffer;
-    moodycamel::ReaderWriterQueue<Frame> m_frames_depth_buffer;
+    moodycamel::ReaderWriterQueue<easy_pbr::Frame> m_frames_color_buffer;
+    moodycamel::ReaderWriterQueue<easy_pbr::Frame> m_frames_depth_buffer;
     Eigen::Affine3d m_tf_worldGL_worldROS;
     Eigen::MatrixXd m_K_color;
     Eigen::MatrixXd m_K_depth;

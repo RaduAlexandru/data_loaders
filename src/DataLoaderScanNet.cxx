@@ -29,7 +29,8 @@ using namespace configuru;
 #include "RandGenerator.h"
 #include "easy_pbr/LabelMngr.h"
 
-using namespace easy_pbr::utils;
+using namespace radu::utils;
+using namespace easy_pbr;
 
 
 DataLoaderScanNet::DataLoaderScanNet(const std::string config_file):

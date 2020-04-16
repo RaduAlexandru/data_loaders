@@ -21,7 +21,8 @@ using namespace configuru;
 #include "data_loaders/viewer/Gui.h"
 #include "data_loaders/utils/MiscUtils.h"
 
-using namespace er::utils;
+using namespace radu::utils;
+using namespace easy_pbr;
 
 
 DataLoaderImgRos::DataLoaderImgRos(const std::string config_file):

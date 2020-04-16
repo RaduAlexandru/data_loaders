@@ -28,7 +28,8 @@ using namespace configuru;
 
 #include <boost/range.hpp>
 
-using namespace er::utils;
+using namespace radu::utils;
+using namespace easy_pbr;
 
 
 DataLoaderStanfordIndoor::DataLoaderStanfordIndoor(const std::string config_file):

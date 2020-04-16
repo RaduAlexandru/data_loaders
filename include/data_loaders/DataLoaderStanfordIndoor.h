@@ -20,9 +20,15 @@ namespace fs = boost::filesystem;
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
-class LabelMngr;
-class RandGenerator;
+namespace radu { namespace utils{
+    class RandGenerator;
+}}
+
+namespace easy_pbr{
+    class LabelMngr;
+}
 class DataTransformer;
+
 
 class DataLoaderStanfordIndoor
 {
@@ -52,7 +58,7 @@ private:
     bool should_read_area(const int area_number); //depending on the mode (train or test) and the the m_fold we may need to read or not one of the 6 areas
 
     //objects 
-    std::shared_ptr<RandGenerator> m_rand_gen;
+    std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
     std::shared_ptr<DataTransformer> m_transformer;
 
     //params

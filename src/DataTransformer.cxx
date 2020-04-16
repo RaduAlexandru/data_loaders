@@ -23,7 +23,8 @@ using namespace configuru;
 #include "numerical_utils.h"
 
 // using namespace er::utils;
-using namespace easy_pbr::utils;
+using namespace radu::utils;
+using namespace easy_pbr;
 
 
 DataTransformer::DataTransformer(const configuru::Config& config):

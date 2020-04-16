@@ -24,7 +24,8 @@ using namespace configuru;
 #include "data_loaders/utils/MiscUtils.h"
 #include "data_loaders/viewer/Scene.h" //TODO remove this as it as used just for debugging
 
-using namespace er::utils;
+using namespace radu::utils;
+using namespace easy_pbr;
 
 
 DataLoaderCloudRos::DataLoaderCloudRos(const std::string config_file):

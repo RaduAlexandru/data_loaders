@@ -81,7 +81,8 @@ def test_semantickitti():
 
             # if cloud.V.size(0)==125620:
                 # print("found")
-
+        if loader.is_finished():
+            loader.reset()
            
         view.update()
 

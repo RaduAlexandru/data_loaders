@@ -5,9 +5,13 @@
 
 #include <configuru.hpp>
 
+namespace radu { namespace utils{
+    class RandGenerator;
+}}
 
-class RandGenerator;
-class Mesh;
+namespace easy_pbr{
+    class Mesh;
+}
 
 class DataTransformer
 {
@@ -15,14 +19,14 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     DataTransformer(const configuru::Config& config_file);
 
-    std::shared_ptr<Mesh> transform(std::shared_ptr<Mesh>& mesh);
+    std::shared_ptr<easy_pbr::Mesh> transform(std::shared_ptr<easy_pbr::Mesh>& mesh);
 
 private:
 
     void init_params(const configuru::Config& config_file);
 
     //objects 
-    std::shared_ptr<RandGenerator> m_rand_gen;
+    std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
 
     //params
     float m_random_translation_xyz_magnitude;

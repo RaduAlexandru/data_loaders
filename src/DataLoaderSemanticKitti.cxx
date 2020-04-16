@@ -29,7 +29,8 @@ using namespace configuru;
 #include "eigen_utils.h"
 #include "RandGenerator.h"
 
-using namespace easy_pbr::utils;
+using namespace radu::utils;
+using namespace easy_pbr;
 
 
 DataLoaderSemanticKitti::DataLoaderSemanticKitti(const std::string config_file):
