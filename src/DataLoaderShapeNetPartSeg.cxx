@@ -190,6 +190,8 @@ void DataLoaderShapeNetPartSeg::read_data(){
         if(m_clouds_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
             //read the frame and everything else and push it to the queue
 
+            TIME_SCOPE("load_shapenet")
+
             fs::path pts_filename=m_pts_filenames[ m_idx_cloud_to_read ];
             fs::path labels_filename=m_labels_filenames[ m_idx_cloud_to_read ];
             if(!m_do_overfit){

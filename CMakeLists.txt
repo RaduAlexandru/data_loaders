@@ -78,6 +78,7 @@ set(MY_SRC
     # ${PROJECT_SOURCE_DIR}/src/RosBagPlayer.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderImg.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderModelNet40.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderStanford3DScene.cxx
 )
 set(DEPS_SRC 
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp

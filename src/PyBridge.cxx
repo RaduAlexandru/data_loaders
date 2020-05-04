@@ -10,6 +10,7 @@
 //my stuff 
 #include "data_loaders/DataLoaderShapeNetPartSeg.h"
 #include "data_loaders/DataLoaderVolRef.h"
+#include "data_loaders/DataLoaderStanford3DScene.h"
 #include "data_loaders/DataLoaderImg.h"
 #include "data_loaders/DataLoaderSemanticKitti.h"
 #include "data_loaders/DataLoaderScanNet.h"
@@ -83,6 +84,20 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("nr_samples", &DataLoaderVolRef::nr_samples ) 
     .def("closest_color_frame", &DataLoaderVolRef::closest_color_frame ) 
     .def("closest_depth_frame", &DataLoaderVolRef::closest_depth_frame ) 
+    ;
+
+    py::class_<DataLoaderStanford3DScene> (m, "DataLoaderStanford3DScene")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderStanford3DScene::start )
+    .def("get_color_frame", &DataLoaderStanford3DScene::get_color_frame )
+    .def("get_depth_frame", &DataLoaderStanford3DScene::get_depth_frame )
+    .def("has_data", &DataLoaderStanford3DScene::has_data ) 
+    .def("is_finished", &DataLoaderStanford3DScene::is_finished ) 
+    .def("is_finished_reading", &DataLoaderStanford3DScene::is_finished_reading ) 
+    .def("reset", &DataLoaderStanford3DScene::reset ) 
+    .def("nr_samples", &DataLoaderStanford3DScene::nr_samples ) 
+    // .def("closest_color_frame", &DataLoaderStanford3DScene::closest_color_frame ) 
+    // .def("closest_depth_frame", &DataLoaderStanford3DScene::closest_depth_frame ) 
     ;
 
     py::class_<DataLoaderImg> (m, "DataLoaderImg")
