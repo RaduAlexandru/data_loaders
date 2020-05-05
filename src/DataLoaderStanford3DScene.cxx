@@ -1,5 +1,6 @@
 #include "data_loaders/DataLoaderStanford3DScene.h"
 
+#include "Profiler.h"
 //c++
 #include <algorithm>
 #include <random>
@@ -190,6 +191,7 @@ void DataLoaderStanford3DScene::read_data(){
 
 void DataLoaderStanford3DScene::read_sample(Frame& frame_color, Frame& frame_depth, const boost::filesystem::path& sample_filename){
 
+    TIME_SCOPE("data_loader_stanford3d")
 
     int frame_idx= std::stoi(sample_filename.stem().string());
 
@@ -227,6 +229,7 @@ void DataLoaderStanford3DScene::read_sample(Frame& frame_color, Frame& frame_dep
         if(frame_idx==m_poses_vec[i].frame_idx){
             frame_color.tf_cam_world=m_poses_vec[i].pose.cast<float>().inverse();
             frame_depth.tf_cam_world=m_poses_vec[i].pose.cast<float>().inverse();
+            break;
         }
     }
 

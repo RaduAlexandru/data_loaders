@@ -24,22 +24,17 @@ def test_volref():
 
     while True:
         if(loader.has_data() ): 
-            # cloud=loader.get_cloud()
-            # Scene.show(cloud,"cloud")
 
             #volref 
             print("got frame")
             frame_color=loader.get_color_frame()
             frame_depth=loader.get_depth_frame()
 
-
-            # Gui.show_rgb(frame_color, "rgb")
-            # Gui.show(frame_color.rgb_32f, "rgb")
-            # rgb_8u=frame_color.rgb_8u
-            # help(rgb_8u)
             Gui.show(frame_color.rgb_32f, "rgb")
-            # help(rgb_32f)
-            # sys.exit("exit")
+
+            rgb_with_valid_depth=frame_color.rgb_with_valid_depth(frame_depth)
+            Gui.show(rgb_with_valid_depth, "rgb_valid")
+
 
             frustum_mesh=frame_color.create_frustum_mesh(0.1)
             frustum_mesh.m_vis.m_line_width=3
@@ -104,16 +99,16 @@ def test_stanford3dscene():
 
     while True:
         if(loader.has_data() ): 
-            # cloud=loader.get_cloud()
-            # Scene.show(cloud,"cloud")
 
-            # #volref 
             print("got frame")
             frame_color=loader.get_color_frame()
             frame_depth=loader.get_depth_frame()
 
 
             Gui.show(frame_color.rgb_32f, "rgb")
+
+            rgb_with_valid_depth=frame_color.rgb_with_valid_depth(frame_depth)
+            Gui.show(rgb_with_valid_depth, "rgb_valid")
 
             frustum_mesh=frame_color.create_frustum_mesh(0.1)
             frustum_mesh.m_vis.m_line_width=3
