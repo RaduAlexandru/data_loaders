@@ -119,6 +119,16 @@ def test_stanford3dscene():
             frame_color.assign_color(cloud) #project the cloud into this frame and creates a color matrix for it
             # Scene.show(cloud, "cloud"+str(nr_cloud))
             Scene.show(cloud, "cloud")
+
+            #show look dir
+            look_dir_mesh=Mesh()
+            look_dir=frame_color.look_dir()
+            look_dir_mesh.V=[
+                look_dir
+            ]
+            look_dir_mesh.m_vis.m_show_points=True
+            Scene.show(look_dir_mesh, "look_dir_mesh")
+
         view.update()
 
 # test_volref()
