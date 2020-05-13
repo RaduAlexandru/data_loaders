@@ -27,6 +27,7 @@ namespace fs = boost::filesystem;
 using namespace radu::utils;
 using namespace easy_pbr;
 
+#define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 DataLoaderVolRef::DataLoaderVolRef(const std::string config_file):
     m_is_modified(false),
@@ -99,8 +100,8 @@ void DataLoaderVolRef::init_data_reading(){
     fs::path dataset_path_full=m_dataset_path;
     for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(dataset_path_full), {})){
         //grab only the color png images
-        bool found_color=entry.path().stem().string().find("color")!= std::string::npos;
-        bool found_png=entry.path().stem().string().find("png")!= std::string::npos;
+        // bool found_color=entry.path().stem().string().find("color")!= std::string::npos;
+        // bool found_png=entry.path().stem().string().find("png")!= std::string::npos;
         // VLOG(1) << "entry is " << entry.path().stem().string() << " has found color " << found_color;
         // VLOG(1) << "entry is " << entry.path().stem().string() << " has found png " << found_png;
         if( entry.path().stem().string().find("color")!= std::string::npos && entry.path().stem().string().find("frame")!= std::string::npos  ){ 
@@ -241,7 +242,7 @@ Frame DataLoaderVolRef::closest_color_frame(const Frame& frame){
     double lowest_score=std::numeric_limits<double>::max();
     fs::path best_path;
 
-    for(int i=0; i<m_samples_filenames.size(); i++){
+    for(int i=0; i<(int)m_samples_filenames.size(); i++){
         fs::path sample_filename=m_samples_filenames[i];
 
         std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
@@ -293,7 +294,7 @@ Frame DataLoaderVolRef::closest_depth_frame(const Frame& frame){
     double lowest_score=std::numeric_limits<double>::max();
     fs::path best_path;
 
-    for(int i=0; i<m_samples_filenames.size(); i++){
+    for(int i=0; i<(int)m_samples_filenames.size(); i++){
         fs::path sample_filename=m_samples_filenames[i];
 
         std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
@@ -410,7 +411,7 @@ Frame DataLoaderVolRef::get_depth_frame(){
 
 bool DataLoaderVolRef::is_finished(){
     //check if this loader has loaded everything
-    if(m_idx_sample_to_read<(int)m_samples_filenames.size()){
+    if(m_idx_sample_to_read<m_samples_filenames.size()){
         return false; //there is still more files to read
     }
 
@@ -426,7 +427,7 @@ bool DataLoaderVolRef::is_finished(){
 
 bool DataLoaderVolRef::is_finished_reading(){
     //check if this loader has loaded everything
-    if(m_idx_sample_to_read<(int)m_samples_filenames.size()){
+    if(m_idx_sample_to_read<m_samples_filenames.size()){
         return false; //there is still more files to read
     }
 

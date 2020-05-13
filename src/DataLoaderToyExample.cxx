@@ -29,6 +29,8 @@ using namespace configuru;
 using namespace rady::utils;
 using namespace easy_pbr;
 
+#define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
+
 DataLoaderToyExample::DataLoaderToyExample(const std::string config_file):
     m_clouds_buffer(BUFFER_SIZE),
     m_is_running(false)

@@ -84,6 +84,7 @@ class CMakeBuild(build_ext):
 
 
         has_catkin=shutil.which("catkin")!=None
+        # has_catkin=False
         #if it doesnt have catkin just run thius:
         if not has_catkin:
             print("No catkin")

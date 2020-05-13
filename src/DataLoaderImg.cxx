@@ -35,6 +35,7 @@ using namespace radu::utils;
 using namespace easy_pbr;
 
 
+#define BUFFER_SIZE 16
 
 DataLoaderImg::DataLoaderImg(const std::string config_file):
     m_nr_resets(0)
@@ -177,7 +178,7 @@ void DataLoaderImg::init_data_reading(){
         if (m_sort_by_filename && !m_shuffle){ //we don't sort if we arre shuffling afterwards as it makes no difference
             for (size_t i = 0; i < rgb_filenames_all.size(); i++){
                 try {
-                    double d = std::stod(rgb_filenames_all[i].stem().string() );
+                    std::stod(rgb_filenames_all[i].stem().string() );
                 } catch (const std::invalid_argument&) {
                     LOG(FATAL) << "We are assuming that the filename is a numerical value like 45.png. However for this file it is not so for file: " << rgb_filenames_all[i] << " at index: " << i;
                 }
@@ -494,7 +495,7 @@ void DataLoaderImg::read_pose_file_eth(){
     }
     VLOG(1) << "Reading pose file for ETH mav dataset";
 
-    uint64_t scan_nr;
+    // uint64_t scan_nr;
     uint64_t timestamp;
     Eigen::Vector3f position;
     Eigen::Quaternionf quat;
@@ -538,7 +539,7 @@ void DataLoaderImg::read_pose_file_icl(){
     }
     VLOG(1) << "Reading pose file for ICL-NUIM dataset";
 
-    uint64_t scan_nr;
+    // uint64_t scan_nr;
     uint64_t timestamp;
     Eigen::Vector3f position;
     Eigen::Quaternionf quat;
@@ -622,7 +623,7 @@ bool DataLoaderImg::get_pose_at_timestamp(Eigen::Affine3f& pose, const uint64_t 
     double smallest_timestamp_diff=std::numeric_limits<double>::max();
     for (size_t i = 0; i < m_worldROS_baselink_vec.size(); i++) {
         uint64_t recorded_timestamp=m_worldROS_baselink_vec[i].first;
-        Eigen::Affine3f pose=m_worldROS_baselink_vec[i].second;
+        // Eigen::Affine3f pose=m_worldROS_baselink_vec[i].second;
         // std::cout << "comparing recorded_timestamp to timestmp \n" << recorded_timestamp << "\n" << timestamp << '\n';
         double diff=fabs((double)timestamp- (double)recorded_timestamp);
         if (  diff < smallest_timestamp_diff){

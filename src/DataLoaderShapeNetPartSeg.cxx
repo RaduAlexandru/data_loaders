@@ -32,6 +32,7 @@ namespace fs = boost::filesystem;
 using namespace radu::utils;
 using namespace easy_pbr;
 
+#define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 DataLoaderShapeNetPartSeg::DataLoaderShapeNetPartSeg(const std::string config_file):
     m_clouds_buffer(BUFFER_SIZE),
@@ -346,7 +347,7 @@ std::shared_ptr<Mesh> DataLoaderShapeNetPartSeg::get_cloud(){
 
 bool DataLoaderShapeNetPartSeg::is_finished(){
     //check if this loader has loaded everything
-    if(m_idx_cloud_to_read<(int)m_pts_filenames.size()){
+    if(m_idx_cloud_to_read<m_pts_filenames.size()){
         return false; //there is still more files to read
     }
 
@@ -362,7 +363,7 @@ bool DataLoaderShapeNetPartSeg::is_finished(){
 
 bool DataLoaderShapeNetPartSeg::is_finished_reading(){
     //check if this loader has loaded everything
-    if(m_idx_cloud_to_read<(int)m_pts_filenames.size()){
+    if(m_idx_cloud_to_read<m_pts_filenames.size()){
         return false; //there is still more files to read
     }
 

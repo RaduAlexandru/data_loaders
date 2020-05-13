@@ -20,7 +20,6 @@
 //spline
 // #include "ceres_spline_opt.h"
 
-#define NUM_FRAMES_BUFFER 8
 
 
 struct Cam{

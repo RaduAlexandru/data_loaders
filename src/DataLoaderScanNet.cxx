@@ -32,6 +32,7 @@ using namespace configuru;
 using namespace radu::utils;
 using namespace easy_pbr;
 
+#define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 DataLoaderScanNet::DataLoaderScanNet(const std::string config_file):
     m_is_modified(false),
@@ -469,7 +470,7 @@ std::shared_ptr<Mesh> DataLoaderScanNet::get_cloud(){
 
 bool DataLoaderScanNet::is_finished(){
     //check if this loader has loaded everything
-    if(m_idx_cloud_to_read<(int)m_ply_filenames.size()){
+    if(m_idx_cloud_to_read<m_ply_filenames.size()){
         return false; //there is still more files to read
     }
 
@@ -485,7 +486,7 @@ bool DataLoaderScanNet::is_finished(){
 
 bool DataLoaderScanNet::is_finished_reading(){
     //check if this loader has loaded everything
-    if(m_idx_cloud_to_read<(int)m_ply_filenames.size()){
+    if(m_idx_cloud_to_read<m_ply_filenames.size()){
         return false; //there is still more files to read
     }
 

@@ -27,6 +27,7 @@ using namespace configuru;
 using namespace radu::utils;
 using namespace easy_pbr;
 
+#define NUM_CLOUDS_BUFFER 5
 
 DataLoaderCloudRos::DataLoaderCloudRos(const std::string config_file):
     m_is_modified(false),

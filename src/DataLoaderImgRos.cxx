@@ -24,6 +24,7 @@ using namespace configuru;
 using namespace radu::utils;
 using namespace easy_pbr;
 
+#define NUM_FRAMES_BUFFER 8
 
 DataLoaderImgRos::DataLoaderImgRos(const std::string config_file):
     // m_frames_buffer(NUM_FRAMES_BUFFER),

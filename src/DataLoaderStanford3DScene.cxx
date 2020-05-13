@@ -28,6 +28,7 @@ namespace fs = boost::filesystem;
 using namespace radu::utils;
 using namespace easy_pbr;
 
+#define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 DataLoaderStanford3DScene::DataLoaderStanford3DScene(const std::string config_file):
     m_is_modified(false),
@@ -106,7 +107,7 @@ void DataLoaderStanford3DScene::init_data_reading(){
         //get the path name
         std::string img_name=entry.path().stem().string();
         // VLOG(1) << "img name is " << img_name;
-        int img_nr=std::stoi(img_name);
+        // int img_nr=std::stoi(img_name);
         // VLOG(1) << "img nr is " << img_nr;
 
         samples_filenames_all.push_back(entry);
@@ -263,7 +264,7 @@ void DataLoaderStanford3DScene::read_pose_file(std::string pose_file){
     m_poses_vec.clear();
 
 
-    int line_read=0;
+    // int line_read=0;
     std::string line;
     Eigen::Affine3d pose; 
     pose.setIdentity();
@@ -341,7 +342,7 @@ Frame DataLoaderStanford3DScene::get_depth_frame(){
 
 bool DataLoaderStanford3DScene::is_finished(){
     //check if this loader has loaded everything
-    if(m_idx_sample_to_read<(int)m_samples_filenames.size()){
+    if(m_idx_sample_to_read<m_samples_filenames.size()){
         return false; //there is still more files to read
     }
 
@@ -357,7 +358,7 @@ bool DataLoaderStanford3DScene::is_finished(){
 
 bool DataLoaderStanford3DScene::is_finished_reading(){
     //check if this loader has loaded everything
-    if(m_idx_sample_to_read<(int)m_samples_filenames.size()){
+    if(m_idx_sample_to_read<m_samples_filenames.size()){
         return false; //there is still more files to read
     }
 

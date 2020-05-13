@@ -17,7 +17,6 @@
 
 #include "data_loaders/core/MeshCore.h"
 
-#define NUM_CLOUDS_BUFFER 5
 
 namespace radu { namespace utils{
     class RandGenerator;

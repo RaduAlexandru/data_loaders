@@ -30,7 +30,6 @@
 #include <boost/filesystem.hpp>
 namespace fs = boost::filesystem;
 
-#define BUFFER_SIZE 16
 
 struct file_timestamp_comparator{
     inline bool operator() (const fs::path& lhs, const fs::path& rhs)

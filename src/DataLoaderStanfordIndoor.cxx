@@ -31,6 +31,7 @@ using namespace configuru;
 using namespace radu::utils;
 using namespace easy_pbr;
 
+#define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 DataLoaderStanfordIndoor::DataLoaderStanfordIndoor(const std::string config_file):
     m_is_modified(false),

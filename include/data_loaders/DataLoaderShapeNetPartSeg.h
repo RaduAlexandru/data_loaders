@@ -17,7 +17,6 @@
 #include <boost/filesystem.hpp>
 
 
-#define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 namespace radu { namespace utils{
     class RandGenerator;

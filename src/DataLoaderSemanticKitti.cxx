@@ -32,6 +32,7 @@ using namespace configuru;
 using namespace radu::utils;
 using namespace easy_pbr;
 
+#define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
 DataLoaderSemanticKitti::DataLoaderSemanticKitti(const std::string config_file):
     m_is_modified(false),
@@ -392,7 +393,7 @@ std::shared_ptr<Mesh> DataLoaderSemanticKitti::get_cloud(){
 
 bool DataLoaderSemanticKitti::is_finished(){
     //check if this loader has loaded everything
-    if(m_idx_cloud_to_read<(int)m_npz_filenames.size()){
+    if(m_idx_cloud_to_read<m_npz_filenames.size()){
         return false; //there is still more files to read
     }
 
@@ -408,7 +409,7 @@ bool DataLoaderSemanticKitti::is_finished(){
 
 bool DataLoaderSemanticKitti::is_finished_reading(){
     //check if this loader has loaded everything
-    if(m_idx_cloud_to_read<(int)m_npz_filenames.size()){
+    if(m_idx_cloud_to_read<m_npz_filenames.size()){
         return false; //there is still more files to read
     }
 
@@ -484,7 +485,7 @@ std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  > DataL
 }
 
 Eigen::Affine3d DataLoaderSemanticKitti::get_pose_for_scan_nr_and_sequence(const int scan_nr, const std::string sequence){
-    CHECK(scan_nr<m_poses_per_sequence[sequence].size()) << "scan_nr out of range. Maximum pose would be for scan_nr " << m_poses_per_sequence[sequence].size() << " and you are trying to index at " <<scan_nr; 
+    CHECK(scan_nr<(int)m_poses_per_sequence[sequence].size()) << "scan_nr out of range. Maximum pose would be for scan_nr " << m_poses_per_sequence[sequence].size() << " and you are trying to index at " <<scan_nr; 
 
     return m_poses_per_sequence[sequence][scan_nr];
 }
