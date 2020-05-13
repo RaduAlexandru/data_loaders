@@ -12,7 +12,7 @@ from distutils.command.install_headers import install_headers as install_headers
 from setuptools import setup
 from distutils.sysconfig import get_python_inc
 import site #section 2.7 in https://docs.python.org/3/distutils/setupscript.html
-import catkin.workspace
+#import catkin.workspace
 
 
 class CMakeExtension(Extension):
@@ -80,37 +80,8 @@ class CMakeBuild(build_ext):
         # cmake_args+=['-DCATKIN_PACKAGE_LIB_DESTINATION=' + "./"]
 
 
-        # subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
-        # subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
-        # subprocess.check_call(['make', 'install'], cwd=self.build_temp)
-        # subprocess.check_call(['catkin build', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
-        subprocess.check_call(['catkin', 'build' ,'--this'] + build_args  + cmake_args, cwd=self.build_temp, env=env)
-
-        ##get the workspace path depending on the current path and catkin.workspace.get_workspaces
-        # print("current path")
-        cur_dir=os.path.dirname(os.path.abspath(__file__))
-        workspaces=catkin.workspace.get_workspaces()
-        # current_workspace=[x if cur_dir in  else '' for x in row]
-        current_workspace=""
-        for path in workspaces:
-            last_part=os.path.basename(os.path.normpath(path))
-            if(last_part=="devel"):
-               potential_workspace=os.path.dirname(path) #gets rid of /devel
-               if(potential_workspace in cur_dir):
-                   current_workspace=potential_workspace
-                   break
-        print("current workspace is ", current_workspace)
-
-        #simlink the libraries from the devel space towards the current dir so that the egg link can find them
-        catkin_lib_dir=os.path.join(current_workspace,"devel/lib/")
-        libs = [f for f in os.listdir(catkin_lib_dir) if os.path.isfile(os.path.join(catkin_lib_dir, f))]
-        print(libs)
-        for lib in libs:
-            if "dataloaders" in lib:
-                print ("linking ", lib)
-                print("cmd", ['ln', '-sf'] + [ os.path.join(catkin_lib_dir,lib) + " " + os.path.join(cur_dir, lib ) ] )
-                subprocess.check_call(['ln', '-sf'] + [ os.path.join(catkin_lib_dir,lib) ] +  [ os.path.join(cur_dir, lib ) ]  )
-                # subprocess.check_call(['cp'] + [ os.path.join(catkin_lib_dir,lib) + " " + os.path.join(cur_dir, lib )]  )
+        subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
+        subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
 
        
 

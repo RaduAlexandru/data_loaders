@@ -38,12 +38,15 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 
 ######   PACKAGES   ############################################################
-find_package(catkin REQUIRED)
+find_package(catkin)
+message("catkin found is ",  ${catkin_FOUND} )
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenCV REQUIRED)
 find_package(EasyPBR REQUIRED)
 # add_subdirectory(${PROJECT_SOURCE_DIR}/deps/pybind11)
-find_package(catkin REQUIRED COMPONENTS roscpp std_msgs cv_bridge pcl_ros image_transport )
+if(${catkin_FOUND})
+	find_package(catkin REQUIRED COMPONENTS roscpp std_msgs cv_bridge pcl_ros image_transport )
+endif()
 
 message("--------------------------------------EASYPBR_SRC_PATH is ", ${EASYPBR_SRC_PATH})
 add_subdirectory( ${EASYPBR_SRC_PATH}/deps/pybind11 ./../../build/pybind11 EXCLUDE_FROM_ALL)
@@ -59,7 +62,9 @@ include_directories(${CMAKE_SOURCE_DIR}/extern)
 # include_directories(${CMAKE_SOURCE_DIR}/deps/pybind11/include)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${EASYPBR_INCLUDE_DIR})
+if(${catkin_FOUND})
 catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport )
+endif()
 
 
 ###   SOURCES   #################################################################

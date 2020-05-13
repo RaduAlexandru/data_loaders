@@ -17,7 +17,8 @@
 #include "string_utils.h"
 
 //cv
-#include <cv_bridge/cv_bridge.h>
+//#include <cv_bridge/cv_bridge.h>
+#include <opencv2/opencv.hpp>
 
 //ros
 // #include "data_loaders/utils/RosTools.h"
