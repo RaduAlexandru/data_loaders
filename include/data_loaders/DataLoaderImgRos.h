@@ -15,10 +15,10 @@
 #include <Eigen/Core>
 #include<Eigen/StdVector>
 
-#include "data_loaders/Frame.h"
+#include "easy_pbr/Frame.h"
 
 //spline
-#include "ceres_spline_opt.h"
+// #include "ceres_spline_opt.h"
 
 #define NUM_FRAMES_BUFFER 8
 

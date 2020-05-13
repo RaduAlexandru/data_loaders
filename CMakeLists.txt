@@ -39,6 +39,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 ######   PACKAGES   ############################################################
 find_package(catkin)
+# set(catkin_FOUND 0 )
 message("catkin found is ",  ${catkin_FOUND} )
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenCV REQUIRED)
@@ -63,7 +64,7 @@ include_directories(${CMAKE_SOURCE_DIR}/extern)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${EASYPBR_INCLUDE_DIR})
 if(${catkin_FOUND})
-catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport )
+    catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport )
 endif()
 
 

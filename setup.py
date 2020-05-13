@@ -13,6 +13,7 @@ from setuptools import setup
 from distutils.sysconfig import get_python_inc
 import site #section 2.7 in https://docs.python.org/3/distutils/setupscript.html
 #import catkin.workspace
+import shutil
 
 
 class CMakeExtension(Extension):
@@ -33,6 +34,9 @@ class CMakeBuild(build_ext):
             cmake_version = LooseVersion(re.search(r'version\s*([\d.]+)', out.decode()).group(1))
             if cmake_version < '3.1.0':
                 raise RuntimeError("CMake >= 3.1.0 is required on Windows")
+
+        #check if we have all dependencies 
+        # check_file(os.path.join(os.getcwd(), 'deps', 'libigl', 'CMakeLists.txt'))
 
         for ext in self.extensions:
             self.build_extension(ext)
@@ -56,7 +60,7 @@ class CMakeBuild(build_ext):
             build_args += ['--', '/m']
         else:
             # cmake_args += ['-DCMAKE_BUILD_TYPE=' + cfg]
-            build_args += ['--', '-j8']
+            build_args += ['--', '-j4']
 
         env = os.environ.copy()
         env['CXXFLAGS'] = '{} -DVERSION_INFO=\\"{}\\"'.format(env.get('CXXFLAGS', ''),
@@ -77,11 +81,44 @@ class CMakeBuild(build_ext):
         # cmake_args+=['-DEASYPBR_SHADERS_PATH=' + get_python_inc()+"/easypbr"]
         # cmake_args+=['-DEASYPBR_SHADERS_PATH=' + site.USER_BASE]
         # cmake_args+=['-DDATA_DIR=' + site.USER_BASE]
-        # cmake_args+=['-DCATKIN_PACKAGE_LIB_DESTINATION=' + "./"]
 
 
-        subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
-        subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
+        has_catkin=shutil.which("catkin")!=None
+        #if it doesnt have catkin just run thius:
+        if not has_catkin:
+            print("No catkin")
+            subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
+            subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
+        else: 
+            # run catkin build and link to the libraries that were reated in the devel space of the workspace 
+            print("We have catkin")
+            import catkin.workspace
+            subprocess.check_call(['catkin', 'build' ,'--this'] + build_args  + cmake_args, cwd=self.build_temp, env=env)
+
+            ##get the workspace path depending on the current path and catkin.workspace.get_workspaces
+            # print("current path")
+            cur_dir=os.path.dirname(os.path.abspath(__file__))
+            workspaces=catkin.workspace.get_workspaces()
+            # current_workspace=[x if cur_dir in  else '' for x in row]
+            current_workspace=""
+            for path in workspaces:
+                last_part=os.path.basename(os.path.normpath(path))
+                if(last_part=="devel"):
+                    potential_workspace=os.path.dirname(path) #gets rid of /devel
+                    if(potential_workspace in cur_dir):
+                        current_workspace=potential_workspace
+                        break
+            print("current workspace is ", current_workspace)
+
+            #simlink the libraries from the devel space towards the current dir so that the egg link can find them
+            catkin_lib_dir=os.path.join(current_workspace,"devel/lib/")
+            libs = [f for f in os.listdir(catkin_lib_dir) if os.path.isfile(os.path.join(catkin_lib_dir, f))]
+            print(libs)
+            for lib in libs:
+                if "dataloaders" in lib:
+                    print ("linking ", lib)
+                    print("cmd", ['ln', '-sf'] + [ os.path.join(catkin_lib_dir,lib) + " " + os.path.join(cur_dir, lib ) ] )
+                    subprocess.check_call(['ln', '-sf'] + [ os.path.join(catkin_lib_dir,lib) ] + [ os.path.join(cur_dir, lib ) ] )
 
        
 
