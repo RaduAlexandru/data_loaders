@@ -7,3 +7,6 @@
 [submodule "deps/cnpy"]
 	path = deps/cnpy
 	url = https://github.com/rogersce/cnpy.git
+[submodule "deps/tiny-process-library"]
+	path = deps/tiny-process-library
+	url = https://github.com/RaduAlexandru/tiny-process-library
