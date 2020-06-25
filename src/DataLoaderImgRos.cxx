@@ -79,7 +79,6 @@ void DataLoaderImgRos::init_ros(){
     ros::init(dummy_remappings, "dummy_name");
 
     ros::NodeHandle private_nh("~");
-    // ros::Subscriber sub = private_nh.subscribe(m_img_topic, 5, &DataLoaderImgRos::callback, this);
 
     image_transport::ImageTransport img_transport( private_nh );
     std::vector<image_transport::Subscriber> img_subs;
@@ -96,24 +95,12 @@ void DataLoaderImgRos::init_ros(){
         }
 
         //cam info only if the source contains the word "topic"
-        std::size_t source_is_from_topic = m_cam_info_source.find("topic");
+        bool source_is_from_topic = m_cam_info_source.find("topic")!=std::string::npos;
         if(source_is_from_topic){
             cam_info_subs[i]=private_nh.subscribe<sensor_msgs::CameraInfo>(m_cams[i].m_cam_info_topic, 5, boost::bind(&DataLoaderImgRos::callback_cam_info, this, _1, i) );
         }
+        // VLOG(1) << "source is from topic " << source_is_from_topic;
     }
-
-//    std::cout <<"subscribing" << std::endl;
-    // image_transport::Subscriber sub;
-    // if(m_is_compressed){
-        // sub = img_transport.subscribe("/stereo_left/image_raw", 5, &DataLoaderImgRos::callback, this, image_transport::TransportHints("compressed"));
-        // sub = img_transport.subscribe("/stereo_left/image_raw", 5, boost::bind(&DataLoaderImgRos::callback, this, _1, 0), ros::VoidPtr(),  image_transport::TransportHints("compressed"));
-    // }else{
-    //     sub = img_transport.subscribe(m_img_topic, 5, &DataLoaderImgRos::callback, this );
-    // }
-    // image_transport::Subscriber sub = img_transport.subscribe(m_img_topic, 5, &DataLoaderImgRos::callback, this, image_transport::TransportHints("compressed"));
-    // ros::Subscriber sub = private_nh.subscribe(m_img_topic, 5, &DataLoaderImgRos::callback, this,  ros::TransportHints("compressed"));
-
-    // ros::spin();
 
     //multithreaded spinning, each callback (from different cameras) will run on different threads in paralel
     ros::MultiThreadedSpinner spinner(m_cams.size()); // Use as many threads as cameras
@@ -125,7 +112,8 @@ void DataLoaderImgRos::init_ros(){
 }
 
 void DataLoaderImgRos::callback_cam_info(const sensor_msgs::CameraInfoConstPtr& msg, const int cam_id){
-   m_cams[cam_id].m_cam_info=msg; 
+    // VLOG(1) << "callback cma info";
+    m_cams[cam_id].m_cam_info=msg; 
 }
 
 void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, const int cam_id) {
@@ -195,29 +183,30 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     }
 
 
-    //get pose
-    if (m_pose_source=="none"){
-        frame.tf_cam_world.setIdentity();
+    // //get pose
+    // if (m_pose_source=="none"){
+    //     frame.tf_cam_world.setIdentity();
 
-    }else if (m_pose_source=="tf"){
-        geometry_msgs::TransformStamped transform;
-        try{
-            transform = m_tf_buf.lookupTransform(img_msg->header.frame_id, m_tf_reference_frame, img_msg->header.stamp);
-        }catch(tf2::TransformException& e){
-            LOG(ERROR) << "Could not obtain camera transform: " << e.what();
-            return;
-        }
-        Eigen::Affine3d tf_cam_world = tf2::transformToEigen(transform);
-        frame.tf_cam_world=tf_cam_world.cast<float>();
+    // }else if (m_pose_source=="tf"){
+    //     geometry_msgs::TransformStamped transform;
+    //     try{
+    //         transform = m_tf_buf.lookupTransform(img_msg->header.frame_id, m_tf_reference_frame, img_msg->header.stamp);
+    //     }catch(tf2::TransformException& e){
+    //         LOG(ERROR) << "Could not obtain camera transform: " << e.what();
+    //         return;
+    //     }
+    //     Eigen::Affine3d tf_cam_world = tf2::transformToEigen(transform);
+    //     frame.tf_cam_world=tf_cam_world.cast<float>();
 
-    }else{
-        LOG(FATAL) << "pose_source is not known";
-    } 
-
-
+    // }else{
+    //     LOG(FATAL) << "pose_source is not known";
+    // } 
 
 
 
+
+    //img 
+    frame.rgb_8u=cv_img;
  
 
 
@@ -344,8 +333,17 @@ bool DataLoaderImgRos::is_loader_thread_alive(){
     return m_is_thread_running;
 }
 
+bool DataLoaderImgRos::has_data_for_all_cams(){
+    for(int i=0; i<nr_cams(); i++){
+        if (!has_data_for_cam(i)){
+            return false;
+        }
+    }
 
-int DataLoaderImgRos::has_data_for_cam(const int cam_id){
+    return true;
+}
+
+bool DataLoaderImgRos::has_data_for_cam(const int cam_id){
     if( m_cams[cam_id].m_frames_buffer.peek()==nullptr){
         return false;
     }else{

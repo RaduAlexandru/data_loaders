@@ -51,7 +51,8 @@ public:
     ~DataLoaderImgRos();
     easy_pbr::Frame get_frame_for_cam(const int cam_id);
     int nr_cams();
-    int has_data_for_cam(const int cam_id);
+    bool has_data_for_all_cams();
+    bool has_data_for_cam(const int cam_id);
     bool is_loader_thread_alive(); //hacky way of checking if the thread is active and then killing the python process that created this loader
 
 
@@ -83,8 +84,9 @@ private:
     //spline interpolation
     // CeresSplineOptimizationPtr m_spline;
 
-    tf2_ros::Buffer m_tf_buf;
-    tf2_ros::TransformListener m_tf_listener{m_tf_buf};
+    // ros::NodeHandle private_nh;
+    // tf2_ros::Buffer m_tf_buf;
+    // tf2_ros::TransformListener m_tf_listener{m_tf_buf};
 
 
 

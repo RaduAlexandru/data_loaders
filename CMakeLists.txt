@@ -123,6 +123,13 @@ add_library( dataloaders_cpp SHARED ${MY_SRC}  ${DEPS_SRC}  )
 message("easypbr lib is ", ${EASYPBR_LIBRARY})
 set(LIBS ${LIBS} ${catkin_LIBRARIES} ${EASYPBR_LIBRARY} ${OpenCV_LIBS})
 
+###   TINY PROCESS LIBRARY   #########################################
+set (TINY_PROCESS_LIB_SOURCES   ${CMAKE_SOURCE_DIR}/deps/tiny-process-library/process.cpp ${CMAKE_SOURCE_DIR}/deps/tiny-process-library/process_unix.cpp )
+add_library( TINY_PROCESS_LIB ${TINY_PROCESS_LIB_SOURCES} )
+target_link_libraries(TINY_PROCESS_LIB ${CMAKE_THREAD_LIBS_INIT})
+set_target_properties(TINY_PROCESS_LIB PROPERTIES LINKER_LANGUAGE C)
+set(LIBS ${LIBS} TINY_PROCESS_LIB)
+
 
 target_link_libraries(dataloaders_cpp ${LIBS} )
 target_link_libraries(dataloaders PRIVATE dataloaders_cpp )

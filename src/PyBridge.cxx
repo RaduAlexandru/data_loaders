@@ -157,20 +157,22 @@ PYBIND11_MODULE(dataloaders, m) {
         .def(py::init<const std::string>())
         .def("get_frame_for_cam", &DataLoaderImgRos::get_frame_for_cam )
         .def("nr_cams", &DataLoaderImgRos::nr_cams ) 
+        .def("has_data_for_all_cams", &DataLoaderImgRos::has_data_for_all_cams ) 
         .def("has_data_for_cam", &DataLoaderImgRos::has_data_for_cam ) 
         .def("is_loader_thread_alive", &DataLoaderImgRos::is_loader_thread_alive ) 
         ;
 
         py::class_<RosBagPlayer, std::shared_ptr<RosBagPlayer> > (m, "RosBagPlayer")
         .def_static("create",  &RosBagPlayer::create<const std::string>  ) 
-        // .def("play", &RosBagPlayer::play ) //We need to template this but i;m lazy
         .def("start", &RosBagPlayer::start )
+        .def("play", &RosBagPlayer::play )
         .def("pause", &RosBagPlayer::pause )
         .def("reset", &RosBagPlayer::reset ) 
         .def("is_paused", &RosBagPlayer::is_paused ) 
         .def("is_finished", &RosBagPlayer::is_finished ) 
         .def("kill", &RosBagPlayer::kill ) 
         ;
+
     #endif
 
     //  py::class_<Mesh, std::shared_ptr<Mesh>> (m, "Mesh")

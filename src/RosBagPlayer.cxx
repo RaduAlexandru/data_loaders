@@ -15,6 +15,11 @@
 #include <configuru.hpp>
 using namespace configuru;
 
+//boost
+#include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
+
 //ros
 #include <ros/ros.h>
 #include "ros_utils.h"
@@ -41,7 +46,14 @@ void RosBagPlayer::init_params(const std::string config_file){
     // std::string config_file="config.cfg";
 
     //read all the parameters
-    Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+    // Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+    std::string config_file_abs;
+    if (fs::path(config_file).is_relative()){
+        config_file_abs=(fs::path(PROJECT_SOURCE_DIR) / config_file).string();
+    }else{
+        config_file_abs=config_file;
+    }
+    Config cfg = configuru::parse_file(config_file_abs, CFG);
     Config rosbag_config=cfg["ros_bag"];
     std::string bag_path = (std::string)rosbag_config["bag_path"];
     std::string bag_args = (std::string)rosbag_config["bag_args"];
