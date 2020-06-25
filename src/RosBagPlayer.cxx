@@ -17,7 +17,7 @@ using namespace configuru;
 
 //ros
 #include <ros/ros.h>
-#include "data_loaders/utils/RosTools.h"
+#include "ros_utils.h"
 
 
 RosBagPlayer::RosBagPlayer(const std::string config_file):

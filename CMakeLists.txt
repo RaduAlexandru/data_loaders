@@ -94,7 +94,7 @@ set(DEPS_SRC
 if (${catkin_FOUND} )
     set(MY_SRC ${MY_SRC} 
         ${PROJECT_SOURCE_DIR}/src/DataLoaderImgRos.cxx 
-        # ${PROJECT_SOURCE_DIR}/src/RosBagPlayer.cxx
+        ${PROJECT_SOURCE_DIR}/src/RosBagPlayer.cxx
     )
 endif()
 
