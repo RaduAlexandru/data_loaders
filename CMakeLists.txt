@@ -46,7 +46,7 @@ find_package(OpenCV REQUIRED)
 find_package(EasyPBR REQUIRED)
 # add_subdirectory(${PROJECT_SOURCE_DIR}/deps/pybind11)
 if(${catkin_FOUND})
-	find_package(catkin REQUIRED COMPONENTS roscpp std_msgs cv_bridge pcl_ros image_transport )
+	find_package(catkin REQUIRED COMPONENTS roscpp std_msgs cv_bridge pcl_ros image_transport tf2_ros tf2_eigen)
 endif()
 
 message("--------------------------------------EASYPBR_SRC_PATH is ", ${EASYPBR_SRC_PATH})
@@ -64,7 +64,7 @@ include_directories(${CMAKE_SOURCE_DIR}/extern)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${EASYPBR_INCLUDE_DIR})
 if(${catkin_FOUND})
-    catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport )
+    catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport tf2_ros tf2_eigen )
 endif()
 
 
@@ -91,6 +91,11 @@ set(DEPS_SRC
     ${PROJECT_SOURCE_DIR}/deps/cnpy/cnpy.cpp
     # ${PROJECT_SOURCE_DIR}/extern/pybind_casters/ndarray_converter.cpp
     )
+if (${catkin_FOUND} )
+    set(MY_SRC ${MY_SRC} 
+        ${PROJECT_SOURCE_DIR}/src/DataLoaderImgRos.cxx 
+    )
+endif()
 
 
 ###   SET ALL THE GLOBAL OPTIONS #########################################
