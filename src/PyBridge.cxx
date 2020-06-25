@@ -17,6 +17,11 @@
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
+#ifdef WITH_ROS
+    #include "data_loaders/DataLoaderImgRos.h"
+    #include "data_loaders/RosBagPlayer.h"
+#endif
+
 
 // https://pybind11.readthedocs.io/en/stable/advanced/cast/stl.html
 // PYBIND11_MAKE_OPAQUE(std::vector<int>); //to be able to pass vectors by reference to functions and have things like push back actually work 
@@ -146,6 +151,27 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_validation", &DataLoaderScanNet::set_mode_validation ) 
     .def("write_for_evaluating_on_scannet_server", &DataLoaderScanNet::write_for_evaluating_on_scannet_server ) 
     ;
+
+    #ifdef WITH_ROS
+        py::class_<DataLoaderImgRos> (m, "DataLoaderImgRos")
+        .def(py::init<const std::string>())
+        .def("get_frame_for_cam", &DataLoaderImgRos::get_frame_for_cam )
+        .def("nr_cams", &DataLoaderImgRos::nr_cams ) 
+        .def("has_data_for_cam", &DataLoaderImgRos::has_data_for_cam ) 
+        .def("is_loader_thread_alive", &DataLoaderImgRos::is_loader_thread_alive ) 
+        ;
+
+        py::class_<RosBagPlayer, std::shared_ptr<RosBagPlayer> > (m, "RosBagPlayer")
+        .def_static("create",  &RosBagPlayer::create<const std::string>  ) 
+        // .def("play", &RosBagPlayer::play ) //We need to template this but i;m lazy
+        .def("start", &RosBagPlayer::start )
+        .def("pause", &RosBagPlayer::pause )
+        .def("reset", &RosBagPlayer::reset ) 
+        .def("is_paused", &RosBagPlayer::is_paused ) 
+        .def("is_finished", &RosBagPlayer::is_finished ) 
+        .def("kill", &RosBagPlayer::kill ) 
+        ;
+    #endif
 
     //  py::class_<Mesh, std::shared_ptr<Mesh>> (m, "Mesh")
     // .def(py::init<>())

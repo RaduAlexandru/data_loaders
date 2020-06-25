@@ -100,6 +100,12 @@ endif()
 
 
 ###   SET ALL THE GLOBAL OPTIONS #########################################
+if(${catkin_FOUND})
+    message("USING ROS")
+    add_definitions(-DWITH_ROS)
+else()
+    message("NOT USING ROS")
+endif()
 
 
 #lib 

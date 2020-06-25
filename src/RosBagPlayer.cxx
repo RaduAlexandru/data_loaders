@@ -28,7 +28,7 @@ RosBagPlayer::RosBagPlayer(const std::string config_file):
         {
 
         init_params(config_file);
-        play(m_cmd);
+        start(m_cmd);
 }
 RosBagPlayer::~RosBagPlayer(){
     m_rosbag->kill(true);
@@ -48,7 +48,7 @@ void RosBagPlayer::init_params(const std::string config_file){
     m_cmd=" " + bag_path + " " + bag_args;
 }
 
-void RosBagPlayer::play(std::string args){
+void RosBagPlayer::start(std::string args){
     //Check for pause in the arguments
     m_paused= args.find("pause") != std::string::npos ? true : false;
     VLOG(2) << "starting bag with pause set to " << m_paused;

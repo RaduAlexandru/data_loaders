@@ -9,6 +9,8 @@
 //My stuff
 #include "tiny-process-library/process.hpp"
 
+//in order to dissalow building on the stack and having only ptrs https://stackoverflow.com/a/17135547
+class RosBagPlayer;
 
 class RosBagPlayer : public std::enable_shared_from_this<RosBagPlayer>{
 public:
@@ -17,7 +19,7 @@ public:
         return std::shared_ptr<RosBagPlayer>( new RosBagPlayer(std::forward<Args>(args)...) );
     }
     ~RosBagPlayer();
-    void play(std::string args);
+    void start(std::string args);
     void pause();
     void play();
     void reset();
