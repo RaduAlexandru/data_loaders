@@ -59,11 +59,13 @@ void DataLoaderImgRos::init_params(const std::string config_file){
     // m_do_pose = loader_config["do_pose"];
     m_pose_source=(std::string)loader_config["pose_source"];
     m_tf_reference_frame=(std::string)loader_config["tf_reference_frame"];
+    m_cam_info_source=(std::string)loader_config["cam_info_source"];
 
     //create the cams 
     m_cams.resize(nr_cams);
     for(int i = 0; i < nr_cams; i++){
         m_cams[i].m_img_topic = (std::string)loader_config["img_topic_"+std::to_string(i)];
+        m_cams[i].m_cam_info_topic = (std::string)loader_config["cam_info_topic_"+std::to_string(i)];
         m_cams[i].m_img_subsample_factor = loader_config["img_subsample_factor_"+std::to_string(i)]; 
         m_cams[i].m_is_compressed = loader_config["is_compressed_"+std::to_string(i)];
         // m_cams[i].m_intrinsics_string = (std::string)loader_config["intrinsics_"+std::to_string(i)];
@@ -82,13 +84,21 @@ void DataLoaderImgRos::init_ros(){
     image_transport::ImageTransport img_transport( private_nh );
     std::vector<image_transport::Subscriber> img_subs;
     img_subs.resize(m_cams.size());
+    std::vector<ros::Subscriber> cam_info_subs;
+    cam_info_subs.resize(m_cams.size());
 
     //make the subscribers
     for(size_t i = 0; i < m_cams.size(); i++){
         if(m_cams[i].m_is_compressed){
-            img_subs[i] = img_transport.subscribe(m_cams[i].m_img_topic, 5, boost::bind(&DataLoaderImgRos::callback, this, _1, i), ros::VoidPtr(), image_transport::TransportHints("compressed"));
+            img_subs[i] = img_transport.subscribe(m_cams[i].m_img_topic, 5, boost::bind(&DataLoaderImgRos::callback_img, this, _1, i), ros::VoidPtr(), image_transport::TransportHints("compressed"));
         }else{
-            img_subs[i] = img_transport.subscribe(m_cams[i].m_img_topic, 5,  boost::bind(&DataLoaderImgRos::callback, this, _1, i) );
+            img_subs[i] = img_transport.subscribe(m_cams[i].m_img_topic, 5,  boost::bind(&DataLoaderImgRos::callback_img, this, _1, i) );
+        }
+
+        //cam info only if the source contains the word "topic"
+        std::size_t source_is_from_topic = m_cam_info_source.find("topic");
+        if(source_is_from_topic){
+            cam_info_subs[i]=private_nh.subscribe<sensor_msgs::CameraInfo>(m_cams[i].m_cam_info_topic, 5, boost::bind(&DataLoaderImgRos::callback_cam_info, this, _1, i) );
         }
     }
 
@@ -114,8 +124,11 @@ void DataLoaderImgRos::init_ros(){
     m_is_thread_running=false;
 }
 
+void DataLoaderImgRos::callback_cam_info(const sensor_msgs::CameraInfoConstPtr& msg, const int cam_id){
+   m_cams[cam_id].m_cam_info=msg; 
+}
 
-void DataLoaderImgRos::callback(const sensor_msgs::ImageConstPtr& img_msg, const int cam_id) {
+void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, const int cam_id) {
 
     // std::cout << "loll callback from " << cam_id <<std::endl;
     // VLOG(1)<< "callback from cam " << cam_id;
@@ -137,6 +150,51 @@ void DataLoaderImgRos::callback(const sensor_msgs::ImageConstPtr& img_msg, const
     }
 
 
+    //get intrinsics 
+    if (m_cam_info_source=="none"){
+        frame.K.setZero();
+        frame.distort_coeffs.setZero();
+    }else if (m_cam_info_source=="topic"){
+        //check if we already got a callback from the camera_info topic
+        if (!cam.m_cam_info){
+            LOG(WARNING) << "No camera info yet"; 
+            return;
+        }
+        //The K is stored in the K vector
+        frame.K.setIdentity();
+        frame.K(0,0) = cam.m_cam_info->K[0]; //fx
+        frame.K(1,1) = cam.m_cam_info->K[4]; //fy
+        frame.K(0,2) = cam.m_cam_info->K[2]; //cx
+        frame.K(1,2) = cam.m_cam_info->K[5]; //cy
+        for(int i = 0; i < 6; ++i)
+            frame.distort_coeffs[i] = cam.m_cam_info->D[i];
+        // // Divide fx, fy, cx, cy by image size to obtain coordinates in [0..1]
+        // distortion[2] /= camInfo->width;
+        // distortion[4] /= camInfo->width;
+        // distortion[3] /= camInfo->height;
+        // distortion[5] /= camInfo->height;
+
+    }else if (m_cam_info_source=="topic_with_double_sphere"){
+        //check if we already got a callback from the camera_info topic
+        if (!cam.m_cam_info){
+            LOG(WARNING) << "No camera info yet"; 
+            return;
+        }
+        //The K is kinda hackly stored inside the D vector of the cam info in this case
+        frame.K.setIdentity();
+        frame.K(0,0) = cam.m_cam_info->D[2]; //fx
+        frame.K(1,1) = cam.m_cam_info->D[3]; //fy
+        frame.K(0,2) = cam.m_cam_info->D[4]; //cx
+        frame.K(1,2) = cam.m_cam_info->D[5]; //cy
+        for(int i = 0; i < 6; ++i)
+            frame.distort_coeffs[i] = cam.m_cam_info->D[i];
+
+    
+    }else{
+        LOG(FATAL) << "m_cam_info_source is not known";
+    }
+
+
     //get pose
     if (m_pose_source=="none"){
         frame.tf_cam_world.setIdentity();
@@ -155,6 +213,8 @@ void DataLoaderImgRos::callback(const sensor_msgs::ImageConstPtr& img_msg, const
     }else{
         LOG(FATAL) << "pose_source is not known";
     } 
+
+
 
 
 

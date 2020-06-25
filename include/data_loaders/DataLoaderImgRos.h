@@ -35,9 +35,11 @@ struct Cam{
     std::string m_img_topic;
     int m_img_subsample_factor=1;
     bool m_is_compressed=false;
+    std::string m_cam_info_topic;
 
     //frames
     moodycamel::ReaderWriterQueue<easy_pbr::Frame> m_frames_buffer;
+    sensor_msgs::CameraInfoConstPtr m_cam_info;
 
 };
 
@@ -57,7 +59,8 @@ private:
 
     void init_params(const std::string config_file);
     void init_ros();
-    void callback(const sensor_msgs::ImageConstPtr& msg, const int cam_id);
+    void callback_img(const sensor_msgs::ImageConstPtr& msg, const int cam_id);
+    void callback_cam_info(const sensor_msgs::CameraInfoConstPtr& msg, const int cam_id);
     // void read_pose_file();
     // bool get_pose_at_timestamp(Eigen::Affine3d& pose, double& deviation_ms, const double timestamp);
     // bool interpolate_pose_along_spline(Eigen::Affine3d& pose_world_baselink_interpolated, const Eigen::Affine3d pose, const double cur_timestamp_ns, const float deviation_ms);
@@ -68,6 +71,7 @@ private:
     std::vector<Cam, Eigen::aligned_allocator<Cam> > m_cams;
     std::string m_pose_source;
     std::string m_tf_reference_frame;
+    std::string m_cam_info_source;
     // bool m_do_pose;
 
  
