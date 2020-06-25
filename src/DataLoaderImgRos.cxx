@@ -76,7 +76,7 @@ void DataLoaderImgRos::init_params(const std::string config_file){
 
 void DataLoaderImgRos::init_ros(){
     std::vector<std::pair<std::string, std::string> > dummy_remappings;
-    ros::init(dummy_remappings, "dummy_name");
+    ros::init(dummy_remappings, "loader_img_ros");
 
     ros::NodeHandle private_nh("~");
 
@@ -101,6 +101,10 @@ void DataLoaderImgRos::init_ros(){
         }
         // VLOG(1) << "source is from topic " << source_is_from_topic;
     }
+
+    //start the tf listener here because it has to be started only after ros_init
+    m_tf_buf=std::make_shared<tf2_ros::Buffer>();
+    m_tf_listener=std::make_shared<tf2_ros::TransformListener>(*m_tf_buf);
 
     //multithreaded spinning, each callback (from different cameras) will run on different threads in paralel
     ros::MultiThreadedSpinner spinner(m_cams.size()); // Use as many threads as cameras
@@ -183,24 +187,27 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     }
 
 
-    // //get pose
-    // if (m_pose_source=="none"){
-    //     frame.tf_cam_world.setIdentity();
+    //get pose
+    // tf2_ros::Buffer m_tf_buf;
+    // tf2_ros::TransformListener m_tf_listener{m_tf_buf};
+    if (m_pose_source=="none"){
+        frame.tf_cam_world.setIdentity();
 
-    // }else if (m_pose_source=="tf"){
-    //     geometry_msgs::TransformStamped transform;
-    //     try{
-    //         transform = m_tf_buf.lookupTransform(img_msg->header.frame_id, m_tf_reference_frame, img_msg->header.stamp);
-    //     }catch(tf2::TransformException& e){
-    //         LOG(ERROR) << "Could not obtain camera transform: " << e.what();
-    //         return;
-    //     }
-    //     Eigen::Affine3d tf_cam_world = tf2::transformToEigen(transform);
-    //     frame.tf_cam_world=tf_cam_world.cast<float>();
+    }else if (m_pose_source=="tf"){
+        geometry_msgs::TransformStamped transform;
+        try{
+            // transform = m_tf_buf.lookupTransform(img_msg->header.frame_id, m_tf_reference_frame, img_msg->header.stamp);
+            transform = m_tf_buf->lookupTransform(img_msg->header.frame_id, m_tf_reference_frame, img_msg->header.stamp);
+        }catch(tf2::TransformException& e){
+            LOG(ERROR) << "Could not obtain camera transform: " << e.what();
+            return;
+        }
+        Eigen::Affine3d tf_cam_world = tf2::transformToEigen(transform);
+        frame.tf_cam_world=tf_cam_world.cast<float>();
 
-    // }else{
-    //     LOG(FATAL) << "pose_source is not known";
-    // } 
+    }else{
+        LOG(FATAL) << "pose_source is not known";
+    } 
 
 
 

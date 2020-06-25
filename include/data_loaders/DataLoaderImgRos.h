@@ -87,6 +87,9 @@ private:
     // ros::NodeHandle private_nh;
     // tf2_ros::Buffer m_tf_buf;
     // tf2_ros::TransformListener m_tf_listener{m_tf_buf};
+    //have to make the tf listener a shared obj because it has to be initialized only after the ros_init happens
+    std::shared_ptr<tf2_ros::Buffer> m_tf_buf;
+    std::shared_ptr<tf2_ros::TransformListener> m_tf_listener;
 
 
 
