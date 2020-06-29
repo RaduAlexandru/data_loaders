@@ -142,6 +142,14 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     }
 
 
+    //resize if the downsample factor is anything ther than 1
+    if (cam.m_img_subsample_factor!=1){
+        cv::Mat resized;
+        cv::resize(cv_img, resized, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor, cv::INTER_CUBIC );
+        cv_img=resized;
+    }
+
+
     //get intrinsics 
     if (m_cam_info_source=="none"){
         frame.K.setZero();
@@ -158,8 +166,9 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
         frame.K(1,1) = cam.m_cam_info->K[4]; //fy
         frame.K(0,2) = cam.m_cam_info->K[2]; //cx
         frame.K(1,2) = cam.m_cam_info->K[5]; //cy
-        for(int i = 0; i < 6; ++i)
+        for(int i = 0; i < 5; ++i){
             frame.distort_coeffs[i] = cam.m_cam_info->D[i];
+        }
         // // Divide fx, fy, cx, cy by image size to obtain coordinates in [0..1]
         // distortion[2] /= camInfo->width;
         // distortion[4] /= camInfo->width;
@@ -178,13 +187,19 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
         frame.K(1,1) = cam.m_cam_info->D[3]; //fy
         frame.K(0,2) = cam.m_cam_info->D[4]; //cx
         frame.K(1,2) = cam.m_cam_info->D[5]; //cy
-        for(int i = 0; i < 6; ++i)
+        for(int i = 0; i < 5; ++i){
             frame.distort_coeffs[i] = cam.m_cam_info->D[i];
+            // frame.distort_coeffs[i] = cam.m_cam_info->D[i]/cam.m_img_subsample_factor;
+        }
 
     
     }else{
         LOG(FATAL) << "m_cam_info_source is not known";
     }
+
+    //adjust the K matrix to the size of the img 
+    frame.K/=cam.m_img_subsample_factor;
+    frame.K(2,2)=1.0;
 
 
     //get pose
@@ -209,13 +224,22 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
         LOG(FATAL) << "pose_source is not known";
     } 
 
-
+    
+    // std::cout << "K is " << frame.K << std::endl;
 
 
     //img 
-    frame.rgb_8u=cv_img;
+    if(cv_img.channels()==3){
+        frame.rgb_8u=cv_img;
+    }else if(cv_img.channels()==1){
+        frame.gray_8u=cv_img;
+    }
+
+    frame.width=cv_img.cols;
+    frame.height=cv_img.rows;
  
 
+    // VLOG(1) << "cv_img has size " <<cv_img.rows << " " << cv_img.cols;
 
 
     //set K
