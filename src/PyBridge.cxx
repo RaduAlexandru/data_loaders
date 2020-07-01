@@ -13,6 +13,7 @@
 #include "data_loaders/DataLoaderStanford3DScene.h"
 #include "data_loaders/DataLoaderImg.h"
 #include "data_loaders/DataLoaderSemanticKitti.h"
+#include "data_loaders/DataLoaderPhenorob.h"
 #include "data_loaders/DataLoaderScanNet.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
@@ -134,6 +135,21 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_validation", &DataLoaderSemanticKitti::set_mode_validation ) 
     .def("set_sequence", &DataLoaderSemanticKitti::set_sequence ) 
     // .def("set_adaptive_subsampling", &DataLoaderSemanticKitti::set_adaptive_subsampling ) 
+    ;
+
+    //DataLoaderPhenorob
+    py::class_<DataLoaderPhenorob> (m, "DataLoaderPhenorob")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderPhenorob::start )
+    .def("get_cloud", &DataLoaderPhenorob::get_cloud, R"EOS( get_cloud. )EOS" )
+    .def("has_data", &DataLoaderPhenorob::has_data )
+    .def("is_finished", &DataLoaderPhenorob::is_finished ) 
+    .def("is_finished_reading", &DataLoaderPhenorob::is_finished_reading ) 
+    .def("reset", &DataLoaderPhenorob::reset ) 
+    .def("nr_samples", &DataLoaderPhenorob::nr_samples ) 
+    .def("label_mngr", &DataLoaderPhenorob::label_mngr ) 
+    .def("set_nr_clouds_to_skip", &DataLoaderPhenorob::set_nr_clouds_to_skip ) 
+    .def("set_nr_clouds_to_read", &DataLoaderPhenorob::set_nr_clouds_to_read ) 
     ;
 
     py::class_<DataLoaderScanNet> (m, "DataLoaderScanNet")

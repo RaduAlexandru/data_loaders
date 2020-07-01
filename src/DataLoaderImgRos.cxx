@@ -141,11 +141,12 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
         LOG(FATAL) << "cv_bridge exception " << e.what();
     }
 
+    frame.img_original_size=cv_img;
 
     //resize if the downsample factor is anything ther than 1
     if (cam.m_img_subsample_factor!=1){
         cv::Mat resized;
-        cv::resize(cv_img, resized, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor, cv::INTER_CUBIC );
+        cv::resize(cv_img, resized, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor, cv::INTER_LANCZOS4 );
         cv_img=resized;
     }
 
