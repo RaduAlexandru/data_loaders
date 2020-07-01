@@ -193,9 +193,13 @@ void DataLoaderPhenorob::read_data(){
 
                 Eigen::VectorXd point_eigen(3);
                 point_eigen<< std::stof(tokens[0]),  std::stof(tokens[1]),  std::stof(tokens[2]);
-                
                 points_vec.push_back(point_eigen);
-                labels_vec.push_back(std::stoi(tokens[3]));
+
+                int label=std::stoi(tokens[3]);
+                if(label>=2){
+                    label=2;
+                }
+                labels_vec.push_back(label);
 
             }
 
@@ -205,6 +209,7 @@ void DataLoaderPhenorob::read_data(){
             cloud->V=vec2eigen(points_vec);
             cloud->L_gt=vec2eigen(labels_vec);
         
+            cloud=m_transformer->transform(cloud);
 
             if(m_normalize){
                 cloud->normalize_size();
@@ -222,6 +227,7 @@ void DataLoaderPhenorob::read_data(){
             cloud->rotate_model_matrix(axis, -90);
             cloud->apply_model_matrix_to_cpu();
             cloud->transform_vertices_cpu(move);
+
 
             if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
                 // https://stackoverflow.com/a/15866196
