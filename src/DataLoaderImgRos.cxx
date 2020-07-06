@@ -241,6 +241,7 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     }else if(cv_img.depth()==CV_16U){
         if(cv_img.channels()==1){
             cv_img.convertTo(frame.depth, CV_32FC1);
+            // cv_img.convertTo(frame.depth, CV_32FC1, 1.0/1000.0);
         }
 
     }
