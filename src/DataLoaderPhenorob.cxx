@@ -150,7 +150,7 @@ void DataLoaderPhenorob::init_data_reading(){
     std::cout << "About to read " << m_sample_filenames.size() << " clouds" <<std::endl; 
 
 
-    CHECK(m_sample_filenames.size()>0) <<"We did not find any npz files to read";
+    CHECK(m_sample_filenames.size()>0) <<"We did not find any files to read";
 
 }
 

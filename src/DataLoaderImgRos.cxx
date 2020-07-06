@@ -14,6 +14,7 @@ using namespace configuru;
 #include <opencv2/highgui/highgui.hpp>
 #include <cv_bridge/cv_bridge.h>
 #include "ros_utils.h"
+#include "opencv_utils.h"
 #include <image_transport/image_transport.h>
 #include <tf2_eigen/tf2_eigen.h>
 
@@ -228,12 +229,20 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     
     // std::cout << "K is " << frame.K << std::endl;
 
+    // VLOG(1) << " cv img type  " << type2string(cv_img.type());
 
     //img 
-    if(cv_img.channels()==3){
-        frame.rgb_8u=cv_img;
-    }else if(cv_img.channels()==1){
-        frame.gray_8u=cv_img;
+    if(cv_img.depth()==CV_8U){
+        if(cv_img.channels()==3){
+            frame.rgb_8u=cv_img;
+        }else if(cv_img.channels()==1){
+            frame.gray_8u=cv_img;
+        }
+    }else if(cv_img.depth()==CV_16U){
+        if(cv_img.channels()==1){
+            cv_img.convertTo(frame.depth, CV_32FC1);
+        }
+
     }
 
     frame.width=cv_img.cols;
