@@ -24,7 +24,7 @@ using namespace configuru;
 using namespace radu::utils;
 using namespace easy_pbr;
 
-#define BUFFER_SIZE 60
+#define BUFFER_SIZE 3
 
 DataLoaderImgRos::DataLoaderImgRos(const std::string config_file):
     m_is_thread_running(false),
@@ -225,6 +225,14 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     }else{
         LOG(FATAL) << "pose_source is not known";
     } 
+
+    //check that the transform form depth to color coincides with /camera/extrinsics/depth_to_color
+    // VLOG(1) << "frame " << img_msg->header.frame_id;
+    // geometry_msgs::TransformStamped transform;
+    // transform = m_tf_buf->lookupTransform("camera_color_optical_frame", "camera_depth_optical_frame", img_msg->header.stamp); //transform from depth to color
+    // Eigen::Affine3d tf_color_depth = tf2::transformToEigen(transform); 
+    // VLOG(1) << "tf_color_depth" << tf_color_depth.translation();
+
 
     
     // std::cout << "K is " << frame.K << std::endl;
