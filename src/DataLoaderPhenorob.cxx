@@ -225,7 +225,7 @@ void DataLoaderPhenorob::read_data(){
             move.setIdentity();
             move.translation()<<50.0, 0.0, -740.0;
             cloud->rotate_model_matrix(axis, -90);
-            cloud->apply_model_matrix_to_cpu();
+            cloud->apply_model_matrix_to_cpu(true);
             cloud->transform_vertices_cpu(move);
 
 
