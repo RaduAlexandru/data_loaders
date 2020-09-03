@@ -82,6 +82,7 @@ public:
     bool has_data_for_all_cams();
     easy_pbr::Frame get_frame_for_cam(const int cam_id);
     int get_nr_cams(){return m_nr_cams; };
+    int nr_samples_for_cam(const int cam_id);
     void set_mask_for_cam(const std::string mask_filename, const int cam_id); //set a mask which will cause parts of the rgb, classes and probs images to be ignored
     void republish_last_frame_from_cam(const int cam_id); //put the last frame back into the ringbuffer so we cna read it from the core
     void republish_last_frame_all_cams();

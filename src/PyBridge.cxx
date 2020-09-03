@@ -116,7 +116,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished", &DataLoaderImg::is_finished ) 
     .def("is_finished_reading", &DataLoaderImg::is_finished_reading ) 
     .def("reset", &DataLoaderImg::reset ) 
-    // .def("nr_samples", &DataLoaderImg::nr_samples ) 
+    .def("nr_samples_for_cam", &DataLoaderImg::nr_samples_for_cam ) 
     ;
 
     //DataLoaderSemanticKitti

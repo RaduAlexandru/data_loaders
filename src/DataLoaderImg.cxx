@@ -453,6 +453,9 @@ Frame DataLoaderImg::get_frame_for_cam(const int cam_id){
 
 }
 
+int DataLoaderImg::nr_samples_for_cam(const int cam_id){
+    return m_rgb_filenames_per_cam[cam_id].size();
+}
 
 void DataLoaderImg::reset(){
 
