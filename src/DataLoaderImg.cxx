@@ -38,7 +38,8 @@ using namespace easy_pbr;
 #define BUFFER_SIZE 16
 
 DataLoaderImg::DataLoaderImg(const std::string config_file):
-    m_nr_resets(0)
+    m_nr_resets(0),
+    m_is_running(false)
     {
 
     init_params(config_file);
@@ -98,6 +99,7 @@ void DataLoaderImg::init_params(const std::string config_file){
 
     Config loader_config=cfg["loader_img"];
     m_autostart=loader_config["autostart"];
+    VLOG(1) << "Autostart is " << m_autostart;
     m_nr_cams = loader_config["nr_cams"];
     m_imgs_to_skip=loader_config["imgs_to_skip"];
     m_nr_images_to_read=loader_config["nr_images_to_read"];
