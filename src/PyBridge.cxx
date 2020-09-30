@@ -20,6 +20,7 @@
 
 #ifdef WITH_ROS
     #include "data_loaders/DataLoaderImgRos.h"
+    #include "data_loaders/DataLoaderCloudRos.h"
     #include "data_loaders/RosBagPlayer.h"
 #endif
 
@@ -176,6 +177,12 @@ PYBIND11_MODULE(dataloaders, m) {
         .def("has_data_for_all_cams", &DataLoaderImgRos::has_data_for_all_cams ) 
         .def("has_data_for_cam", &DataLoaderImgRos::has_data_for_cam ) 
         .def("is_loader_thread_alive", &DataLoaderImgRos::is_loader_thread_alive ) 
+        ;
+
+        py::class_<DataLoaderCloudRos> (m, "DataLoaderCloudRos")
+        .def(py::init<const std::string>())
+        .def("has_data", &DataLoaderCloudRos::has_data )
+        .def("get_cloud", &DataLoaderCloudRos::get_cloud )
         ;
 
         py::class_<RosBagPlayer, std::shared_ptr<RosBagPlayer> > (m, "RosBagPlayer")

@@ -17,12 +17,18 @@ using namespace configuru;
 
 //my stuff 
 #include "ros_utils.h"
-#include "data_loaders/viewer/Mesh.h"
-//mostly used for testing
-#include "data_loaders/cloud_segmenter/CloudSegmenter.h"
-#include "data_loaders/mesher/Mesher.h"
-#include "data_loaders/utils/MiscUtils.h"
-#include "data_loaders/viewer/Scene.h" //TODO remove this as it as used just for debugging
+#include "easy_pbr/Mesh.h"
+#include "easy_pbr/LabelMngr.h"
+#include "data_loaders/DataTransformer.h"
+#include "Profiler.h"
+#include "string_utils.h"
+#include "eigen_utils.h"
+#include "RandGenerator.h"
+
+//boost
+#include <boost/bind.hpp>
+#include <boost/filesystem.hpp>
+namespace fs = boost::filesystem;
 
 using namespace radu::utils;
 using namespace easy_pbr;
@@ -38,12 +44,12 @@ DataLoaderCloudRos::DataLoaderCloudRos(const std::string config_file):
     m_rand_gen(new RandGenerator() )
 {
     init_params(config_file);
-    if(m_do_pose){
-        read_pose_file(); //for the razlaw lbh data this reads the transform tf_lasermap_odom
-        if(m_hacky_fix_for_razlaws_ma_bags){
-            read_pose_file_vel2lasermap(); //this reads the transform tf_lasermap_vel/ From this we will set the pose.translation to lasermap_vel
-        }
-    }
+    // if(m_do_pose){
+        // read_pose_file(); //for the razlaw lbh data this reads the transform tf_lasermap_odom
+        // if(m_hacky_fix_for_razlaws_ma_bags){
+            // read_pose_file_vel2lasermap(); //this reads the transform tf_lasermap_vel/ From this we will set the pose.translation to lasermap_vel
+        // }
+    // }
     create_transformation_matrices();
     std::cout << " creating thread" << "\n";
     m_loader_thread=std::thread(&DataLoaderCloudRos::init_ros, this);  //starts the spin in another thread
@@ -65,26 +71,42 @@ void DataLoaderCloudRos::init_params(const std::string config_file){
     // std::string config_file="config.cfg";
 
     //read all the parameters
-    Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
+//read all the parameters
+    std::string config_file_abs;
+    if (fs::path(config_file).is_relative()){
+        config_file_abs=(fs::path(PROJECT_SOURCE_DIR) / config_file).string();
+    }else{
+        config_file_abs=config_file;
+    }
+    Config cfg = configuru::parse_file(config_file_abs, CFG);
+
     Config loader_config=cfg["loader_cloud_ros"];
     m_cloud_topic = (std::string)loader_config["cloud_topic"];
-    m_do_pose = loader_config["do_pose"];
-    m_do_random_gap_removal = loader_config["do_random_gap_removal"];
-    m_pose_file = (std::string)loader_config["pose_file"];
-    m_pose_file_format = (std::string)loader_config["pose_file_format"];
-    m_timestamp_multiplier = loader_config["timestamp_multiplier"];
-    m_exact_time = loader_config["exact_time"];
+    // m_do_pose = loader_config["do_pose"];
+    // m_do_random_gap_removal = loader_config["do_random_gap_removal"];
+    // m_pose_file = (std::string)loader_config["pose_file"];
+    // m_pose_file_format = (std::string)loader_config["pose_file_format"];
+    // m_timestamp_multiplier = loader_config["timestamp_multiplier"];
+    // m_exact_time = loader_config["exact_time"];
     m_min_dist_filter = loader_config["min_dist_filter"]; 
-    m_hacky_fix_for_razlaws_ma_bags = loader_config["hacky_fix_for_razlaws_ma_bags"]; 
+    // m_hacky_fix_for_razlaws_ma_bags = loader_config["hacky_fix_for_razlaws_ma_bags"]; 
 
     std::cout << "-------------" << m_timestamp_multiplier << std::endl;
 }
 
 void DataLoaderCloudRos::init_ros(){
+    std::vector<std::pair<std::string, std::string> > dummy_remappings;
+    ros::init(dummy_remappings, "loader_cloud_ros");
+
     ros::NodeHandle private_nh("~");
     ros::Subscriber sub = private_nh.subscribe(m_cloud_topic, 5, &DataLoaderCloudRos::callback, this);
 
-    ros::spin();
+    // ros::spin();
+
+    //so that we can have both the ImgRos and the cloud rus running we need a asyncspinner
+    ros::AsyncSpinner spinner(1); // Use x threads
+    spinner.start();
+    ros::waitForShutdown();
 
 
     LOG(INFO) << "finished ros communication";
@@ -103,116 +125,117 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
     pcl::fromPCLPointCloud2(*temp_cloud, *cloud);
 
 
-    MeshCore mesh_core;
-    mesh_core.V=pcl2eigen(cloud);
-    mesh_core.m_width=cloud->width;
-    mesh_core.m_height=cloud->height;
-    VLOG(1) << "width and height is " << mesh_core.m_width << " " << mesh_core.m_height;
+    // MeshCore mesh_core;
+    MeshSharedPtr mesh=Mesh::create();
+    mesh->V=pcl2eigen(cloud);
+    mesh->m_width=cloud->width;
+    mesh->m_height=cloud->height;
+    VLOG(1) << "width and height is " << mesh->m_width << " " << mesh->m_height;
 
     //the distance to the sensor is just the norm of every point as the cloud starts in velodyne frame 
-    mesh_core.D=mesh_core.V.rowwise().norm();
+    mesh->D=mesh->V.rowwise().norm();
 
     double timestamp=(double)cloud_msg->header.stamp.toNSec();
 
 
     //remove all points that have a lower distance to the densor than the min_dist_filter. IT DOES NOT REMOVE THEM BECAUSE THIS WILL MAKE THE CLOUD UNORGANIZED
     if(m_min_dist_filter>0.0){
-        for(int i=0; i<mesh_core.D.rows(); i++){
-            if(mesh_core.D(i)<m_min_dist_filter){
-                mesh_core.V(i,0)=0.0;
-                mesh_core.V(i,1)=0.0;
-                mesh_core.V(i,2)=0.0;
+        for(int i=0; i<mesh->D.rows(); i++){
+            if(mesh->D(i)<m_min_dist_filter){
+                mesh->V(i,0)=0.0;
+                mesh->V(i,1)=0.0;
+                mesh->V(i,2)=0.0;
             }    
         }
     }
 
     //establish a random view_direction
-    mesh_core.m_view_direction=m_rand_gen->rand_float(0,2*M_PI); 
+    // mesh->m_view_direction=m_rand_gen->rand_float(0,2*M_PI); 
     
 
-    if(m_do_random_gap_removal){
-        //remove point in the gap around the random direction so that the unwrapping to 2D can be done by the Mesher
-        //roate it so that it looks towards the gap. This will be called algorithm frame
-        Eigen::Affine3d tf_alg_vel;
-        tf_alg_vel.setIdentity();
-        Eigen::Matrix3d alg_vel_rot;
-        alg_vel_rot = Eigen::AngleAxisd(-0.5*M_PI+mesh_core.m_view_direction, Eigen::Vector3d::UnitY())  //this rotation is done second and rotates around the Y axis of alg frame
-        * Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX());   //this rotation is done first. Performed on the X axis of alg frame (after this the y is pointing towards camera, x is right and z is down)
-        tf_alg_vel.matrix().block<3,3>(0,0)=alg_vel_rot;
+    // if(m_do_random_gap_removal){
+    //     //remove point in the gap around the random direction so that the unwrapping to 2D can be done by the Mesher
+    //     //roate it so that it looks towards the gap. This will be called algorithm frame
+    //     Eigen::Affine3d tf_alg_vel;
+    //     tf_alg_vel.setIdentity();
+    //     Eigen::Matrix3d alg_vel_rot;
+    //     alg_vel_rot = Eigen::AngleAxisd(-0.5*M_PI+mesh_core.m_view_direction, Eigen::Vector3d::UnitY())  //this rotation is done second and rotates around the Y axis of alg frame
+    //     * Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX());   //this rotation is done first. Performed on the X axis of alg frame (after this the y is pointing towards camera, x is right and z is down)
+    //     tf_alg_vel.matrix().block<3,3>(0,0)=alg_vel_rot;
 
-        mesh_core.apply_transform(tf_alg_vel); //from velodyne frame to the algorithm frame
+    //     mesh_core.apply_transform(tf_alg_vel); //from velodyne frame to the algorithm frame
         
-        for (size_t i = 0; i < mesh_core.V.rows(); i++) {
-            if (!mesh_core.V.row(i).isZero()) {
-                //calculate an angle to it
-                double theta, phi;
-                phi = std::atan2(mesh_core.V.row(i).x(), - mesh_core.V.row(i).z()); // atan goes from -pi to pi
+    //     for (size_t i = 0; i < mesh_core.V.rows(); i++) {
+    //         if (!mesh_core.V.row(i).isZero()) {
+    //             //calculate an angle to it
+    //             double theta, phi;
+    //             phi = std::atan2(mesh_core.V.row(i).x(), - mesh_core.V.row(i).z()); // atan goes from -pi to pi
 
-                //if phi (the angle in the horizontal direction) is is within a certain range of 0 then set the points to nan
-                float gap_angle=0.1415;
-                // float gap_angle=0.8415;
-                if(phi< gap_angle && phi > -gap_angle ){
-                    mesh_core.V.row(i).setZero();
-                }
+    //             //if phi (the angle in the horizontal direction) is is within a certain range of 0 then set the points to nan
+    //             float gap_angle=0.1415;
+    //             // float gap_angle=0.8415;
+    //             if(phi< gap_angle && phi > -gap_angle ){
+    //                 mesh_core.V.row(i).setZero();
+    //             }
 
-            }
-        }
+    //         }
+    //     }
 
-        Eigen::Affine3d tf_vel_alg= tf_alg_vel.inverse();
-        mesh_core.apply_transform(tf_vel_alg); //from algorithm frame back to velodyne frame
-    }
-
-
-    if(m_do_pose){
-        //move into a baselink, then into world frame and then into gl frame
-        Eigen::Affine3d sensor_pose;  //maps from baselink to world ros
-        double deviation_ms=-1;
-        if (!get_pose_at_timestamp(sensor_pose,deviation_ms, timestamp)){
-            LOG(WARNING) << "Not found any pose at timestamp " << timestamp << " Discarding";
-            return;
-        }
-
-        if(m_pose_file_format=="david_old"){
-            //the old format had the pose file expressed in velodyne frame, the new one is already in baselink
-            mesh_core.apply_transform(m_tf_baselink_vel); // from velodyne frame to baselink 
-        } 
-        mesh_core.apply_transform(sensor_pose); // from baselonk to worldROS
-    }
-
-    VLOG(1) << "meshcore the m_cur_pose is " << mesh_core.m_cur_pose.matrix();
+    //     Eigen::Affine3d tf_vel_alg= tf_alg_vel.inverse();
+    //     mesh_core.apply_transform(tf_vel_alg); //from algorithm frame back to velodyne frame
+    // }
 
 
+    // if(m_do_pose){
+    //     //move into a baselink, then into world frame and then into gl frame
+    //     Eigen::Affine3d sensor_pose;  //maps from baselink to world ros
+    //     double deviation_ms=-1;
+    //     if (!get_pose_at_timestamp(sensor_pose,deviation_ms, timestamp)){
+    //         LOG(WARNING) << "Not found any pose at timestamp " << timestamp << " Discarding";
+    //         return;
+    //     }
 
-    mesh_core.apply_transform(m_tf_worldGL_worldROS); // from worldROS to worldGL
+    //     if(m_pose_file_format=="david_old"){
+    //         //the old format had the pose file expressed in velodyne frame, the new one is already in baselink
+    //         mesh_core.apply_transform(m_tf_baselink_vel); // from velodyne frame to baselink 
+    //     } 
+    //     mesh_core.apply_transform(sensor_pose); // from baselonk to worldROS
+    // }
 
-
-    //attemp3 just make the cur pose,be where the velodyne frame should be now
-    if(m_hacky_fix_for_razlaws_ma_bags){
-        Eigen::Affine3d tf_lasermap_vel;
-        double deviation_ms;
-        get_pose_vel2lasermap_at_timestamp(tf_lasermap_vel,deviation_ms, timestamp);
-        Eigen::Affine3d tf_worldGL_vel=m_tf_worldGL_worldROS*tf_lasermap_vel;
-        mesh_core.m_cur_pose.translation() = tf_worldGL_vel.translation();
-    }
+    // VLOG(1) << "meshcore the m_cur_pose is " << mesh_core.m_cur_pose.matrix();
 
 
 
-    //debug the pose
-    MeshCore pose_debug;
-    pose_debug.V.resize(1,3);
-    pose_debug.V.row(0) = mesh_core.m_cur_pose.translation().cast<double>();
-    pose_debug.m_vis.m_show_points=true;
-    MeshCore mesh_dummy=mesh_core;
-    Scene::show(mesh_dummy, "dummy"); //just showing this first because otherwise the camera scene and centroid fucks up because the next one is only a point
-    Scene::show(pose_debug, "pose_debug_from_loader");
+    // // mesh_core.apply_transform(m_tf_worldGL_worldROS); // from worldROS to worldGL
+
+
+    // //attemp3 just make the cur pose,be where the velodyne frame should be now
+    // if(m_hacky_fix_for_razlaws_ma_bags){
+    //     Eigen::Affine3d tf_lasermap_vel;
+    //     double deviation_ms;
+    //     get_pose_vel2lasermap_at_timestamp(tf_lasermap_vel,deviation_ms, timestamp);
+    //     Eigen::Affine3d tf_worldGL_vel=m_tf_worldGL_worldROS*tf_lasermap_vel;
+    //     mesh_core.m_cur_pose.translation() = tf_worldGL_vel.translation();
+    // }
+
+
+
+    // //debug the pose
+    // MeshCore pose_debug;
+    // pose_debug.V.resize(1,3);
+    // pose_debug.V.row(0) = mesh_core.m_cur_pose.translation().cast<double>();
+    // pose_debug.m_vis.m_show_points=true;
+    // MeshCore mesh_dummy=mesh_core;
+    // Scene::show(mesh_dummy, "dummy"); //just showing this first because otherwise the camera scene and centroid fucks up because the next one is only a point
+    // Scene::show(pose_debug, "pose_debug_from_loader");
 
 
     //some sensible visualization options
-    mesh_core.m_vis.m_show_mesh=false;
-    mesh_core.m_vis.m_show_points=true;
+    mesh->m_vis.m_show_mesh=false;
+    mesh->m_vis.m_show_points=true;
 
 
-    m_clouds_buffer[m_working_cloud_idx]=mesh_core;
+    m_clouds_buffer[m_working_cloud_idx]=mesh;
     m_finished_cloud_idx = m_working_cloud_idx;
     m_working_cloud_idx = (m_working_cloud_idx + 1) % NUM_CLOUDS_BUFFER;
     m_is_modified = true;
@@ -229,7 +252,7 @@ bool DataLoaderCloudRos::is_loader_thread_alive(){
     return m_is_thread_running;
 }
 
-MeshCore DataLoaderCloudRos::get_cloud(){
+std::shared_ptr<easy_pbr::Mesh> DataLoaderCloudRos::get_cloud(){
     m_is_modified=false;
     return m_clouds_buffer[m_finished_cloud_idx];
 }

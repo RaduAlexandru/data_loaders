@@ -108,8 +108,13 @@ void DataLoaderImgRos::init_ros(){
     m_tf_listener=std::make_shared<tf2_ros::TransformListener>(*m_tf_buf);
 
     //multithreaded spinning, each callback (from different cameras) will run on different threads in paralel
-    ros::MultiThreadedSpinner spinner(m_cams.size()); // Use as many threads as cameras
-    spinner.spin();
+    // ros::MultiThreadedSpinner spinner(m_cams.size()); // Use as many threads as cameras
+    // spinner.spin();
+
+    //so that we can have both the ImgRos and the cloud rus running we need a asyncspinner
+    ros::AsyncSpinner spinner(m_cams.size()); // Use as many threads as cameras
+    spinner.start();
+    ros::waitForShutdown();
 
     LOG(INFO) << "finished ros communication";
     std::cout << "inside thread" << "\n";
@@ -248,8 +253,8 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
         }
     }else if(cv_img.depth()==CV_16U){
         if(cv_img.channels()==1){
-            cv_img.convertTo(frame.depth, CV_32FC1);
-            // cv_img.convertTo(frame.depth, CV_32FC1, 1.0/1000.0);
+            // cv_img.convertTo(frame.depth, CV_32FC1);
+            cv_img.convertTo(frame.depth, CV_32FC1, 1.0/1000.0);
         }
 
     }

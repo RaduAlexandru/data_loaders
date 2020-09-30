@@ -15,12 +15,16 @@
 #include <Eigen/Core>
 #include<Eigen/StdVector>
 
-#include "data_loaders/core/MeshCore.h"
+// #include "data_loaders/core/MeshCore.h"
 
 
 namespace radu { namespace utils{
     class RandGenerator;
 }}
+
+namespace easy_pbr{
+    class Mesh;
+}
 
 class DataLoaderCloudRos
 {
@@ -28,7 +32,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     DataLoaderCloudRos(const std::string config_file);
     ~DataLoaderCloudRos();
-    MeshCore get_cloud();
+    std::shared_ptr<easy_pbr::Mesh> get_cloud();
     bool has_data(){return m_is_modified;};
     bool is_loader_thread_alive(); //hacky way of checking if the thread is active and then killing the python process that created this loader
 
@@ -65,7 +69,7 @@ private:
     //internal
     std::atomic<bool> m_is_thread_running;
     bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
-    std::vector<MeshCore, Eigen::aligned_allocator<MeshCore>> m_clouds_buffer; //need to use a buffer of meshes because the Loader needs to keep in memory both the calculated Cloud and the one its currently working on
+    std::vector<   std::shared_ptr<easy_pbr::Mesh>  , Eigen::aligned_allocator< std::shared_ptr<easy_pbr::Mesh> >> m_clouds_buffer; //need to use a buffer of meshes because the Loader needs to keep in memory both the calculated Cloud and the one its currently working on
     int m_finished_cloud_idx; //idx pointing to the most recent finished mesh
     int m_working_cloud_idx; //idx poiting to the mesh we are currently working on
     std::vector<std::pair<double, Eigen::Affine3d>, Eigen::aligned_allocator<std::pair<double, Eigen::Affine3d>>  >m_worldROS_baselink_vec;
