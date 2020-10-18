@@ -125,6 +125,26 @@ void DataLoaderVolRef::init_data_reading(){
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
     for (size_t i = 0; i <samples_filenames_all.size(); i++) {
         if( (int)i>=m_nr_samples_to_skip && ((int)m_samples_filenames.size()<m_nr_samples_to_read || m_nr_samples_to_read<0 ) ){
+
+
+            //if we are loading only from selected idxs
+            // VLOG(1) << "m_load_from_idxs has size " << m_load_from_idxs.size();
+            if(m_load_from_idxs.size()){
+                // VLOG(1) << "loading from selected indexes";
+                bool do_we_load_from_idx=false;
+                for(int j=0; j < m_load_from_idxs.rows(); j++){
+                    if(i==(int)m_load_from_idxs[j]){
+                        do_we_load_from_idx=true;
+                        // VLOG(1) << "loading for this idx";
+                    }
+                }
+                if (!do_we_load_from_idx){
+                    continue;
+                    // VLOG(1) << "NOT loading for this idx";
+                }
+            }
+
+
             m_samples_filenames.push_back(samples_filenames_all[i]);
         }
     }
@@ -169,6 +189,9 @@ void DataLoaderVolRef::read_data(){
             if(!m_do_overfit){
                 m_idx_sample_to_read++;
             }
+
+
+
 
             //read frame color and frame depth
             Frame frame_color;
@@ -338,6 +361,14 @@ Frame DataLoaderVolRef::closest_depth_frame(const Frame& frame){
 
     return frame_depth;
     
+}
+
+
+void DataLoaderVolRef::load_only_from_idxs(const Eigen::VectorXi& vec){
+    if(m_shuffle){
+        LOG(WARNING) << "We are shuffling after every reset so selecting some indexes now will change every time we reset. This may not be what you want so you may consider setting shuffle to false";
+    }
+    m_load_from_idxs=vec;
 }
 
 

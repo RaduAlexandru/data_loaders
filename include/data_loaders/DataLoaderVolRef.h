@@ -39,6 +39,9 @@ public:
     easy_pbr::Frame closest_color_frame(const easy_pbr::Frame& frame); //returns the frame color that is closest to the current one and also looks in a similar direction
     easy_pbr::Frame closest_depth_frame(const easy_pbr::Frame& frame); //returns the frame depth that is closest to the current one and looks in a similar direction
 
+
+    void load_only_from_idxs(const Eigen::VectorXi& vec); //Set a vector of ints and we will load only color and depth frames from those
+
 private:
 
     void init_params(const std::string config_file);
@@ -74,5 +77,6 @@ private:
     Eigen::Affine3d m_tf_worldGL_worldROS;
     Eigen::MatrixXd m_K_color;
     Eigen::MatrixXd m_K_depth;
+    Eigen::VectorXi m_load_from_idxs;
 
 };
