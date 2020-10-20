@@ -491,3 +491,7 @@ int DataLoaderVolRef::nr_samples(){
 void DataLoaderVolRef::set_shuffle(bool val){
     m_shuffle=val;
 }
+
+void DataLoaderVolRef::set_overfit(bool val){
+    m_do_overfit=val;
+}
