@@ -41,6 +41,7 @@ public:
 
 
     void load_only_from_idxs(const Eigen::VectorXi& vec); //Set a vector of ints and we will load only color and depth frames from those
+    void set_shuffle(bool val);
 
 private:
 

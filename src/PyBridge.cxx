@@ -92,6 +92,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("closest_color_frame", &DataLoaderVolRef::closest_color_frame ) 
     .def("closest_depth_frame", &DataLoaderVolRef::closest_depth_frame ) 
     .def("load_only_from_idxs", &DataLoaderVolRef::load_only_from_idxs ) 
+    .def("set_shuffle", &DataLoaderVolRef::set_shuffle ) 
     ;
 
     py::class_<DataLoaderStanford3DScene> (m, "DataLoaderStanford3DScene")

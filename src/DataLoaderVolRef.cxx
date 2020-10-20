@@ -109,15 +109,7 @@ void DataLoaderVolRef::init_data_reading(){
         }
     }
 
-    if(m_shuffle){
-        unsigned seed = m_nr_resets;
-        auto rng = std::default_random_engine(seed);
-        std::shuffle(std::begin(samples_filenames_all), std::end(samples_filenames_all), rng);
-    }else{
-        std::sort(samples_filenames_all.begin(), samples_filenames_all.end());
-    }
 
-  
 
 
 
@@ -148,6 +140,17 @@ void DataLoaderVolRef::init_data_reading(){
             m_samples_filenames.push_back(samples_filenames_all[i]);
         }
     }
+
+
+    if(m_shuffle){
+        unsigned seed = m_nr_resets;
+        auto rng = std::default_random_engine(seed);
+        std::shuffle(std::begin(samples_filenames_all), std::end(samples_filenames_all), rng);
+    }else{
+        std::sort(samples_filenames_all.begin(), samples_filenames_all.end());
+    }
+
+  
 
     std::cout << "About to read " << m_samples_filenames.size() << " samples" <<std::endl; 
 
@@ -365,9 +368,9 @@ Frame DataLoaderVolRef::closest_depth_frame(const Frame& frame){
 
 
 void DataLoaderVolRef::load_only_from_idxs(const Eigen::VectorXi& vec){
-    if(m_shuffle){
-        LOG(WARNING) << "We are shuffling after every reset so selecting some indexes now will change every time we reset. This may not be what you want so you may consider setting shuffle to false";
-    }
+    // if(m_shuffle){
+    //     LOG(WARNING) << "We are shuffling after every reset so selecting some indexes now will change every time we reset. This may not be what you want so you may consider setting shuffle to false";
+    // }
     m_load_from_idxs=vec;
 }
 
@@ -485,3 +488,6 @@ int DataLoaderVolRef::nr_samples(){
 }
 
 
+void DataLoaderVolRef::set_shuffle(bool val){
+    m_shuffle=val;
+}
