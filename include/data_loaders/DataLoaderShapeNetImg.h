@@ -55,6 +55,7 @@ private:
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
     void read_scene(const std::string scene_path); //a path to the scene which contains all the  images and the pose and so on
     std::unordered_map<std::string, std::string> create_mapping_classnr2classname(); //create the mapping between the weird nr of a class to the actual class name
+    Eigen::Affine3f process_extrinsics_line(const std::string line);
     
 
     //objects

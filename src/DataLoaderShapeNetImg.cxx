@@ -16,9 +16,11 @@ using namespace configuru;
 #include "easy_pbr/Frame.h"
 #include "Profiler.h"
 #include "string_utils.h"
+#include "numerical_utils.h"
 #include "eigen_utils.h"
 #include "RandGenerator.h"
 #include "easy_pbr/LabelMngr.h"
+#include "UtilsGL.h"
 
 //json 
 // #include "json11/json11.hpp"
@@ -164,12 +166,56 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
         if(img_path.filename().string().find("png")!= std::string::npos){
             // VLOG(1) << "png img path " << img_path;
 
+            int img_idx=std::stoi( img_path.stem().string() );
+            // VLOG(1) << "img idx is " << img_idx;
+
             Frame frame;
 
             frame.rgb_8u=cv::imread(img_path.string());
             frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
             frame.width=frame.rgb_32f.cols;
             frame.height=frame.rgb_32f.rows;
+
+            //read pose and camera params
+
+            //intrisncis are from here 
+            // https://github.com/facebookresearch/pytorch3d/blob/778383eef77a23686f3d0e68834b29d6d73f8501/pytorch3d/datasets/r2n2/r2n2.py
+            // and from https://github.com/facebookresearch/meshrcnn/blob/master/shapenet/utils/coords.py
+            // ther we also have zmin and zmax
+            // but it seems that it's not actually  a K matrix but rather a projection matrix as  an opengl projection matrix like in here http://www.songho.ca/opengl/gl_projectionmatrix.html
+            // so it projects from camera coordinates to clip coordinates but we want a K matrix that projects to screen coords
+            Eigen::Matrix4f P;
+            P << 
+            2.1875, 0.0, 0.0, 0.0,
+            0.0, 2.1875, 0.0, 0.0,
+            0.0, 0.0, -1.002002, -0.2002002,
+            0.0, 0.0, -1.0, 0.0;
+            Eigen::Matrix3f K = opengl_proj_to_intrinsics(P, 137, 137);
+            // VLOG(1) << "K is " << K;
+            frame.K=K;
+
+            //the extrinsics are stored in rendering_metadata.txt, stored as azimuth elevation and distance 
+            //processing of this can be seen here: https://github.com/NVIDIAGameWorks/kaolin/blob/master/kaolin/datasets/shapenet.py
+            Eigen::Affine3f tf_cam_world;
+            int lines_read=0;
+            bool found=false;
+            std::ifstream metadata_file( (fs::path(scene_path)/"rendering_metadata.txt").string() );
+            if(!metadata_file.is_open()){
+                LOG(FATAL) << "Could not open the rendering metadata file ";
+            }
+            for( std::string line; getline( metadata_file, line ); ){
+                if (lines_read==img_idx){
+                    VLOG(1) << "img idx" << img_idx << "reading line " << lines_read << " line " << line;
+                    tf_cam_world=process_extrinsics_line(line);
+                    found=true;
+                    break;
+                }
+                lines_read++;
+            }
+            CHECK(found) << "Could not find a corrsponding line in the metadata for img " << img_idx;
+            // VLOG(1) << "TF is " << tf_cam_world.matrix();
+            frame.tf_cam_world=tf_cam_world;
+
 
             m_frames_for_scene.push_back(frame);
 
@@ -197,133 +243,37 @@ Frame DataLoaderShapeNetImg::get_random_frame(){
 }
 
 
-// void DataLoaderShapeNetImg::read_data(){
-
-//     loguru::set_thread_name("loader_thread_shapenet");
 
 
-//     while (m_is_running) {
+bool DataLoaderShapeNetImg::is_finished(){
+    //check if this loader has loaded everything
+    if(m_idx_scene_to_read<m_scene_folders.size()){
+        return false; //there is still more files to read
+    }
+   
 
-//         //we finished reading so we wait here for a reset
-//         if(m_idx_img_to_read>=m_pts_filenames.size()){
-//             std::this_thread::sleep_for(std::chrono::milliseconds(300));
-//             continue;
-//         }
+    return true; //there is nothing more to read and nothing more in the buffer so we are finished
 
-
-//         // std::cout << "size approx is " << m_queue.size_approx() << '\n';
-//         // std::cout << "m_idx_img_to_read is " << m_idx_img_to_read << '\n';
-//         if(m_imgs_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
-//             //read the frame and everything else and push it to the queue
-
-//             TIME_SCOPE("load_shapenet")
-
-//             fs::path pts_filename=m_pts_filenames[ m_idx_img_to_read ];
-//             fs::path labels_filename=m_labels_filenames[ m_idx_img_to_read ];
-//             if(!m_do_overfit){
-//                 m_idx_img_to_read++;
-//             }
-
-//             // VLOG(1) << "Reading from object" << m_restrict_to_object;
-
-//             //read pts
-//             MeshSharedPtr cloud=Mesh::create();
-//             cloud->V=read_pts(pts_filename.string());
-//             cloud->L_gt=read_labels(labels_filename.string());
-//             cloud->D=cloud->V.rowwise().norm();
-//             if(m_normalize){
-//                 cloud->normalize_size();
-//                 cloud->normalize_position();
-//             }
-
-//             // VLOG(1) << "cloud->v is " << cloud->V;
-
-//             //transform
-//             // cloud.apply_transform(m_tf_worldGL_worldROS); // from worldROS to worldGL
-
-//             if(m_mode=="train"){
-//                 cloud=m_transformer->transform(cloud);
-//             }
-
-//             if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
-//                 // https://stackoverflow.com/a/15866196
-//                 Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud->V.rows());
-//                 perm.setIdentity();
-//                 std::shuffle(perm.indices().data(), perm.indices().data()+perm.indices().size(), m_rand_gen->generator());
-//                 // VLOG(1) << "permutation matrix is " << perm.indices();
-//                 // A_perm = A * perm; // permute columns
-//                 cloud->V = perm * cloud->V; // permute rows
-//                 cloud->L_gt = perm * cloud->L_gt; // permute rows
-//                 cloud->D = perm * cloud->D; // permute rows
-//             }
-
-//             //some sensible visualization options
-//             cloud->m_vis.m_show_mesh=false;
-//             cloud->m_vis.m_show_points=true;
-//             cloud->m_vis.m_color_type=+MeshColorType::SemanticGT;
-            
-//             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
-//             // cloud->m_label_mngr=m_label_mngr->shared_from_this();
-//             cloud->m_label_mngr=m_label_mngr;
-
-//             // VLOG(1) << "Label uindx is " << cloud->m_label_mngr->get_idx_unlabeled();
-//             cloud->m_disk_path=pts_filename.string();
-
-//             m_imgs_buffer.enqueue(cloud);
-
-//         }
-
-//     }
-
-// }
+}
 
 
-// Eigen::MatrixXd DataLoaderShapeNetImg::read_pts(const std::string file_path){
-//     std::ifstream infile( file_path );
-//     if(!infile.is_open()){
-//         LOG(FATAL) << "Could not open pts file " << file_path;
-//     }
+void DataLoaderShapeNetImg::reset(){
 
-//     std::vector<Eigen::Vector3d,  Eigen::aligned_allocator<Eigen::Vector3d>  > points_vec;
-//     std::string line;
-//     while (std::getline(infile, line)) {
-//         std::istringstream iss(line);
+    m_nr_resets++;
 
+    //reshuffle for the next epoch
+    if(m_shuffle){
+        unsigned seed = m_nr_resets;
+        auto rng_0 = std::default_random_engine(seed); 
+        std::shuffle(std::begin(m_scene_folders), std::end(m_scene_folders), rng_0);
+    }
 
-//         std::vector<std::string> tokens=split(line," ");
-//         Eigen::Vector3d point;
-//         point.x()=stod(tokens[0]);
-//         point.y()=stod(tokens[1]);
-//         point.z()=stod(tokens[2]);
+    m_idx_scene_to_read=0;
+}
 
-//         points_vec.push_back(point);
-
-//     }
-
-//     return vec2eigen(points_vec);
-// }
-
-// Eigen::MatrixXi DataLoaderShapeNetImg::read_labels(const std::string file_path){
-//     std::ifstream infile( file_path );
-//     if(!infile.is_open()){
-//         LOG(FATAL) << "Could not open labels file " << file_path;
-//     }
-
-//     std::vector< int> labels_vec;
-//     std::string line;
-//     while (std::getline(infile, line)) {
-//         std::istringstream iss(line);
-
-
-//         std::vector<std::string> tokens=split(line," ");
-//         int label=stoi(tokens[0]);
-
-//         labels_vec.push_back(label);
-
-//     }
-
-//     return vec2eigen(labels_vec);
-// }
+int DataLoaderShapeNetImg::nr_samples(){
+    return m_scene_folders.size();
+}
 
 std::unordered_map<std::string, std::string> DataLoaderShapeNetImg::create_mapping_classnr2classname(){
 
@@ -378,62 +328,51 @@ std::unordered_map<std::string, std::string> DataLoaderShapeNetImg::create_mappi
     return classnr2classname;
 }
 
+Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string line){
 
-// bool DataLoaderShapeNetImg::has_data(){
-//     if(m_imgs_buffer.peek()==nullptr){
-//         return false;
-//     }else{
-//         return true;
-//     }
-// }
+    std::vector<std::string> tokens = radu::utils::split(line, " ");
+    float azimuth = std::stof(tokens[0]);
+    float elevation = std::stof(tokens[1]);
+    float distance = std::stof(tokens[3]);
+
+    Eigen::Affine3f tf;
+
+    //from compute_camera_params() in https://github.com/NVIDIAGameWorks/kaolin/blob/a76a004ada95280c6a0a821678cf1b886bcb3625/kaolin/mathutils/geometry/transformations.py 
+    float theta = radu::utils::degrees2radians(azimuth);
+    float phi = radu::utils::degrees2radians(elevation);
+
+    float camY = distance * std::sin(phi);
+    float temp = distance * std::cos(phi);
+    float camX = temp * std::cos(theta);
+    float camZ = temp * std::sin(theta);
+    // cam_pos = np.array([camX, camY, camZ])
+    Eigen::Vector3f t;
+    t << camX,camY,camZ;
+
+    Eigen::Vector3f axisZ = t;
+    Eigen::Vector3f axisY = Eigen::Vector3f::UnitY();
+    Eigen::Vector3f axisX = axisY.cross(axisZ);
+    axisY = axisZ.cross(axisX);
+
+    // cam_mat = np.array([axisX, axisY, axisZ])
+    Eigen::Matrix3f R;
+    R.col(0)=axisX; 
+    R.col(1)=axisY; 
+    R.col(2)=axisZ; 
+    // l2 = np.atleast_1d(np.linalg.norm(cam_mat, 2, 1))
+    // l2[l2 == 0] = 1
+    // cam_mat = cam_mat / np.expand_dims(l2, 1)
+
+    tf.translation() = t;
+    tf.linear() = R;
+
+    Eigen::Affine3f tf_ret=tf.inverse(); 
+    // Eigen::Affine3f tf_ret=tf; 
 
 
-// std::shared_ptr<Mesh> DataLoaderShapeNetImg::get_cloud(){
 
-//     std::shared_ptr<Mesh> cloud;
-//     m_imgs_buffer.try_dequeue(cloud);
+    return tf_ret;
 
-//     return cloud;
-// }
-
-bool DataLoaderShapeNetImg::is_finished(){
-    //check if this loader has loaded everything
-    if(m_idx_scene_to_read<m_scene_folders.size()){
-        return false; //there is still more files to read
-    }
-   
-
-    return true; //there is nothing more to read and nothing more in the buffer so we are finished
-
-}
-
-
-// bool DataLoaderShapeNetImg::is_finished_reading(){
-//     //check if this loader has loaded everything
-//     if(m_idx_img_to_read<m_pts_filenames.size()){
-//         return false; //there is still more files to read
-//     }
-
-//     return true; //there is nothing more to read and so we are finished reading
-
-// }
-
-void DataLoaderShapeNetImg::reset(){
-
-    m_nr_resets++;
-
-    //reshuffle for the next epoch
-    if(m_shuffle){
-        unsigned seed = m_nr_resets;
-        auto rng_0 = std::default_random_engine(seed); 
-        std::shuffle(std::begin(m_scene_folders), std::end(m_scene_folders), rng_0);
-    }
-
-    m_idx_scene_to_read=0;
-}
-
-int DataLoaderShapeNetImg::nr_samples(){
-    return m_scene_folders.size();
 }
 
 // std::shared_ptr<LabelMngr> DataLoaderShapeNetImg::label_mngr(){
