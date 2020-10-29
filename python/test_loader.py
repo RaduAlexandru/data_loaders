@@ -136,15 +136,15 @@ def test_shapenet_img():
 
     while True:
         if(loader.finished_reading_scene() ): 
-            print("gto frame")
             frame=loader.get_random_frame()
-            print("finished getting frame")
+            loader.start_reading_next_scene()
+
 
     #         print("finished loading scene")
     #         frame=loader.get_random_frame()
     #         loader.start_reading_random_scene()
 
-    #         Gui.show(frame_color.rgb_32f, "rgb")
+            Gui.show(frame.rgb_32f, "rgb")
 
         view.update()
 

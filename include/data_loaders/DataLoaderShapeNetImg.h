@@ -17,15 +17,17 @@
 #include <boost/bind.hpp>
 #include <boost/filesystem.hpp>
 
+#include "easy_pbr/Frame.h"
+
 
 
 namespace radu { namespace utils{
     class RandGenerator;
 }}
 
-namespace easy_pbr{
-    class Frame;
-}
+// namespace easy_pbr{
+//     class Frame;
+// }
 // class DataTransformer;
 
 
@@ -35,7 +37,7 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     DataLoaderShapeNetImg(const std::string config_file);
     ~DataLoaderShapeNetImg();
-    std::shared_ptr<easy_pbr::Frame> get_random_frame();
+    easy_pbr::Frame get_random_frame();
     void start_reading_next_scene(); //switch to another scene from this object and start reading it
     bool finished_reading_scene(); //returns true when we have finished reading everything for that one scene of the corresponding object and we can safely use get_random_frame
     void reset(); //starts reading from the beggining
@@ -73,6 +75,6 @@ private:
 
     //internal
     std::vector<boost::filesystem::path> m_scene_folders; //contains all the folders of the scenes for this objects
-    std::vector< std::shared_ptr<easy_pbr::Frame> > m_frames_for_scene;
+    std::vector< easy_pbr::Frame > m_frames_for_scene;
 
 };

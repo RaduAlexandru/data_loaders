@@ -140,6 +140,12 @@ void DataLoaderShapeNetImg::start_reading_next_scene(){
         m_idx_scene_to_read++;
     }
 
+    
+
+    //start the reading
+    if (m_loader_thread.joinable()){
+        m_loader_thread.join(); //join the thread from the previous iteration of running
+    }
     m_is_running=true;
     m_loader_thread=std::thread(&DataLoaderShapeNetImg::read_scene, this, scene_path);  //starts to read in another thread
 }
@@ -156,14 +162,14 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
         //get only files that end in png
         // VLOG(1) << "img_path" <<img_path.filename();
         if(img_path.filename().string().find("png")!= std::string::npos){
-            // VLOG(1) << "img path " << img_path;
+            // VLOG(1) << "png img path " << img_path;
 
-            std::shared_ptr<Frame> frame=std::make_shared<Frame>();
+            Frame frame;
 
-            frame->rgb_8u=cv::imread(img_path.string());
-            frame->rgb_8u.convertTo(frame->rgb_32f, CV_32FC3, 1.0/255.0);
-            frame->width=frame->rgb_32f.cols;
-            frame->height=frame->rgb_32f.rows;
+            frame.rgb_8u=cv::imread(img_path.string());
+            frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
+            frame.width=frame.rgb_32f.cols;
+            frame.height=frame.rgb_32f.rows;
 
             m_frames_for_scene.push_back(frame);
 
@@ -172,12 +178,10 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
     CHECK(m_frames_for_scene.size()!=0) << "Clouldn't load any images for this scene in path " << scene_path; 
 
-    
     //shuffle the images from this scene 
     unsigned seed = m_nr_resets;
     auto rng_0 = std::default_random_engine(seed);
     std::shuffle(std::begin(m_frames_for_scene), std::end(m_frames_for_scene), rng_0);
-
 
     m_is_running=false;
 }
@@ -187,11 +191,8 @@ bool DataLoaderShapeNetImg::finished_reading_scene(){
     return !m_is_running;
 }
 
-std::shared_ptr<Frame> DataLoaderShapeNetImg::get_random_frame(){
-    VLOG(1) << "calling get random frame ";
+Frame DataLoaderShapeNetImg::get_random_frame(){
     int random_idx=m_rand_gen->rand_int(0, m_frames_for_scene.size()-1);
-    // int random_idx=m_rand_gen->rand_int(0, 10);
-    VLOG(1) << "random idx is " << random_idx << " m_frames_for_scene is " << m_frames_for_scene.size();
     return m_frames_for_scene[random_idx];
 }
 
