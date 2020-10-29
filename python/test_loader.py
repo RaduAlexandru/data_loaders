@@ -139,12 +139,10 @@ def test_shapenet_img():
             frame=loader.get_random_frame()
             loader.start_reading_next_scene()
 
-
-    #         print("finished loading scene")
-    #         frame=loader.get_random_frame()
-    #         loader.start_reading_random_scene()
-
             Gui.show(frame.rgb_32f, "rgb")
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
 
         view.update()
 

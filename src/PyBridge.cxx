@@ -86,6 +86,9 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("get_random_frame", &DataLoaderShapeNetImg::get_random_frame ) 
     .def("start_reading_next_scene", &DataLoaderShapeNetImg::start_reading_next_scene ) 
     .def("finished_reading_scene", &DataLoaderShapeNetImg::finished_reading_scene ) 
+    .def("is_finished", &DataLoaderShapeNetImg::is_finished ) 
+    .def("reset", &DataLoaderShapeNetImg::reset ) 
+    .def("nr_samples", &DataLoaderShapeNetImg::nr_samples ) 
     ;
 
     py::class_<DataLoaderVolRef> (m, "DataLoaderVolRef")

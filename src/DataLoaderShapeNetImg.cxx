@@ -396,20 +396,16 @@ std::unordered_map<std::string, std::string> DataLoaderShapeNetImg::create_mappi
 //     return cloud;
 // }
 
-// bool DataLoaderShapeNetImg::is_finished(){
-//     //check if this loader has loaded everything
-//     if(m_idx_img_to_read<m_pts_filenames.size()){
-//         return false; //there is still more files to read
-//     }
+bool DataLoaderShapeNetImg::is_finished(){
+    //check if this loader has loaded everything
+    if(m_idx_scene_to_read<m_scene_folders.size()){
+        return false; //there is still more files to read
+    }
+   
 
-//     //check that there is nothing in the ring buffers
-//     if(m_imgs_buffer.peek()!=nullptr){
-//         return false; //there is still something in the buffer
-//     }
+    return true; //there is nothing more to read and nothing more in the buffer so we are finished
 
-//     return true; //there is nothing more to read and nothing more in the buffer so we are finished
-
-// }
+}
 
 
 // bool DataLoaderShapeNetImg::is_finished_reading(){
@@ -422,26 +418,23 @@ std::unordered_map<std::string, std::string> DataLoaderShapeNetImg::create_mappi
 
 // }
 
-// void DataLoaderShapeNetImg::reset(){
+void DataLoaderShapeNetImg::reset(){
 
-//     m_nr_resets++;
+    m_nr_resets++;
 
-//     //reshuffle for the next epoch
-//     if(m_shuffle){
-//         // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-//         unsigned seed = m_nr_resets;
-//         auto rng_0 = std::default_random_engine(seed); //create two engines with the same states so the vector are randomized in the same way
-//         auto rng_1 = rng_0;
-//         std::shuffle(std::begin(m_pts_filenames), std::end(m_pts_filenames), rng_0);
-//         std::shuffle(std::begin(m_labels_filenames), std::end(m_labels_filenames), rng_1);
-//     }
+    //reshuffle for the next epoch
+    if(m_shuffle){
+        unsigned seed = m_nr_resets;
+        auto rng_0 = std::default_random_engine(seed); 
+        std::shuffle(std::begin(m_scene_folders), std::end(m_scene_folders), rng_0);
+    }
 
-//     m_idx_img_to_read=0;
-// }
+    m_idx_scene_to_read=0;
+}
 
-// int DataLoaderShapeNetImg::nr_samples(){
-//     return m_pts_filenames.size();
-// }
+int DataLoaderShapeNetImg::nr_samples(){
+    return m_scene_folders.size();
+}
 
 // std::shared_ptr<LabelMngr> DataLoaderShapeNetImg::label_mngr(){
 //     CHECK(m_label_mngr) << "label_mngr was not created";
