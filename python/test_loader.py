@@ -131,11 +131,30 @@ def test_stanford3dscene():
 
         view.update()
 
+def test_shapenet_img():
+    loader=DataLoaderShapeNetImg(config_path)
+
+    while True:
+        if(loader.finished_reading_scene() ): 
+            print("gto frame")
+            frame=loader.get_random_frame()
+            print("finished getting frame")
+
+    #         print("finished loading scene")
+    #         frame=loader.get_random_frame()
+    #         loader.start_reading_random_scene()
+
+    #         Gui.show(frame_color.rgb_32f, "rgb")
+
+        view.update()
+
+
 # test_volref()
 # test_img()
 # test_semantickitti()
 # test_scannet()
-test_stanford3dscene()
+# test_stanford3dscene()
+test_shapenet_img()
 
 
 

@@ -9,6 +9,7 @@
 
 //my stuff 
 #include "data_loaders/DataLoaderShapeNetPartSeg.h"
+#include "data_loaders/DataLoaderShapeNetImg.h"
 #include "data_loaders/DataLoaderVolRef.h"
 #include "data_loaders/DataLoaderStanford3DScene.h"
 #include "data_loaders/DataLoaderImg.h"
@@ -77,6 +78,14 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_validation", &DataLoaderShapeNetPartSeg::set_mode_validation ) 
     .def("get_object_name", &DataLoaderShapeNetPartSeg::get_object_name ) 
     .def("set_object_name", &DataLoaderShapeNetPartSeg::set_object_name ) 
+    ;
+
+    //DataLoaderShapeNetImg
+    py::class_<DataLoaderShapeNetImg> (m, "DataLoaderShapeNetImg")
+    .def(py::init<const std::string>())
+    .def("get_random_frame", &DataLoaderShapeNetImg::get_random_frame ) 
+    .def("start_reading_next_scene", &DataLoaderShapeNetImg::start_reading_next_scene ) 
+    .def("finished_reading_scene", &DataLoaderShapeNetImg::finished_reading_scene ) 
     ;
 
     py::class_<DataLoaderVolRef> (m, "DataLoaderVolRef")
