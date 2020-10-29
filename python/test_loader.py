@@ -41,10 +41,10 @@ def test_volref():
             frustum_name="frustum"
             Scene.show(frustum_mesh, frustum_name)
 
-            cloud=frame_depth.backproject_depth()
-            frame_color.assign_color(cloud) #project the cloud into this frame and creates a color matrix for it
-            # Scene.show(cloud, "cloud"+str(nr_cloud))
-            Scene.show(cloud, "cloud")
+            # cloud=frame_depth.backproject_depth()
+            # frame_color.assign_color(cloud) #project the cloud into this frame and creates a color matrix for it
+            # # Scene.show(cloud, "cloud"+str(nr_cloud))
+            # Scene.show(cloud, "cloud")
         view.update()
 
 
@@ -140,8 +140,8 @@ def test_shapenet_img():
             # loader.start_reading_next_scene()
 
             Gui.show(frame.rgb_32f, "rgb")
-            frustum=frame.create_frustum_mesh()
-            print("frame trans ", frame.tf_cam_world.matrix() )
+            Gui.show(frame.mask, "mask")
+            frustum=frame.create_frustum_mesh(0.1)
             Scene.show(frustum, "frustum")
 
 

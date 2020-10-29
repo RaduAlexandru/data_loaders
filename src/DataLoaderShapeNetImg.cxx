@@ -17,6 +17,7 @@ using namespace configuru;
 #include "Profiler.h"
 #include "string_utils.h"
 #include "numerical_utils.h"
+#include "opencv_utils.h"
 #include "eigen_utils.h"
 #include "RandGenerator.h"
 #include "easy_pbr/LabelMngr.h"
@@ -171,7 +172,16 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
             Frame frame;
 
-            frame.rgb_8u=cv::imread(img_path.string());
+            //get rgba image and get the alpha in a mask
+            cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED );
+            std::vector<cv::Mat> channels(4);
+            cv::split(rgba_8u, channels);
+            frame.mask=channels[3];
+            channels.pop_back();
+            cv::merge(channels, frame.rgb_8u);
+
+            // frame.rgb_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED );
+            // VLOG(1) << "img type is " << radu::utils::type2string( frame.rgb_8u.type() );
             frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
             frame.width=frame.rgb_32f.cols;
             frame.height=frame.rgb_32f.rows;
@@ -205,7 +215,7 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             }
             for( std::string line; getline( metadata_file, line ); ){
                 if (lines_read==img_idx){
-                    VLOG(1) << "img idx" << img_idx << "reading line " << lines_read << " line " << line;
+                    // VLOG(1) << "img idx" << img_idx << "reading line " << lines_read << " line " << line;
                     tf_cam_world=process_extrinsics_line(line);
                     found=true;
                     break;
@@ -239,6 +249,7 @@ bool DataLoaderShapeNetImg::finished_reading_scene(){
 
 Frame DataLoaderShapeNetImg::get_random_frame(){
     int random_idx=m_rand_gen->rand_int(0, m_frames_for_scene.size()-1);
+    // int random_idx=0;
     return m_frames_for_scene[random_idx];
 }
 
@@ -358,13 +369,17 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
     Eigen::Matrix3f R;
     R.col(0)=axisX; 
     R.col(1)=axisY; 
-    R.col(2)=axisZ; 
+    R.col(2)=-axisZ; 
     // l2 = np.atleast_1d(np.linalg.norm(cam_mat, 2, 1))
     // l2[l2 == 0] = 1
     // cam_mat = cam_mat / np.expand_dims(l2, 1)
 
     tf.translation() = t;
     tf.linear() = R;
+
+    //just to make sure it's orthogonal
+    Eigen::AngleAxisf aa(R);    // RotationMatrix to AxisAngle
+    R = aa.toRotationMatrix();  // AxisAngle      to RotationMatrix
 
     Eigen::Affine3f tf_ret=tf.inverse(); 
     // Eigen::Affine3f tf_ret=tf; 
