@@ -151,13 +151,37 @@ def test_shapenet_img():
 
         view.update()
 
+def test_nerf():
+    loader=DataLoaderNerf(config_path)
+
+    while True:
+        if(loader.has_data() ): 
+
+            # print("got frame")
+            frame=loader.get_next_frame()
+
+
+            Gui.show(frame.rgb_32f, "rgb")
+
+
+            frustum_mesh=frame.create_frustum_mesh()
+            frustum_mesh.m_vis.m_line_width=3
+            Scene.show(frustum_mesh, "frustum")
+        
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
+
+        view.update()
+
 
 # test_volref()
 # test_img()
 # test_semantickitti()
 # test_scannet()
 # test_stanford3dscene()
-test_shapenet_img()
+# test_shapenet_img()
+test_nerf()
 
 
 

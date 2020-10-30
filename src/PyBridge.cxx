@@ -16,6 +16,7 @@
 #include "data_loaders/DataLoaderSemanticKitti.h"
 #include "data_loaders/DataLoaderPhenorob.h"
 #include "data_loaders/DataLoaderScanNet.h"
+#include "data_loaders/DataLoaderNerf.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -182,6 +183,16 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_test", &DataLoaderScanNet::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderScanNet::set_mode_validation ) 
     .def("write_for_evaluating_on_scannet_server", &DataLoaderScanNet::write_for_evaluating_on_scannet_server ) 
+    ;
+
+    //DataLoaderNerf
+    py::class_<DataLoaderNerf> (m, "DataLoaderNerf")
+    .def(py::init<const std::string>())
+    .def("has_data", &DataLoaderNerf::has_data ) 
+    .def("get_next_frame", &DataLoaderNerf::get_next_frame ) 
+    .def("is_finished", &DataLoaderNerf::is_finished ) 
+    .def("reset", &DataLoaderNerf::reset ) 
+    .def("nr_samples", &DataLoaderNerf::nr_samples ) 
     ;
 
     #ifdef WITH_ROS
