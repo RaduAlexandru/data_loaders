@@ -97,7 +97,10 @@ void DataLoaderNerf::init_data_reading(){
     for (fs::directory_iterator itr(m_dataset_path/m_mode); itr!=fs::directory_iterator(); ++itr){
         fs::path img_path= itr->path();
         //we disregard the images that contain depth and normals, we load only the rgb
-        if (fs::is_regular_file(img_path) &&  img_path.stem().string().find("depth")== std::string::npos &&  img_path.stem().string().find("normal")== std::string::npos   ){
+        if (fs::is_regular_file(img_path) && 
+        img_path.filename().string().find("png") != std::string::npos &&
+        img_path.stem().string().find("depth")== std::string::npos &&  
+        img_path.stem().string().find("normal")== std::string::npos   ){
             m_imgs_paths.push_back(img_path);
         }
     }
@@ -177,9 +180,12 @@ void DataLoaderNerf::read_data(){
     for (size_t i = 0; i < m_imgs_paths.size(); i++){
 
         Frame frame;
+
+        fs::path img_path=m_imgs_paths[i];
+        // VLOG(1) << "reading " << img_path;
         
         //read rgba and split into rgb and alpha mask
-        cv::Mat rgba_8u = cv::imread(m_imgs_paths[i].string(), cv::IMREAD_UNCHANGED);
+        cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
         std::vector<cv::Mat> channels(4);
         cv::split(rgba_8u, channels);
         frame.mask=channels[3];
@@ -192,7 +198,7 @@ void DataLoaderNerf::read_data(){
         frame.height=frame.rgb_32f.rows;
 
         //extrinsics
-        frame.tf_cam_world=m_filename2pose[m_imgs_paths[i].stem().string()].cast<float>();
+        frame.tf_cam_world=m_filename2pose[img_path.stem().string()].cast<float>();
 
         //intrinsics got mostly from here https://github.com/bmild/nerf/blob/0247d6e7ede8d918bc1fab2711f845669aee5e03/load_blender.py
         frame.K.setIdentity();
@@ -203,6 +209,7 @@ void DataLoaderNerf::read_data(){
         frame.K(1,2) = frame.height/2.0;
 
         m_frames.push_back(frame);
+        // VLOG(1) << "pushback and frames is " << m_frames.size();
 
 
     }
