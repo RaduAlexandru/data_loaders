@@ -248,6 +248,9 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
     // frame_color.tf_cam_world=tf_world_cam.cast<float>();
     // frame_depth.tf_cam_world=tf_world_cam.cast<float>();
 
+    //for some reason the y is flipped so we unflip it 
+    tf_world_cam.linear().col(1)=-tf_world_cam.linear().col(1);
+
     Eigen::Affine3d m_tf_worldGL_world;
     m_tf_worldGL_world.setIdentity();
     Eigen::Matrix3d worldGL_world_rot;

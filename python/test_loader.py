@@ -163,9 +163,12 @@ def test_nerf():
             Gui.show(frame.rgb_32f, "rgb")
 
 
-            frustum_mesh=frame.create_frustum_mesh()
-            frustum_mesh.m_vis.m_line_width=3
-            Scene.show(frustum_mesh, "frustum")
+            frustum_mesh=frame.create_frustum_mesh(0.2)
+            frustum_mesh.m_vis.m_line_width=1
+            Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+
+            # cloud=frame.depth2world_xyz_mesh()
+            # Scene.show(cloud, "cloud")
         
         if loader.is_finished():
             print("resetting")

@@ -183,6 +183,11 @@ void DataLoaderNerf::read_data(){
 
         fs::path img_path=m_imgs_paths[i];
         // VLOG(1) << "reading " << img_path;
+
+        //get the idx
+        std::string filename=img_path.stem().string();
+        std::vector<std::string> tokens=radu::utils::split(filename,"_");
+        frame.frame_idx=std::stoi(tokens[1]);
         
         //read rgba and split into rgb and alpha mask
         cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
@@ -196,6 +201,23 @@ void DataLoaderNerf::read_data(){
         frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
         frame.width=frame.rgb_32f.cols;
         frame.height=frame.rgb_32f.rows;
+
+        // //if we are loading the test one, get also the depth
+        // if(m_mode=="test"){
+        //     fs::path parent=img_path.parent_path();
+        //     std::string img_filename=img_path.stem().string();
+        //     // VLOG(1) << "parent" << parent;
+        //     // fs::path depth_img_path=
+        //     fs::path depth_img_path=parent/(img_filename+"_depth_0001.png");
+        //     VLOG(1) << "depth img path" << depth_img_path;
+            
+        //     cv::Mat depth=cv::imread(depth_img_path.string() , CV_LOAD_IMAGE_ANYDEPTH);
+        //     CHECK(!depth.empty()) << "The depth image is empty at path " << depth_img_path;
+        //     // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
+        //     depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in cm but we want it in meters
+        //     // frame.depth=1.0/frame.depth; //seems to be the inverse depth
+        // }
+
 
         //extrinsics
         frame.tf_cam_world=m_filename2pose[img_path.stem().string()].cast<float>();
