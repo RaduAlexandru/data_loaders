@@ -39,6 +39,7 @@ public:
     ~DataLoaderNerf();
     void start(); //starts reading the data from disk. This gets called automatically if we have autostart=true
     easy_pbr::Frame get_next_frame();
+    easy_pbr::Frame get_random_frame();
     bool has_data(); //will reeturn always true because this dataloader preloads all the frames and keeps them in memory all the time. They are not so many
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
@@ -65,6 +66,7 @@ private:
     //params
     bool m_autostart;
     // std::atomic<bool> m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
+    int m_subsample_factor;
     std::string m_mode; // train or test or val
     bool m_shuffle;
     bool m_do_overfit; // return all the time just the first image

@@ -191,6 +191,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("start", &DataLoaderNerf::start ) 
     .def("has_data", &DataLoaderNerf::has_data ) 
     .def("get_next_frame", &DataLoaderNerf::get_next_frame ) 
+    .def("get_random_frame", &DataLoaderNerf::get_random_frame ) 
     .def("is_finished", &DataLoaderNerf::is_finished ) 
     .def("reset", &DataLoaderNerf::reset ) 
     .def("nr_samples", &DataLoaderNerf::nr_samples ) 

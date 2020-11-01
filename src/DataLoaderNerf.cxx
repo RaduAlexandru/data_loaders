@@ -69,6 +69,7 @@ void DataLoaderNerf::init_params(const std::string config_file){
     Config loader_config=cfg["loader_nerf"];
 
     m_autostart=loader_config["autostart"];
+    m_subsample_factor=loader_config["subsample_factor"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_mode=(std::string)loader_config["mode"];
@@ -193,6 +194,11 @@ void DataLoaderNerf::read_data(){
         
         //read rgba and split into rgb and alpha mask
         cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
+        if(m_subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor);
+            rgba_8u=resized;
+        }
         std::vector<cv::Mat> channels(4);
         cv::split(rgba_8u, channels);
         frame.mask=channels[3];
@@ -231,6 +237,8 @@ void DataLoaderNerf::read_data(){
         frame.K(1,1) = focal;
         frame.K(0,2) = frame.width/2.0;
         frame.K(1,2) = frame.height/2.0;
+        frame.K/=m_subsample_factor;
+        frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
 
         m_frames.push_back(frame);
         // VLOG(1) << "pushback and frames is " << m_frames.size();
@@ -253,6 +261,16 @@ Frame DataLoaderNerf::get_next_frame(){
 
     return frame;
 }
+
+Frame DataLoaderNerf::get_random_frame(){
+    CHECK(m_frames.size()>0 ) << "m_frames has size 0";
+
+    int random_idx=m_rand_gen->rand_int(0, m_frames.size()-1);
+    Frame  frame= m_frames[random_idx];
+
+    return frame;
+}
+
 
 
 
