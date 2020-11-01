@@ -460,12 +460,12 @@ bool DataLoaderVolRef::is_finished(){
         return false; //there is still more files to read
     }
 
-    //check that there is nothing in the ring buffers
-    if(m_frames_color_buffer.peek()!=nullptr || m_frames_depth_buffer.peek()!=nullptr){
-        return false; //there is still something in the buffer
+    //if ANY of the two frame buffers is empty then we say that we finished reading. This is because not always we want to read the depth bffer
+    if(m_frames_color_buffer.peek()==nullptr || m_frames_depth_buffer.peek()==nullptr){
+        return true; 
     }
 
-    return true; //there is nothing more to read and nothing more in the buffer so we are finished
+    return false; //there is still something in at least one of the buffers
 
 }
 
