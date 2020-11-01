@@ -37,11 +37,15 @@ public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
     DataLoaderNerf(const std::string config_file);
     ~DataLoaderNerf();
+    void start(); //starts reading the data from disk. This gets called automatically if we have autostart=true
     easy_pbr::Frame get_next_frame();
     bool has_data(); //will reeturn always true because this dataloader preloads all the frames and keeps them in memory all the time. They are not so many
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
     bool is_finished(); //check if we finished reading all the images from the scene
+    void set_mode_train(); //set the loader so that it starts reading form the training set
+    void set_mode_test();
+    void set_mode_validation();
 
 
 
@@ -59,7 +63,7 @@ private:
     // std::shared_ptr<DataTransformer> m_transformer;
 
     //params
-    // bool m_autostart;
+    bool m_autostart;
     // std::atomic<bool> m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     std::string m_mode; // train or test or val
     bool m_shuffle;

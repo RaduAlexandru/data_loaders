@@ -43,11 +43,9 @@ DataLoaderNerf::DataLoaderNerf(const std::string config_file):
 {
     init_params(config_file);
 
-
-    init_data_reading();
-    init_poses();
-
-    read_data();
+    if(m_autostart){
+        start();
+    }
 
 }
 
@@ -70,7 +68,7 @@ void DataLoaderNerf::init_params(const std::string config_file){
     Config cfg = configuru::parse_file(config_file_abs, CFG);
     Config loader_config=cfg["loader_nerf"];
 
-    // m_autostart=loader_config["autostart"];
+    m_autostart=loader_config["autostart"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_mode=(std::string)loader_config["mode"];
@@ -84,6 +82,11 @@ void DataLoaderNerf::init_params(const std::string config_file){
 
 }
 
+void DataLoaderNerf::start(){
+    init_data_reading();
+    init_poses();
+    read_data();
+}
 
 
 void DataLoaderNerf::init_data_reading(){
@@ -92,7 +95,6 @@ void DataLoaderNerf::init_data_reading(){
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
     
-
     //go to the folder of train val or test depending on the mode in which we are one
     for (fs::directory_iterator itr(m_dataset_path/m_mode); itr!=fs::directory_iterator(); ++itr){
         fs::path img_path= itr->path();
@@ -287,5 +289,15 @@ int DataLoaderNerf::nr_samples(){
 
 bool DataLoaderNerf::has_data(){
     return true; //we always have data since the loader stores all the image in memory and keeps them there
+}
+
+void DataLoaderNerf::set_mode_train(){
+    m_mode="train";
+}
+void DataLoaderNerf::set_mode_test(){
+    m_mode="test";
+}
+void DataLoaderNerf::set_mode_validation(){
+    m_mode="val";
 }
 

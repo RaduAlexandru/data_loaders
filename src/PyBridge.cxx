@@ -188,11 +188,15 @@ PYBIND11_MODULE(dataloaders, m) {
     //DataLoaderNerf
     py::class_<DataLoaderNerf> (m, "DataLoaderNerf")
     .def(py::init<const std::string>())
+    .def("start", &DataLoaderNerf::start ) 
     .def("has_data", &DataLoaderNerf::has_data ) 
     .def("get_next_frame", &DataLoaderNerf::get_next_frame ) 
     .def("is_finished", &DataLoaderNerf::is_finished ) 
     .def("reset", &DataLoaderNerf::reset ) 
     .def("nr_samples", &DataLoaderNerf::nr_samples ) 
+    .def("set_mode_train", &DataLoaderNerf::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderNerf::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderNerf::set_mode_validation )
     ;
 
     #ifdef WITH_ROS

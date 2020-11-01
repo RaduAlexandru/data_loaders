@@ -152,6 +152,8 @@ def test_shapenet_img():
 
 def test_nerf():
     loader=DataLoaderNerf(config_path)
+    loader.set_mode_train()
+    loader.start()
 
     while True:
         if(loader.has_data() ): 
