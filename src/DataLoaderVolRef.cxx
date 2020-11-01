@@ -264,6 +264,14 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
     frame_depth.K=m_K_depth.cast<float>()/m_depth_subsample_factor;
     frame_color.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
     frame_depth.K(2,2)=1.0;
+
+    //if the depth and the rgb have the same size then we can use the depth to compute a mask for the rgb part
+    if (frame_color.rgb_32f.size == frame_depth.depth.size){
+        cv::Mat mask;
+        cv::threshold( frame_depth.depth, mask, 0.0, 1.0, cv::THRESH_BINARY);
+        frame_color.mask=mask;
+        frame_depth.mask=mask;
+    }
 }
 
 Frame DataLoaderVolRef::closest_color_frame(const Frame& frame){
