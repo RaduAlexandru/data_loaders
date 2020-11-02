@@ -136,7 +136,7 @@ def test_shapenet_img():
     while True:
         if(loader.finished_reading_scene() ): 
             frame=loader.get_random_frame()
-            # loader.start_reading_next_scene()
+            loader.start_reading_next_scene()
 
             Gui.show(frame.rgb_32f, "rgb")
             Gui.show(frame.mask, "mask")

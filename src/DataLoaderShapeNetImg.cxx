@@ -72,6 +72,7 @@ void DataLoaderShapeNetImg::init_params(const std::string config_file){
 
     // m_autostart=loader_config["autostart"];
     m_shuffle=loader_config["shuffle"];
+    m_subsample_factor=loader_config["subsample_factor"];
     m_do_overfit=loader_config["do_overfit"];
     m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
@@ -174,6 +175,11 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
             //get rgba image and get the alpha in a mask
             cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED );
+            if(m_subsample_factor>1){
+                cv::Mat resized;
+                cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor);
+                rgba_8u=resized;
+            }
             std::vector<cv::Mat> channels(4);
             cv::split(rgba_8u, channels);
             frame.mask=channels[3];
@@ -203,6 +209,8 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             Eigen::Matrix3f K = opengl_proj_to_intrinsics(P, 137, 137);
             // VLOG(1) << "K is " << K;
             frame.K=K;
+            frame.K/=m_subsample_factor;
+            frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
 
             //the extrinsics are stored in rendering_metadata.txt, stored as azimuth elevation and distance 
             //processing of this can be seen here: https://github.com/NVIDIAGameWorks/kaolin/blob/master/kaolin/datasets/shapenet.py

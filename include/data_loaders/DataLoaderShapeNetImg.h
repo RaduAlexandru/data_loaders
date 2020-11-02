@@ -66,6 +66,7 @@ private:
     // bool m_autostart;
     std::atomic<bool> m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     // std::string m_mode; // train or test or val
+    int m_subsample_factor;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just images from the the first scene of that specified object class
     std::string m_restrict_to_object;  //makes it load clouds only from a specific object
