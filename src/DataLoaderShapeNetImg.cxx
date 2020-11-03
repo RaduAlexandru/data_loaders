@@ -189,12 +189,12 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED );
             if(m_subsample_factor>1){
                 cv::Mat resized;
-                cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor);
+                cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
                 rgba_8u=resized;
             }
             std::vector<cv::Mat> channels(4);
             cv::split(rgba_8u, channels);
-            frame.mask=channels[3];
+            cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
             channels.pop_back();
             cv::merge(channels, frame.rgb_8u);
 

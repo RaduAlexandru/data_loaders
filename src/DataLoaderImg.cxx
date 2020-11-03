@@ -307,7 +307,7 @@ void DataLoaderImg::read_data_for_cam(const int cam_id){
 
             if(m_rgb_subsample_factor>1){
                 cv::Mat resized;
-                cv::resize(frame.rgb_8u, resized, cv::Size(), 1.0/m_rgb_subsample_factor, 1.0/m_rgb_subsample_factor);
+                cv::resize(frame.rgb_8u, resized, cv::Size(), 1.0/m_rgb_subsample_factor, 1.0/m_rgb_subsample_factor, cv::INTER_AREA);
                 frame.rgb_8u=resized;
             }
             frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);

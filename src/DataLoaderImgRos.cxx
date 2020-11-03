@@ -152,7 +152,7 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     //resize if the downsample factor is anything ther than 1
     if (cam.m_img_subsample_factor!=1){
         cv::Mat resized;
-        cv::resize(cv_img, resized, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor, cv::INTER_LANCZOS4 );
+        cv::resize(cv_img, resized, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor, cv::INTER_AREA );
         cv_img=resized;
     }
 

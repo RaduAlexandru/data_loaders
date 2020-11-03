@@ -200,7 +200,7 @@ void DataLoaderStanford3DScene::read_sample(Frame& frame_color, Frame& frame_dep
     frame_color.rgb_8u=cv::imread(sample_filename.string());
     if(m_rgb_subsample_factor>1){
         cv::Mat resized;
-        cv::resize(frame_color.rgb_8u, resized, cv::Size(), 1.0/m_rgb_subsample_factor, 1.0/m_rgb_subsample_factor);
+        cv::resize(frame_color.rgb_8u, resized, cv::Size(), 1.0/m_rgb_subsample_factor, 1.0/m_rgb_subsample_factor, cv::INTER_AREA);
         // frame.rgb_8u=resized.clone();
         frame_color.rgb_8u=resized;
     }
