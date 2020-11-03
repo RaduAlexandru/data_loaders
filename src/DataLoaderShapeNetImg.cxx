@@ -135,15 +135,19 @@ void DataLoaderShapeNetImg::init_data_reading(){
         std::shuffle(std::begin(m_scene_folders), std::end(m_scene_folders), rng_0);
     }
 
+    CHECK(m_scene_folders.size()!=0 ) << "We have read zero scene folders";
+
 
 }
 
 void DataLoaderShapeNetImg::start_reading_next_scene(){
     CHECK(m_is_running==false) << "The loader thread is already running. Wait until the scene is finished loading before loading a new one. You can check this with finished_reading_scene()";
 
-    std::string scene_path=m_scene_folders[m_idx_scene_to_read].string();
+    std::string scene_path;
+    if ( m_idx_scene_to_read< m_scene_folders.size()){
+        scene_path=m_scene_folders[m_idx_scene_to_read].string();
+    }
 
-    read_scene(scene_path);
 
 
     if(!m_do_overfit){
@@ -156,8 +160,10 @@ void DataLoaderShapeNetImg::start_reading_next_scene(){
     if (m_loader_thread.joinable()){
         m_loader_thread.join(); //join the thread from the previous iteration of running
     }
-    m_is_running=true;
-    m_loader_thread=std::thread(&DataLoaderShapeNetImg::read_scene, this, scene_path);  //starts to read in another thread
+    if(!scene_path.empty()){
+        m_is_running=true;
+        m_loader_thread=std::thread(&DataLoaderShapeNetImg::read_scene, this, scene_path);  //starts to read in another thread
+    }
 }
 
 
