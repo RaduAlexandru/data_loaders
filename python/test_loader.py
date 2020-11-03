@@ -185,8 +185,8 @@ def test_nerf():
 # test_semantickitti()
 # test_scannet()
 # test_stanford3dscene()
-# test_shapenet_img()
-test_nerf()
+test_shapenet_img()
+# test_nerf()
 
 
 

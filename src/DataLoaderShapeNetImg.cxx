@@ -71,6 +71,8 @@ void DataLoaderShapeNetImg::init_params(const std::string config_file){
     Config loader_config=cfg["loader_shapenet_img"];
 
     // m_autostart=loader_config["autostart"];
+    m_nr_samples_to_skip=loader_config["nr_samples_to_skip"];
+    m_nr_samples_to_read=loader_config["nr_samples_to_read"];
     m_shuffle=loader_config["shuffle"];
     m_subsample_factor=loader_config["subsample_factor"];
     m_do_overfit=loader_config["do_overfit"];
@@ -117,9 +119,13 @@ void DataLoaderShapeNetImg::init_data_reading(){
 
 
     //load all the scene for the chosen object
+    int nr_read=0;
     for (fs::directory_iterator itr(chosen_object_path); itr!=fs::directory_iterator(); ++itr){
-        fs::path scene_path= itr->path()/"rendering";
-        m_scene_folders.push_back(scene_path);
+        if( nr_read>=m_nr_samples_to_skip && ((int)m_scene_folders.size()<m_nr_samples_to_read || m_nr_samples_to_read<0 ) ){
+            fs::path scene_path= itr->path()/"rendering";
+            m_scene_folders.push_back(scene_path);
+        }
+        nr_read++;
     }
 
     // shuffle the data if neccsary
