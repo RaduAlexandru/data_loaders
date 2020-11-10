@@ -133,15 +133,30 @@ def test_stanford3dscene():
 def test_shapenet_img():
     loader=DataLoaderShapeNetImg(config_path)
 
+    i=0
+
     while True:
         if(loader.finished_reading_scene() ): 
             frame=loader.get_random_frame()
-            loader.start_reading_next_scene()
 
-            Gui.show(frame.rgb_32f, "rgb")
-            Gui.show(frame.mask, "mask")
-            frustum=frame.create_frustum_mesh(0.1)
-            Scene.show(frustum, "frustum")
+            # if i==0:
+            # if i==35:
+            # if (frame.frame_idx==35):
+            # if (frame.frame_idx==34):
+            # if (frame.frame_idx==34 or frame.frame_idx==35):
+            if True:
+                loader.start_reading_next_scene()
+
+                Gui.show(frame.rgb_32f, "rgb")
+                Gui.show(frame.mask, "mask")
+                Gui.show(frame.depth, "depth")
+                frustum=frame.create_frustum_mesh(0.1)
+                Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
+
+                cloud=frame.depth2world_xyz_mesh()
+                Scene.show(cloud, "cloud")
+
+            i+=1
 
 
         if loader.is_finished():

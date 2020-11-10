@@ -73,6 +73,8 @@ private:
     bool m_do_overfit; // return all the time just images from the the first scene of that specified object class
     std::string m_restrict_to_object;  //makes it load clouds only from a specific object
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
+    boost::filesystem::path m_dataset_depth_path;  //get the path where all the off files are 
+    std::string m_difficulty;
     std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_scene_to_read;
