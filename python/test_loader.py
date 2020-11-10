@@ -151,7 +151,8 @@ def test_shapenet_img():
                 Gui.show(frame.mask, "mask")
                 Gui.show(frame.depth, "depth")
                 frustum=frame.create_frustum_mesh(0.1)
-                Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
+                # Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
+                Scene.show(frustum, "frustum" )
 
                 cloud=frame.depth2world_xyz_mesh()
                 Scene.show(cloud, "cloud")

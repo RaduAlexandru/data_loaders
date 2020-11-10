@@ -190,8 +190,8 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             frame.frame_idx=img_idx;
 
             //get rgba image and get the alpha in a mask
-            // cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED ); //correct 
-            cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+            cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED ); //correct 
+            // cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
             if(m_subsample_factor>1){
                 cv::Mat resized;
                 cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
