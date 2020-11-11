@@ -155,6 +155,7 @@ def test_shapenet_img():
                 Scene.show(frustum, "frustum" )
 
                 cloud=frame.depth2world_xyz_mesh()
+                cloud=frame.assign_color(cloud)
                 Scene.show(cloud, "cloud")
 
             i+=1

@@ -81,6 +81,8 @@ void DataLoaderShapeNetImg::init_params(const std::string config_file){
     m_dataset_depth_path =(std::string)loader_config["dataset_depth_path"];
     m_difficulty =(std::string)loader_config["difficulty"];
 
+    CHECK(m_difficulty=="easy") << "We only implemented the reader for the easy dataset. The hard version just moves the model randomly but maybe you can do that by just moving the mesh";
+
 
     //data transformer
     // Config transformer_config=loader_config["transformer"];
@@ -550,6 +552,9 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
     float az = std::stof(tokens[0]);
     float el = std::stof(tokens[1]);
     float distance_ratio = std::stof(tokens[3]);
+    // float ox = std::stof(tokens[7]); 
+    // float oy = std::stof(tokens[8]); 
+    // float oz = std::stof(tokens[9]); 
 
     // # Calculate rotation and translation matrices.
     // # Step 1: World coordinate to object coordinate.
@@ -604,9 +609,9 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
     worldGL_worldROS_rot = Eigen::AngleAxisf(-0.5*M_PI, Eigen::Vector3f::UnitX());
     tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
     Eigen::Affine3f tf_worldROS_worldGL=tf_worldGL_worldROS.inverse();
+    Eigen::Affine3f tf_ret_cor=tf_worldGL_worldROS*tf_ret.inverse();
+    tf_ret=tf_ret_cor.inverse();
 
-     Eigen::Affine3f tf_ret_cor=tf_worldGL_worldROS*tf_ret.inverse();
-     tf_ret=tf_ret_cor.inverse();
 
 
 
