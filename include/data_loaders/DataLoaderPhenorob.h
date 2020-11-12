@@ -45,8 +45,13 @@ public:
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of samples/examples that this loader will iterate over
     std::shared_ptr<easy_pbr::LabelMngr> label_mngr();
-    void set_nr_clouds_to_skip(const int new_val);
-    void set_nr_clouds_to_read(const int new_val);
+    void set_nr_plants_to_skip(const int new_val);
+    void set_nr_plants_to_read(const int new_val);
+    void set_nr_days_to_skip(const int new_val);
+    void set_nr_days_to_read(const int new_val);
+
+    //TODO 
+    
 
 
 private:
@@ -60,26 +65,32 @@ private:
     std::shared_ptr<DataTransformer> m_transformer;
 
     //params
-    bool m_autostart;
-    bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
-    std::string m_mode; // train or test or val
     fs::path m_dataset_path; 
-    int m_nr_clouds_to_skip;
-    int m_nr_clouds_to_read;
-    bool m_shuffle_points; //When splatting in a permutohedral lattice it's better to have adyancent point in 3D be in different parts in memoru to aboid hashing conflicts
-    bool m_normalize; //normalizes the point cloud between [-1,1]
-    bool m_shuffle;
-    bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
-    // bool m_do_adaptive_subsampling; //randomly drops points from the cloud, dropping with more probability the ones that are closes and with less the ones further
-    std::thread m_loader_thread;
-    uint32_t m_idx_cloud_to_read;
-    int m_nr_resets;
-    // std::string m_pose_file;
-    // std::string m_pose_file_format;
+    bool m_autostart;
+    //plant 
+    std::string m_plant_type; //maize or tomato
+    std::string m_segmentation_method; //leaf_collar or leaf_tip (only valid if we are loading maize)
+    //which plants to read
+    int m_nr_plants_to_skip;
+    int m_nr_plants_to_read; //how many plants of the selected type we should read, set to -1 to read all plants
+    //which days to read
+    int m_nr_days_to_skip;
+    int m_nr_days_to_read; //how many days to read for the selected plants, set to -1 to read all days
+    //params for after reading 
+    bool m_shuffle_points;
+    bool m_normalize;
+    bool m_shuffle_days;
+    bool m_do_overfit; //return only one of the samples the whole time, concretely the first sample in the dataset
+
+
 
 
     //internal
+    std::thread m_loader_thread;
+    uint32_t m_idx_cloud_to_read;
+    int m_nr_resets;
     bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
+    bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     int m_nr_sequences;
     std::vector<fs::path> m_sample_filenames;
     moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;

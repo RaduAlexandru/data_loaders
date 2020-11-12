@@ -48,6 +48,7 @@ DataLoaderPhenorob::DataLoaderPhenorob(const std::string config_file):
     // create_transformation_matrices();
     // std::cout << " creating thread" << "\n";
     if(m_autostart){
+        init_data_reading();
         m_is_running=true;
         m_loader_thread=std::thread(&DataLoaderPhenorob::read_data, this);  //starts the spin in another thread
     }
@@ -79,21 +80,27 @@ void DataLoaderPhenorob::init_params(const std::string config_file){
     Config cfg = configuru::parse_file(config_file_abs, CFG);
     Config loader_config=cfg["loader_phenorob"];
 
+
+
+    m_dataset_path=(std::string)loader_config["dataset_path"];
     m_autostart=loader_config["autostart"];
-    // m_mode=(std::string)loader_config["mode"];
-    m_nr_clouds_to_skip=loader_config["nr_clouds_to_skip"];
-    m_nr_clouds_to_read=loader_config["nr_clouds_to_read"];
+    m_plant_type=(std::string)loader_config["plant_type"];
+    m_segmentation_method=(std::string)loader_config["segmentation_method"];
+    m_nr_plants_to_skip=loader_config["nr_plants_to_skip"];
+    m_nr_plants_to_read=loader_config["nr_plants_to_read"];
+    m_nr_days_to_skip=loader_config["nr_days_to_skip"];
+    m_nr_days_to_read=loader_config["nr_days_to_read"];
     m_shuffle_points=loader_config["shuffle_points"];
     m_normalize=loader_config["normalize"];
-    m_shuffle=loader_config["shuffle"];
+    m_shuffle_days=loader_config["shuffle_days"];
     m_do_overfit=loader_config["do_overfit"];
-    // m_do_adaptive_subsampling=loader_config["do_adaptive_subsampling"];
-    m_dataset_path=(std::string)loader_config["dataset_path"];
-    // m_sequence=(std::string)loader_config["sequence"];
+
+    //sanity check all settings
+    CHECK(m_plant_type=="maize" || m_plant_type=="tomato") << "Plant type should be maize or tomato but it is set to " << m_plant_type;
+    CHECK(m_segmentation_method=="leaf_tip" || m_segmentation_method=="leaf_collar") << "Segmentation type should be leaf_tip or leaf_collar but it is set to " << m_segmentation_method;
 
     //label file and colormap
-    Config mngr_config=loader_config["label_mngr"];
-    m_label_mngr=std::make_shared<LabelMngr>(mngr_config);
+    m_label_mngr=std::make_shared<LabelMngr>(255, 0);
 
     //data transformer
     Config transformer_config=loader_config["transformer"];
@@ -113,39 +120,125 @@ void DataLoaderPhenorob::start(){
 
 void DataLoaderPhenorob::init_data_reading(){
 
-    std::vector<fs::path> sample_filenames_all;
+    // std::vector<fs::path> sample_filenames_all;
+
+    // //get how many sequnces we have here
+    // if(!fs::is_directory(m_dataset_path)) {
+    //     LOG(FATAL) << "No directory " << m_dataset_path;
+    // }
+    // for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(m_dataset_path), {})){
+    //     sample_filenames_all.push_back(entry );
+    // }
+
+
+
+
+    // if(!m_shuffle){ //if we are shuffling, there is no need to sort them
+    //     std::sort(sample_filenames_all.begin(), sample_filenames_all.end());
+    // }
+
+
+
+    // //ADDS THE clouds to the member std_vector of paths 
+    // //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
+    // for (size_t i = 0; i < sample_filenames_all.size(); i++) {
+    //     if( (int)i>=m_nr_clouds_to_skip && ((int)m_sample_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
+    //         m_sample_filenames.push_back(sample_filenames_all[i]);
+    //     }
+    // }
+
+    // //shuffle the filles to be read if necessary
+    // if(m_shuffle){
+    //     unsigned seed = m_nr_resets;
+    //     auto rng = std::default_random_engine(seed);
+    //     std::shuffle(std::begin(m_sample_filenames), std::end(m_sample_filenames), rng);
+    // }
+
+
+
+
+
+
+
+
+
+
+
+
+    //attempt 2 
 
     //get how many sequnces we have here
     if(!fs::is_directory(m_dataset_path)) {
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
+    //get the plant folders from which we are going to read
+    std::vector<fs::path> plant_folders;
     for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(m_dataset_path), {})){
-        sample_filenames_all.push_back(entry );
-    }
+        //check if it's a file and contains the word maize or tomato
+        if (!fs::is_regular_file(entry)){
+            std::string stem=entry.path().stem().string();
+            //enter only the maize or tomato folder depending on which one we selected
+            if (  radu::utils::contains( radu::utils::lowercase(stem), m_plant_type ) ){
+                //get the nr of the plant 
+                int plant_nr=std::stoi(stem.substr( stem.length() - 2 ));
+                // VLOG(1) << "plant nr" << plant_nr;
+                //check if we need to skip read this nr of the plant
+                if(plant_nr>m_nr_plants_to_skip &&  ( (int)plant_folders.size()<m_nr_plants_to_read || m_nr_plants_to_read<0)  ){
+                    // VLOG(1) << "pushing plant folder " << entry;
+                    // plant_folders.push_back(entry);
+                    //if we are segmenting maize we also enter the correspnding folde
+                    if(m_plant_type=="maize"){
+                        if(m_segmentation_method=="leaf_collar"){
+                            plant_folders.push_back(entry/"LeafCollarMethod");
+                        }else{
+                            plant_folders.push_back(entry/"LeafTipMethod");
+                        }
+                    }else{
+                        plant_folders.push_back(entry);
+                    }
 
-
-
-
-    if(!m_shuffle){ //if we are shuffling, there is no need to sort them
-        std::sort(sample_filenames_all.begin(), sample_filenames_all.end());
-    }
-
-
-
-    //ADDS THE clouds to the member std_vector of paths 
-    //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
-    for (size_t i = 0; i < sample_filenames_all.size(); i++) {
-        if( (int)i>=m_nr_clouds_to_skip && ((int)m_sample_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
-            m_sample_filenames.push_back(sample_filenames_all[i]);
+                }
+            }
         }
     }
 
+    //get the days
+    std::vector<fs::path> sample_filenames_all;
+    for (int i=0; i<plant_folders.size(); i++){
+        int  day_for_plant=0;
+        int  days_added_for_plant=0;
+        for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(plant_folders[i]), {})){
+            //check if it's a file and contains the word maize or tomato
+            if (fs::is_regular_file(entry)){
+                if(day_for_plant>m_nr_days_to_skip &&  ( days_added_for_plant<m_nr_days_to_read || m_nr_days_to_read<0)  ){
+                    VLOG(1) << "entry is " << entry;
+                    sample_filenames_all.push_back(entry);
+                    days_added_for_plant++;
+                }
+                day_for_plant++;
+
+            }
+        }
+    }
+
+
+
+
+ 
+    //ADDS THE clouds to the member std_vector of paths 
+    for (size_t i = 0; i < sample_filenames_all.size(); i++) {
+        m_sample_filenames.push_back(sample_filenames_all[i]);
+    }
+
     //shuffle the filles to be read if necessary
-    if(m_shuffle){
+    if(m_shuffle_days){
         unsigned seed = m_nr_resets;
         auto rng = std::default_random_engine(seed);
         std::shuffle(std::begin(m_sample_filenames), std::end(m_sample_filenames), rng);
     }
+
+
+
 
     std::cout << "About to read " << m_sample_filenames.size() << " clouds" <<std::endl; 
 
@@ -196,9 +289,9 @@ void DataLoaderPhenorob::read_data(){
                 points_vec.push_back(point_eigen);
 
                 int label=std::stoi(tokens[3]);
-                if(label>=2){
-                    label=2;
-                }
+                // if(label>=2){
+                    // label=2;
+                // }
                 labels_vec.push_back(label);
 
             }
@@ -306,7 +399,7 @@ bool DataLoaderPhenorob::is_finished_reading(){
 void DataLoaderPhenorob::reset(){
     m_nr_resets++;
     // we shuffle again the data so as to have freshly shuffled data for the next epoch
-    if(m_shuffle){
+    if(m_shuffle_days){
         // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
         // auto rng = std::default_random_engine(seed);
         unsigned seed = m_nr_resets;
@@ -339,12 +432,17 @@ std::shared_ptr<LabelMngr> DataLoaderPhenorob::label_mngr(){
 // void DataLoaderSemanticKitti::set_adaptive_subsampling(const bool adaptive_subsampling){
 //     m_do_adaptive_subsampling=adaptive_subsampling;
 // }
-
-void DataLoaderPhenorob::set_nr_clouds_to_skip(const int new_val){
-    m_nr_clouds_to_skip=new_val;
+void DataLoaderPhenorob::set_nr_plants_to_skip(const int new_val){
+    m_nr_plants_to_skip=new_val;
 }
-void DataLoaderPhenorob::set_nr_clouds_to_read(const int new_val){
-    m_nr_clouds_to_read=new_val;
+void DataLoaderPhenorob::set_nr_plants_to_read(const int new_val){
+    m_nr_plants_to_read=new_val;
+}
+void DataLoaderPhenorob::set_nr_days_to_skip(const int new_val){
+    m_nr_days_to_skip=new_val;
+}
+void DataLoaderPhenorob::set_nr_days_to_read(const int new_val){
+    m_nr_days_to_read=new_val;
 }
 
 

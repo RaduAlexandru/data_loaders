@@ -195,6 +195,24 @@ def test_nerf():
 
         view.update()
 
+def test_phenorob():
+    loader=DataLoaderPhenorob(config_path)
+    # loader.start()
+
+    while True:
+        if(loader.has_data() ): 
+
+            # print("got frame")
+            cloud=loader.get_cloud()
+
+            Scene.show(cloud, "cloud" )
+        
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
+
+        view.update()
+
 
 # test_volref()
 # test_img()
@@ -202,8 +220,9 @@ def test_nerf():
 # test_semantickitti()
 # test_scannet()
 # test_stanford3dscene()
-test_shapenet_img()
+# test_shapenet_img()
 # test_nerf()
+test_phenorob()
 
 
 

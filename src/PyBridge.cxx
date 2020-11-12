@@ -165,8 +165,10 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("reset", &DataLoaderPhenorob::reset ) 
     .def("nr_samples", &DataLoaderPhenorob::nr_samples ) 
     .def("label_mngr", &DataLoaderPhenorob::label_mngr ) 
-    .def("set_nr_clouds_to_skip", &DataLoaderPhenorob::set_nr_clouds_to_skip ) 
-    .def("set_nr_clouds_to_read", &DataLoaderPhenorob::set_nr_clouds_to_read ) 
+    .def("set_nr_plants_to_skip", &DataLoaderPhenorob::set_nr_plants_to_skip ) 
+    .def("set_nr_plants_to_read", &DataLoaderPhenorob::set_nr_plants_to_read ) 
+    .def("set_nr_days_to_skip", &DataLoaderPhenorob::set_nr_days_to_skip ) 
+    .def("set_nr_days_to_read", &DataLoaderPhenorob::set_nr_days_to_read ) 
     ;
 
     py::class_<DataLoaderScanNet> (m, "DataLoaderScanNet")
