@@ -40,7 +40,8 @@ DataLoaderPhenorob::DataLoaderPhenorob(const std::string config_file):
     m_clouds_buffer(BUFFER_SIZE),
     m_idx_cloud_to_read(0),
     m_nr_resets(0),
-    m_rand_gen(new RandGenerator)
+    m_rand_gen(new RandGenerator),
+    m_do_augmentation(false)
 {
 
     init_params(config_file);
@@ -301,8 +302,7 @@ void DataLoaderPhenorob::read_data(){
             MeshSharedPtr cloud=Mesh::create();
             cloud->V=vec2eigen(points_vec);
             cloud->L_gt=vec2eigen(labels_vec);
-        
-            cloud=m_transformer->transform(cloud);
+
 
             if(m_normalize){
                 cloud->normalize_size();
@@ -321,6 +321,25 @@ void DataLoaderPhenorob::read_data(){
             cloud->apply_model_matrix_to_cpu(true);
             cloud->transform_vertices_cpu(move);
 
+            if (m_do_augmentation){
+                cloud=m_transformer->transform(cloud);
+            }else{
+                //if we are not doing augmentation, we are running the test one but maybe we still want to do the subsampling 
+                if(m_transformer->m_random_subsample_percentage!=0.0){
+                    float prob_of_death=m_transformer->m_random_subsample_percentage;
+                    int vertices_marked_for_removal=0;
+                    std::vector<bool> is_vertex_to_be_removed(cloud->V.rows(), false);
+                    for(int i = 0; i < cloud->V.rows(); i++){
+                        float random= m_rand_gen->rand_float(0.0, 1.0);
+                        if(random<prob_of_death){
+                            is_vertex_to_be_removed[i]=true;
+                            vertices_marked_for_removal++;
+                        }
+                    }
+                    cloud->remove_marked_vertices(is_vertex_to_be_removed, false);
+                }
+
+            }
 
             if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
                 // https://stackoverflow.com/a/15866196
@@ -444,8 +463,9 @@ void DataLoaderPhenorob::set_nr_days_to_skip(const int new_val){
 void DataLoaderPhenorob::set_nr_days_to_read(const int new_val){
     m_nr_days_to_read=new_val;
 }
-
-
+void DataLoaderPhenorob::set_do_augmentation(const bool val){
+    m_do_augmentation=val;
+}
 
 
 

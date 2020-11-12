@@ -169,6 +169,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_nr_plants_to_read", &DataLoaderPhenorob::set_nr_plants_to_read ) 
     .def("set_nr_days_to_skip", &DataLoaderPhenorob::set_nr_days_to_skip ) 
     .def("set_nr_days_to_read", &DataLoaderPhenorob::set_nr_days_to_read ) 
+    .def("set_do_augmentation", &DataLoaderPhenorob::set_do_augmentation ) 
     ;
 
     py::class_<DataLoaderScanNet> (m, "DataLoaderScanNet")

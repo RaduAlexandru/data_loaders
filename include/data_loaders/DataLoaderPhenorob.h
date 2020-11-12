@@ -49,6 +49,7 @@ public:
     void set_nr_plants_to_read(const int new_val);
     void set_nr_days_to_skip(const int new_val);
     void set_nr_days_to_read(const int new_val);
+    void set_do_augmentation(const bool val);
 
     //TODO 
     
@@ -81,6 +82,7 @@ private:
     bool m_normalize;
     bool m_shuffle_days;
     bool m_do_overfit; //return only one of the samples the whole time, concretely the first sample in the dataset
+    bool m_do_augmentation;
 
 
 

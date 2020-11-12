@@ -21,13 +21,6 @@ public:
 
     std::shared_ptr<easy_pbr::Mesh> transform(std::shared_ptr<easy_pbr::Mesh>& mesh);
 
-private:
-
-    void init_params(const configuru::Config& config_file);
-
-    //objects 
-    std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
-
     //params
     float m_random_translation_xyz_magnitude;
     float m_random_translation_xz_magnitude;
@@ -43,6 +36,15 @@ private:
     Eigen::Vector3f m_hsv_jitter;
     float m_chance_of_xyz_noise;
     Eigen::Vector3f m_xyz_noise_stddev;
+
+private:
+
+    void init_params(const configuru::Config& config_file);
+
+    //objects 
+    std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
+
+  
 
 
     //internal
