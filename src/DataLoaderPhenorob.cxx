@@ -362,6 +362,8 @@ void DataLoaderPhenorob::read_data(){
             cloud->m_label_mngr=m_label_mngr->shared_from_this();
 
             cloud->m_disk_path=sample_filename.string();
+
+            cloud->name=sample_filename.stem().string();
             
 
             m_clouds_buffer.enqueue(cloud);;
