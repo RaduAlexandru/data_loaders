@@ -41,15 +41,16 @@ DataLoaderCloudRos::DataLoaderCloudRos(const std::string config_file):
     m_finished_cloud_idx(-1),
     m_working_cloud_idx(0),
     m_min_dist_filter(0.0),
+    m_exact_time(true),
     m_rand_gen(new RandGenerator() )
 {
     init_params(config_file);
-    // if(m_do_pose){
-        // read_pose_file(); //for the razlaw lbh data this reads the transform tf_lasermap_odom
+    if(m_do_pose){
+        read_pose_file(); 
         // if(m_hacky_fix_for_razlaws_ma_bags){
-            // read_pose_file_vel2lasermap(); //this reads the transform tf_lasermap_vel/ From this we will set the pose.translation to lasermap_vel
+        //     read_pose_file_vel2lasermap(); //this reads the transform tf_lasermap_vel/ From this we will set the pose.translation to lasermap_vel
         // }
-    // }
+    }
     create_transformation_matrices();
     std::cout << " creating thread" << "\n";
     m_loader_thread=std::thread(&DataLoaderCloudRos::init_ros, this);  //starts the spin in another thread
@@ -82,10 +83,10 @@ void DataLoaderCloudRos::init_params(const std::string config_file){
 
     Config loader_config=cfg["loader_cloud_ros"];
     m_cloud_topic = (std::string)loader_config["cloud_topic"];
-    // m_do_pose = loader_config["do_pose"];
+    m_do_pose = loader_config["do_pose"];
     // m_do_random_gap_removal = loader_config["do_random_gap_removal"];
-    // m_pose_file = (std::string)loader_config["pose_file"];
-    // m_pose_file_format = (std::string)loader_config["pose_file_format"];
+    m_pose_file = (std::string)loader_config["pose_file"];
+    m_pose_file_format = (std::string)loader_config["pose_file_format"];
     // m_timestamp_multiplier = loader_config["timestamp_multiplier"];
     // m_exact_time = loader_config["exact_time"];
     m_min_dist_filter = loader_config["min_dist_filter"]; 
@@ -130,7 +131,7 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
     mesh->V=pcl2eigen(cloud);
     mesh->m_width=cloud->width;
     mesh->m_height=cloud->height;
-    VLOG(1) << "width and height is " << mesh->m_width << " " << mesh->m_height;
+    // VLOG(1) << "width and height is " << mesh->m_width << " " << mesh->m_height;
 
     //the distance to the sensor is just the norm of every point as the cloud starts in velodyne frame 
     mesh->D=mesh->V.rowwise().norm();
@@ -186,21 +187,23 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
     // }
 
 
-    // if(m_do_pose){
-    //     //move into a baselink, then into world frame and then into gl frame
-    //     Eigen::Affine3d sensor_pose;  //maps from baselink to world ros
-    //     double deviation_ms=-1;
-    //     if (!get_pose_at_timestamp(sensor_pose,deviation_ms, timestamp)){
-    //         LOG(WARNING) << "Not found any pose at timestamp " << timestamp << " Discarding";
-    //         return;
-    //     }
 
-    //     if(m_pose_file_format=="david_old"){
-    //         //the old format had the pose file expressed in velodyne frame, the new one is already in baselink
-    //         mesh_core.apply_transform(m_tf_baselink_vel); // from velodyne frame to baselink 
-    //     } 
-    //     mesh_core.apply_transform(sensor_pose); // from baselonk to worldROS
-    // }
+    if(m_do_pose){
+        //move into a baselink, then into world frame and then into gl frame
+        Eigen::Affine3d sensor_pose;  //maps from baselink to world ros
+        double deviation_ms=-1;
+        if (!get_pose_at_timestamp(sensor_pose,deviation_ms, timestamp)){
+            LOG(WARNING) << "Not found any pose at timestamp " << timestamp << " Discarding";
+            return;
+        }
+
+        // if(m_pose_file_format=="david_old"){
+            //the old format had the pose file expressed in velodyne frame, the new one is already in baselink
+            // mesh_core.apply_transform(m_tf_baselink_vel); // from velodyne frame to baselink 
+        // } 
+        mesh->transform_vertices_cpu(sensor_pose); // from baselonk to worldROS
+        mesh->transform_vertices_cpu(m_tf_worldGL_worldROS);
+    }
 
     // VLOG(1) << "meshcore the m_cur_pose is " << mesh_core.m_cur_pose.matrix();
 
@@ -356,6 +359,21 @@ void DataLoaderCloudRos::read_pose_file(){
     //        VLOG(2) << "recorded scan_nr is " << scan_nr;
             // Eigen::Affine3d pose_inv=pose.inverse();
 
+            m_worldROS_baselink_vec.push_back ( std::pair<double, Eigen::Affine3d>((double)timestamp,pose) );
+        }
+    }else if(m_pose_file_format=="tum"){
+        std::string line;
+        while (std::getline(infile, line)) {
+            std::istringstream iss(line);
+            iss >> timestamp
+                >> position.x() >> position.y() >> position.z()
+                >> quat.x() >> quat.y() >> quat.z() >> quat.w();
+
+            Eigen::Affine3d pose;
+            pose.setIdentity();
+            pose.matrix().block<3,3>(0,0)=quat.toRotationMatrix();
+            pose.matrix().block<3,1>(0,3)=position;
+       
             m_worldROS_baselink_vec.push_back ( std::pair<double, Eigen::Affine3d>((double)timestamp,pose) );
         }
     }else{

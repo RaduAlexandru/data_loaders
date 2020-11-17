@@ -217,6 +217,7 @@ PYBIND11_MODULE(dataloaders, m) {
         .def(py::init<const std::string>())
         .def("has_data", &DataLoaderCloudRos::has_data )
         .def("get_cloud", &DataLoaderCloudRos::get_cloud )
+        .def("is_loader_thread_alive", &DataLoaderCloudRos::is_loader_thread_alive ) 
         ;
 
         py::class_<RosBagPlayer, std::shared_ptr<RosBagPlayer> > (m, "RosBagPlayer")
