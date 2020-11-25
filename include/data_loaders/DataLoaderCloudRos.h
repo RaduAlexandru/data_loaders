@@ -25,6 +25,7 @@ namespace radu { namespace utils{
 namespace easy_pbr{
     class Mesh;
 }
+class DataTransformer;
 
 class DataLoaderCloudRos
 {
@@ -52,6 +53,7 @@ private:
 
     //objects 
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
+    std::shared_ptr<DataTransformer> m_transformer;
 
     //params
     std::thread m_loader_thread;

@@ -72,7 +72,7 @@ void DataLoaderCloudRos::init_params(const std::string config_file){
     // std::string config_file="config.cfg";
 
     //read all the parameters
-//read all the parameters
+    //read all the parameters
     std::string config_file_abs;
     if (fs::path(config_file).is_relative()){
         config_file_abs=(fs::path(PROJECT_SOURCE_DIR) / config_file).string();
@@ -92,7 +92,12 @@ void DataLoaderCloudRos::init_params(const std::string config_file){
     m_min_dist_filter = loader_config["min_dist_filter"]; 
     // m_hacky_fix_for_razlaws_ma_bags = loader_config["hacky_fix_for_razlaws_ma_bags"]; 
 
-    std::cout << "-------------" << m_timestamp_multiplier << std::endl;
+
+    //data transformer
+    Config transformer_config=loader_config["transformer"];
+    m_transformer=std::make_shared<DataTransformer>(transformer_config);
+
+    // std::cout << "-------------" << m_timestamp_multiplier << std::endl;
 }
 
 void DataLoaderCloudRos::init_ros(){
@@ -185,6 +190,9 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
     //     Eigen::Affine3d tf_vel_alg= tf_alg_vel.inverse();
     //     mesh_core.apply_transform(tf_vel_alg); //from algorithm frame back to velodyne frame
     // }
+
+
+    mesh=m_transformer->transform(mesh);
 
 
 

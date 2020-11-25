@@ -226,10 +226,10 @@ def test_cloud_ros():
         view.update()
 
 
-# test_volref()
+test_volref()
 # test_img()
 # test_img_ros()
-test_cloud_ros()
+# test_cloud_ros()
 # test_semantickitti()
 # test_scannet()
 # test_stanford3dscene()
