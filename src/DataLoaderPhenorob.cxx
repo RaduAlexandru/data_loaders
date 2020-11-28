@@ -283,7 +283,12 @@ void DataLoaderPhenorob::read_data(){
                 // std::cout << line << std::endl;
                 std::vector<std::string> tokens=split(line, " ");
                 // VLOG(1) << "lne is " << line;
-                CHECK(tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line;
+                // CHECK(tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line << " from file " << sample_filename;
+                // LOG_IF(ERROR, tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line << " from file " << sample_filename;
+                if(tokens.size()!=4){
+                    continue;
+                }
+
 
                 Eigen::VectorXd point_eigen(3);
                 point_eigen<< std::stof(tokens[0]),  std::stof(tokens[1]),  std::stof(tokens[2]);

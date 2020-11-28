@@ -210,8 +210,8 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
             // mesh_core.apply_transform(m_tf_baselink_vel); // from velodyne frame to baselink 
         // } 
         mesh->transform_vertices_cpu(sensor_pose); // from baselonk to worldROS
-        mesh->transform_vertices_cpu(m_tf_worldGL_worldROS);
     }
+    mesh->transform_vertices_cpu(m_tf_worldGL_worldROS);
 
     // VLOG(1) << "meshcore the m_cur_pose is " << mesh_core.m_cur_pose.matrix();
 
