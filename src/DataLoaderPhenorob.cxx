@@ -41,7 +41,8 @@ DataLoaderPhenorob::DataLoaderPhenorob(const std::string config_file):
     m_idx_cloud_to_read(0),
     m_nr_resets(0),
     m_rand_gen(new RandGenerator),
-    m_do_augmentation(false)
+    m_do_augmentation(false),
+    m_selected_plant_nr(-1)
 {
 
     init_params(config_file);
@@ -184,7 +185,9 @@ void DataLoaderPhenorob::init_data_reading(){
                 int plant_nr=std::stoi(stem.substr( stem.length() - 2 ));
                 // VLOG(1) << "plant nr" << plant_nr;
                 //check if we need to skip read this nr of the plant
-                if(plant_nr>m_nr_plants_to_skip &&  ( (int)plant_folders.size()<m_nr_plants_to_read || m_nr_plants_to_read<0)  ){
+                if(plant_nr>m_nr_plants_to_skip &&  ( (int)plant_folders.size()<m_nr_plants_to_read || m_nr_plants_to_read<0) 
+                    && (m_selected_plant_nr!=-1 && plant_nr==m_selected_plant_nr) //check if we need to use just one concrete plant nr
+                 ){
                     // VLOG(1) << "pushing plant folder " << entry;
                     // plant_folders.push_back(entry);
                     //if we are segmenting maize we also enter the correspnding folde
@@ -211,7 +214,10 @@ void DataLoaderPhenorob::init_data_reading(){
         for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(plant_folders[i]), {})){
             //check if it's a file and contains the word maize or tomato
             if (fs::is_regular_file(entry)){
-                if(day_for_plant>m_nr_days_to_skip &&  ( days_added_for_plant<m_nr_days_to_read || m_nr_days_to_read<0)  ){
+                if(day_for_plant>m_nr_days_to_skip &&  ( days_added_for_plant<m_nr_days_to_read || m_nr_days_to_read<0)  
+                    && ( !m_selected_day.empty() && radu::utils::contains( entry.path().stem().string(), m_selected_day )  )//if we have a slected day, get only from that one
+                
+                ){
                     VLOG(1) << "entry is " << entry;
                     sample_filenames_all.push_back(entry);
                     days_added_for_plant++;
@@ -272,104 +278,7 @@ void DataLoaderPhenorob::read_data(){
             }
             // VLOG(1) << "reading " << sample_filename;
 
-
-            std::vector<Eigen::VectorXd> points_vec;
-            std::vector<int> labels_vec;
-
-            //read the text and each line contains xyz,label
-            std::ifstream f(sample_filename.string());
-            std::string line;    
-            while (std::getline(f, line)) {
-                // std::cout << line << std::endl;
-                std::vector<std::string> tokens=split(line, " ");
-                // VLOG(1) << "lne is " << line;
-                // CHECK(tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line << " from file " << sample_filename;
-                // LOG_IF(ERROR, tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line << " from file " << sample_filename;
-                if(tokens.size()!=4){
-                    continue;
-                }
-
-
-                Eigen::VectorXd point_eigen(3);
-                point_eigen<< std::stof(tokens[0]),  std::stof(tokens[1]),  std::stof(tokens[2]);
-                points_vec.push_back(point_eigen);
-
-                int label=std::stoi(tokens[3]);
-                // if(label>=2){
-                    // label=2;
-                // }
-                labels_vec.push_back(label);
-
-            }
-
-
-            //copy into EigenMatrix 
-            MeshSharedPtr cloud=Mesh::create();
-            cloud->V=vec2eigen(points_vec);
-            cloud->L_gt=vec2eigen(labels_vec);
-
-
-            if(m_normalize){
-                cloud->normalize_size();
-                // cloud->normalize_position();
-            }
-
-            // cloud->normalize_position();
-            Eigen::Vector3d axis;
-            axis << 1.0, 0.0, 0.0;
-            // Eigen::Vector3d mov;
-            // mov << 0.0, 0.0, -10.0;
-            Eigen::Affine3d move;
-            move.setIdentity();
-            move.translation()<<50.0, 0.0, -740.0;
-            cloud->rotate_model_matrix(axis, -90);
-            cloud->apply_model_matrix_to_cpu(true);
-            cloud->transform_vertices_cpu(move);
-
-            if (m_do_augmentation){
-                cloud=m_transformer->transform(cloud);
-            }else{
-                //if we are not doing augmentation, we are running the test one but maybe we still want to do the subsampling 
-                if(m_transformer->m_random_subsample_percentage!=0.0){
-                    float prob_of_death=m_transformer->m_random_subsample_percentage;
-                    int vertices_marked_for_removal=0;
-                    std::vector<bool> is_vertex_to_be_removed(cloud->V.rows(), false);
-                    for(int i = 0; i < cloud->V.rows(); i++){
-                        float random= m_rand_gen->rand_float(0.0, 1.0);
-                        if(random<prob_of_death){
-                            is_vertex_to_be_removed[i]=true;
-                            vertices_marked_for_removal++;
-                        }
-                    }
-                    cloud->remove_marked_vertices(is_vertex_to_be_removed, false);
-                }
-
-            }
-
-            if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
-                // https://stackoverflow.com/a/15866196
-                Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud->V.rows());
-                perm.setIdentity();
-                std::shuffle(perm.indices().data(), perm.indices().data()+perm.indices().size(), m_rand_gen->generator());
-                // VLOG(1) << "permutation matrix is " << perm.indices();
-                // A_perm = A * perm; // permute columns
-                cloud->V = perm * cloud->V; // permute rows
-                cloud->L_gt = perm * cloud->L_gt; // permute rows
-                // cloud->D = perm * cloud->D; // permute rows
-            }
-
-            //some sensible visualization options
-            cloud->m_vis.m_show_mesh=false;
-            cloud->m_vis.m_show_points=true;
-            cloud->m_vis.m_color_type=+MeshColorType::SemanticGT;
-
-            //set the labelmngr which will be used by the viewer to put correct colors for the semantics
-            cloud->m_label_mngr=m_label_mngr->shared_from_this();
-
-            cloud->m_disk_path=sample_filename.string();
-
-            cloud->name=sample_filename.stem().string();
-            
+            MeshSharedPtr cloud=read_sample(sample_filename);
 
             m_clouds_buffer.enqueue(cloud);;
 
@@ -378,6 +287,110 @@ void DataLoaderPhenorob::read_data(){
     }
 
 }
+
+std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_filename){
+
+    std::vector<Eigen::VectorXd> points_vec;
+    std::vector<int> labels_vec;
+
+    //read the text and each line contains xyz,label
+    std::ifstream f(sample_filename.string());
+    std::string line;    
+    while (std::getline(f, line)) {
+        // std::cout << line << std::endl;
+        std::vector<std::string> tokens=split(line, " ");
+        // VLOG(1) << "lne is " << line;
+        // CHECK(tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line << " from file " << sample_filename;
+        // LOG_IF(ERROR, tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line << " from file " << sample_filename;
+        if(tokens.size()!=4){
+            continue;
+        }
+
+
+        Eigen::VectorXd point_eigen(3);
+        point_eigen<< std::stof(tokens[0]),  std::stof(tokens[1]),  std::stof(tokens[2]);
+        points_vec.push_back(point_eigen);
+
+        int label=std::stoi(tokens[3]);
+        // if(label>=2){
+            // label=2;
+        // }
+        labels_vec.push_back(label);
+
+    }
+
+
+    //copy into EigenMatrix 
+    MeshSharedPtr cloud=Mesh::create();
+    cloud->V=vec2eigen(points_vec);
+    cloud->L_gt=vec2eigen(labels_vec);
+
+
+    if(m_normalize){
+        cloud->normalize_size();
+        // cloud->normalize_position();
+    }
+
+    // cloud->normalize_position();
+    Eigen::Vector3d axis;
+    axis << 1.0, 0.0, 0.0;
+    // Eigen::Vector3d mov;
+    // mov << 0.0, 0.0, -10.0;
+    Eigen::Affine3d move;
+    move.setIdentity();
+    move.translation()<<50.0, 0.0, -740.0;
+    cloud->rotate_model_matrix(axis, -90);
+    cloud->apply_model_matrix_to_cpu(true);
+    cloud->transform_vertices_cpu(move);
+
+    if (m_do_augmentation){
+        cloud=m_transformer->transform(cloud);
+    }else{
+        //if we are not doing augmentation, we are running the test one but maybe we still want to do the subsampling 
+        if(m_transformer->m_random_subsample_percentage!=0.0){
+            float prob_of_death=m_transformer->m_random_subsample_percentage;
+            int vertices_marked_for_removal=0;
+            std::vector<bool> is_vertex_to_be_removed(cloud->V.rows(), false);
+            for(int i = 0; i < cloud->V.rows(); i++){
+                float random= m_rand_gen->rand_float(0.0, 1.0);
+                if(random<prob_of_death){
+                    is_vertex_to_be_removed[i]=true;
+                    vertices_marked_for_removal++;
+                }
+            }
+            cloud->remove_marked_vertices(is_vertex_to_be_removed, false);
+        }
+
+    }
+
+    if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
+        // https://stackoverflow.com/a/15866196
+        Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud->V.rows());
+        perm.setIdentity();
+        std::shuffle(perm.indices().data(), perm.indices().data()+perm.indices().size(), m_rand_gen->generator());
+        // VLOG(1) << "permutation matrix is " << perm.indices();
+        // A_perm = A * perm; // permute columns
+        cloud->V = perm * cloud->V; // permute rows
+        cloud->L_gt = perm * cloud->L_gt; // permute rows
+        // cloud->D = perm * cloud->D; // permute rows
+    }
+
+    //some sensible visualization options
+    cloud->m_vis.m_show_mesh=false;
+    cloud->m_vis.m_show_points=true;
+    cloud->m_vis.m_color_type=+MeshColorType::SemanticGT;
+
+    //set the labelmngr which will be used by the viewer to put correct colors for the semantics
+    cloud->m_label_mngr=m_label_mngr->shared_from_this();
+
+    cloud->m_disk_path=sample_filename.string();
+
+    cloud->name=sample_filename.stem().string();
+
+    return cloud;
+
+}
+
 
 bool DataLoaderPhenorob::has_data(){
     if(m_clouds_buffer.peek()==nullptr){
@@ -392,6 +405,15 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::get_cloud(){
 
     std::shared_ptr<Mesh> cloud;
     m_clouds_buffer.try_dequeue(cloud);
+
+    return cloud;
+}
+
+std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorob::get_cloud_with_idx(const int idx){
+    CHECK(idx<nr_samples() ) << "Idx is outside of range. Idx is " << idx << " and we have nr of samples" << nr_samples();
+
+    fs::path sample_filename=m_sample_filenames[ idx ];
+    MeshSharedPtr cloud=read_sample(sample_filename);
 
     return cloud;
 }
@@ -458,6 +480,16 @@ std::shared_ptr<LabelMngr> DataLoaderPhenorob::label_mngr(){
 // void DataLoaderSemanticKitti::set_adaptive_subsampling(const bool adaptive_subsampling){
 //     m_do_adaptive_subsampling=adaptive_subsampling;
 // }
+void DataLoaderPhenorob::set_day(const std::string day_format){
+    // Set a concrete day from which we read The format of the string is something like 0325 in which the first two characters is the month and the last 2 is the day
+    //CHECK that we have 4 characters
+    CHECK(day_format.size()==4) << "Day format should have 4 characters (0325), first 2 corresponding to month and last 2 corresponding to day";
+
+    m_selected_day=day_format;
+}
+void DataLoaderPhenorob::set_plant_nr(const int nr){
+    m_selected_plant_nr=nr;
+}
 void DataLoaderPhenorob::set_nr_plants_to_skip(const int new_val){
     m_nr_plants_to_skip=new_val;
 }
@@ -473,7 +505,10 @@ void DataLoaderPhenorob::set_nr_days_to_read(const int new_val){
 void DataLoaderPhenorob::set_do_augmentation(const bool val){
     m_do_augmentation=val;
 }
-
+void DataLoaderPhenorob::set_segmentation_method(const std::string method ){
+    m_segmentation_method=method;
+    CHECK(m_segmentation_method=="leaf_tip" || m_segmentation_method=="leaf_collar") << "Segmentation type should be leaf_tip or leaf_collar but it is set to " << m_segmentation_method;
+}
 
 
 // PYBIND11_MODULE(DataLoader, m) {

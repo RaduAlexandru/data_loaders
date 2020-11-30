@@ -39,17 +39,21 @@ public:
     ~DataLoaderPhenorob();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
     std::shared_ptr<easy_pbr::Mesh> get_cloud();
+    std::shared_ptr<easy_pbr::Mesh> get_cloud_with_idx(const int idx);
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of samples/examples that this loader will iterate over
     std::shared_ptr<easy_pbr::LabelMngr> label_mngr();
+    void set_day(const std::string day_format); // Set a concrete day from which we read The format of the string is something like 0325 in which the first two characters is the month and the last 2 is the day
+    void set_plant_nr(const int nr);
     void set_nr_plants_to_skip(const int new_val);
     void set_nr_plants_to_read(const int new_val);
     void set_nr_days_to_skip(const int new_val);
     void set_nr_days_to_read(const int new_val);
     void set_do_augmentation(const bool val);
+    void set_segmentation_method(const std::string method);
 
     //TODO 
     
@@ -60,6 +64,7 @@ private:
     void init_params(const std::string config_file);
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
     void read_data();
+    std::shared_ptr<easy_pbr::Mesh> read_sample(const fs::path sample_filename); //reads one data sample
 
     //objects 
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
@@ -74,9 +79,11 @@ private:
     //which plants to read
     int m_nr_plants_to_skip;
     int m_nr_plants_to_read; //how many plants of the selected type we should read, set to -1 to read all plants
+    int m_selected_plant_nr;
     //which days to read
     int m_nr_days_to_skip;
     int m_nr_days_to_read; //how many days to read for the selected plants, set to -1 to read all days
+    std::string m_selected_day; //To read one concrete single day, day for eg can be 0325 which is march 25 from which we will read
     //params for after reading 
     bool m_shuffle_points;
     bool m_normalize;
