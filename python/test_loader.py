@@ -195,23 +195,21 @@ def test_nerf():
 
         view.update()
 
-# def test_phenorob():
-#     loader=DataLoaderPhenorob(config_path)
-#     # loader.start()
+def test_phenorob():
+    loader=DataLoaderPhenorob(config_path)
 
-#     while True:
-#         if(loader.has_data() ): 
+    while True:
+        if(loader.has_data() ): 
 
-#             # print("got frame")
-#             cloud=loader.get_cloud()
+            cloud=loader.get_cloud()
 
-#             Scene.show(cloud, "cloud" )
+            Scene.show(cloud, "cloud" )
         
-#         if loader.is_finished():
-#             print("resetting")
-#             loader.reset()
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
 
-#         view.update()
+        view.update()
 
 def test_cloud_ros():
     bag=RosBagPlayer.create(config_path)
@@ -226,7 +224,7 @@ def test_cloud_ros():
         view.update()
 
 
-test_volref()
+# test_volref()
 # test_img()
 # test_img_ros()
 # test_cloud_ros()
@@ -235,7 +233,7 @@ test_volref()
 # test_stanford3dscene()
 # test_shapenet_img()
 # test_nerf()
-# test_phenorob()
+test_phenorob()
 
 
 

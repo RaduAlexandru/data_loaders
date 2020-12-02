@@ -186,25 +186,17 @@ void DataLoaderPhenorob::init_data_reading(){
                 // VLOG(1) << "plant nr" << plant_nr;
                 //check if we need to skip read this nr of the plant
                 if(plant_nr>m_nr_plants_to_skip &&  ( (int)plant_folders.size()<m_nr_plants_to_read || m_nr_plants_to_read<0) 
-                    && (m_selected_plant_nr!=-1 && plant_nr==m_selected_plant_nr) //check if we need to use just one concrete plant nr
+                    && (m_selected_plant_nr==-1 || plant_nr==m_selected_plant_nr) //check if we need to use just one concrete plant nr 
                  ){
-                    // VLOG(1) << "pushing plant folder " << entry;
-                    // plant_folders.push_back(entry);
-                    //if we are segmenting maize we also enter the correspnding folde
-                    if(m_plant_type=="maize"){
-                        if(m_segmentation_method=="leaf_collar"){
-                            plant_folders.push_back(entry/"LeafCollarMethod");
-                        }else{
-                            plant_folders.push_back(entry/"LeafTipMethod");
-                        }
-                    }else{
-                        plant_folders.push_back(entry);
-                    }
+                   
+                    plant_folders.push_back(entry);
+
 
                 }
             }
         }
     }
+    CHECK(!plant_folders.empty()) << "Plant folders is empty";
 
     //get the days
     std::vector<fs::path> sample_filenames_all;
@@ -215,12 +207,20 @@ void DataLoaderPhenorob::init_data_reading(){
             //check if it's a file and contains the word maize or tomato
             if (fs::is_regular_file(entry)){
                 if(day_for_plant>m_nr_days_to_skip &&  ( days_added_for_plant<m_nr_days_to_read || m_nr_days_to_read<0)  
-                    && ( !m_selected_day.empty() && radu::utils::contains( entry.path().stem().string(), m_selected_day )  )//if we have a slected day, get only from that one
+                    && ( m_selected_day.empty() || radu::utils::contains( entry.path().stem().string(), m_selected_day )  )//if we have a slected day, get only from that one
                 
                 ){
                     VLOG(1) << "entry is " << entry;
-                    sample_filenames_all.push_back(entry);
-                    days_added_for_plant++;
+
+
+                    // we get only the folders that end in _a because those are the annotated ones
+                    std::string stem=entry.path().stem().string();
+                    if(stem.substr( stem.length() - 2 ) == "_a"){
+                        sample_filenames_all.push_back(entry);
+                        days_added_for_plant++;
+                    }
+
+
                 }
                 day_for_plant++;
 
@@ -302,7 +302,11 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
         // VLOG(1) << "lne is " << line;
         // CHECK(tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line << " from file " << sample_filename;
         // LOG_IF(ERROR, tokens.size()==4) << "We expect to have 4 tokens corresponding to xyz,label but we got " << tokens.size() << " and the line is " << line << " from file " << sample_filename;
-        if(tokens.size()!=4){
+        int expected_tokens=4;
+        if(m_plant_type=="maize"){
+            expected_tokens=5; //if we load maize it will have 5 tokens corresponding to xyz, label collar, label tip
+        }
+        if(tokens.size()!=expected_tokens){
             continue;
         }
 
@@ -311,7 +315,13 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
         point_eigen<< std::stof(tokens[0]),  std::stof(tokens[1]),  std::stof(tokens[2]);
         points_vec.push_back(point_eigen);
 
-        int label=std::stoi(tokens[3]);
+
+        int label=-1;
+        if(m_segmentation_method=="leaf_collar"){
+            label=std::stoi(tokens[3]);
+        }else{
+            label=std::stoi(tokens[4]);
+        }
         // if(label>=2){
             // label=2;
         // }
