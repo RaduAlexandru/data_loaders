@@ -316,10 +316,8 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
         points_vec.push_back(point_eigen);
 
 
-        int label=-1;
-        if(m_segmentation_method=="leaf_collar"){
-            label=std::stoi(tokens[3]);
-        }else{
+        int label=std::stoi(tokens[3]);;
+        if(m_segmentation_method=="leaf_tip" && m_plant_type=="maize"){
             label=std::stoi(tokens[4]);
         }
         // if(label>=2){
