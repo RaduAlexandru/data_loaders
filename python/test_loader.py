@@ -197,6 +197,7 @@ def test_nerf():
 
 def test_phenorob():
     loader=DataLoaderPhenorob(config_path)
+    loader.start()
 
     while True:
         if(loader.has_data() ): 
