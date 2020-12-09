@@ -54,6 +54,7 @@ public:
     void set_nr_days_to_read(const int new_val);
     void set_do_augmentation(const bool val);
     void set_segmentation_method(const std::string method);
+    void set_preload(const bool val); //if we preload, then we read the meshes only once and store them in memory
 
     //TODO 
     
@@ -90,6 +91,7 @@ private:
     bool m_shuffle_days;
     bool m_do_overfit; //return only one of the samples the whole time, concretely the first sample in the dataset
     bool m_do_augmentation;
+    bool m_preload;
 
 
 
@@ -97,12 +99,14 @@ private:
     //internal
     std::thread m_loader_thread;
     uint32_t m_idx_cloud_to_read;
+    uint32_t m_idx_cloud_to_return;
     int m_nr_resets;
     bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     int m_nr_sequences;
     std::vector<fs::path> m_sample_filenames;
     moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
+    std::vector< std::shared_ptr<easy_pbr::Mesh>  > m_clouds_vec;
     // std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >m_worldROS_cam_vec; //actually the semantic kitti expressed the clouds in the left camera coordinate so it should be m_worldRos_cam_vec 
 
     //label mngr to link to all the meshes that will have a semantic information

@@ -39,6 +39,7 @@ DataLoaderPhenorob::DataLoaderPhenorob(const std::string config_file):
     m_is_running(false),
     m_clouds_buffer(BUFFER_SIZE),
     m_idx_cloud_to_read(0),
+    m_idx_cloud_to_return(0),
     m_nr_resets(0),
     m_rand_gen(new RandGenerator),
     m_do_augmentation(false),
@@ -96,6 +97,7 @@ void DataLoaderPhenorob::init_params(const std::string config_file){
     m_normalize=loader_config["normalize"];
     m_shuffle_days=loader_config["shuffle_days"];
     m_do_overfit=loader_config["do_overfit"];
+    m_preload=loader_config["preload"];
 
     //sanity check all settings
     CHECK(m_plant_type=="maize" || m_plant_type=="tomato") << "Plant type should be maize or tomato but it is set to " << m_plant_type;
@@ -117,7 +119,11 @@ void DataLoaderPhenorob::start(){
     init_data_reading();
 
     m_is_running=true;
-    m_loader_thread=std::thread(&DataLoaderPhenorob::read_data, this);  //starts the spin in another thread
+    if (m_preload){
+        read_data(); //if we prelaod we don't need to use any threads and it may cause some other issues
+    }else{
+        m_loader_thread=std::thread(&DataLoaderPhenorob::read_data, this);  //starts the spin in another thread
+    }
 }
 
 void DataLoaderPhenorob::init_data_reading(){
@@ -259,30 +265,49 @@ void DataLoaderPhenorob::read_data(){
     loguru::set_thread_name("loader_thread_kitti");
 
 
-    while (m_is_running ) {
-
-        //we finished reading so we wait here for a reset
-        if(m_idx_cloud_to_read>=m_sample_filenames.size()){
-            std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            continue;
-        }
-
-        // std::cout << "size approx is " << m_queue.size_approx() << '\n';
-        // std::cout << "m_idx_img_to_read is " << m_idx_img_to_read << '\n';
-        if(m_clouds_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
-            //read the frame and everything else and push it to the queue
+    //if we preload, we just read the meshes and store them in memory, data transformation will be done while reading the mesh
+    if (m_preload){
+        for(int i=0; i<m_sample_filenames.size(); i++ ){
 
             fs::path sample_filename=m_sample_filenames[ m_idx_cloud_to_read ];
+            VLOG(1) << "preloading from " << sample_filename;
             if(!m_do_overfit){
                 m_idx_cloud_to_read++;
             }
-            // VLOG(1) << "reading " << sample_filename;
-
             MeshSharedPtr cloud=read_sample(sample_filename);
-
-            m_clouds_buffer.enqueue(cloud);;
+            m_clouds_vec.push_back(cloud);
 
         }
+
+    }else{ //we continously read from disk
+
+        while (m_is_running ) {
+
+            //we finished reading so we wait here for a reset
+            if(m_idx_cloud_to_read>=m_sample_filenames.size()){
+                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                continue;
+            }
+
+            // std::cout << "size approx is " << m_queue.size_approx() << '\n';
+            // std::cout << "m_idx_img_to_read is " << m_idx_img_to_read << '\n';
+            if(m_clouds_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
+                //read the frame and everything else and push it to the queue
+
+                fs::path sample_filename=m_sample_filenames[ m_idx_cloud_to_read ];
+                if(!m_do_overfit){
+                    m_idx_cloud_to_read++;
+                }
+                // VLOG(1) << "reading " << sample_filename;
+
+                MeshSharedPtr cloud=read_sample(sample_filename);
+
+                m_clouds_buffer.enqueue(cloud);;
+
+            }
+
+        }
+
 
     }
 
@@ -351,10 +376,8 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
     cloud->apply_model_matrix_to_cpu(true);
     cloud->transform_vertices_cpu(move);
 
-    if (m_do_augmentation){
-        cloud=m_transformer->transform(cloud);
-    }else{
-        //if we are not doing augmentation, we are running the test one but maybe we still want to do the subsampling 
+    if (m_preload){ //if we preload then we just subsample, and then we move and rotate the cloud, when we retreive it
+
         if(m_transformer->m_random_subsample_percentage!=0.0){
             float prob_of_death=m_transformer->m_random_subsample_percentage;
             int vertices_marked_for_removal=0;
@@ -369,6 +392,28 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
             cloud->remove_marked_vertices(is_vertex_to_be_removed, false);
         }
 
+
+    }else{ //we dont' preload and do augmentation constanyl
+
+        if (m_do_augmentation){
+            cloud=m_transformer->transform(cloud);
+        }else{
+            //if we are not doing augmentation, we are running the test one but maybe we still want to do the subsampling 
+            if(m_transformer->m_random_subsample_percentage!=0.0){
+                float prob_of_death=m_transformer->m_random_subsample_percentage;
+                int vertices_marked_for_removal=0;
+                std::vector<bool> is_vertex_to_be_removed(cloud->V.rows(), false);
+                for(int i = 0; i < cloud->V.rows(); i++){
+                    float random= m_rand_gen->rand_float(0.0, 1.0);
+                    if(random<prob_of_death){
+                        is_vertex_to_be_removed[i]=true;
+                        vertices_marked_for_removal++;
+                    }
+                }
+                cloud->remove_marked_vertices(is_vertex_to_be_removed, false);
+            }
+
+        }
     }
 
     if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
@@ -401,20 +446,46 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
 
 
 bool DataLoaderPhenorob::has_data(){
-    if(m_clouds_buffer.peek()==nullptr){
-        return false;
-    }else{
+    if (m_preload){
         return true;
+    }else{
+        if(m_clouds_buffer.peek()==nullptr){
+            return false;
+        }else{
+            return true;
+        }
     }
 }
 
 
 std::shared_ptr<Mesh> DataLoaderPhenorob::get_cloud(){
 
-    std::shared_ptr<Mesh> cloud;
-    m_clouds_buffer.try_dequeue(cloud);
+    if (m_preload){
+        CHECK(m_idx_cloud_to_return<m_clouds_vec.size()) << " m_idx_cloud_to_return is out of bounds. m_idx_cloud_to_return is " << m_idx_cloud_to_return << " and clouds vec is " << m_clouds_vec.size();
+        // VLOG(1) << "m_idx_cloud_to_return " << m_idx_cloud_to_return << " and m clouds vec is " << m_clouds_vec.size();
+        std::shared_ptr<Mesh> cloud = std::make_shared<Mesh>( m_clouds_vec[m_idx_cloud_to_return]->clone() ); //we clone it because we don;y want to do data augmentation on the mesh that is on the vector
+        m_idx_cloud_to_return++;
+        
+        //this cloud doesnt have applied any data augmentation, except subsampling so we do it here 
+        if (m_do_augmentation){
+            float prob_of_death=m_transformer->m_random_subsample_percentage;
+            m_transformer->m_random_subsample_percentage=0.0;
+            cloud=m_transformer->transform(cloud);
+            m_transformer->m_random_subsample_percentage=prob_of_death;
+        }
 
-    return cloud;
+        // VLOG(1) << "returning cloud from " << cloud->m_disk_path;
+        cloud->m_is_dirty=true;
+
+        return cloud;
+
+
+    }else{
+        std::shared_ptr<Mesh> cloud;
+        m_clouds_buffer.try_dequeue(cloud);
+        return cloud;
+    }
+
 }
 
 std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorob::get_cloud_with_idx(const int idx){
@@ -423,32 +494,64 @@ std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorob::get_cloud_with_idx(const int
     fs::path sample_filename=m_sample_filenames[ idx ];
     MeshSharedPtr cloud=read_sample(sample_filename);
 
+    if (m_preload && m_do_augmentation){
+         //this cloud doesnt have applied any data augmentation, except subsampling so we do it here 
+        float prob_of_death=m_transformer->m_random_subsample_percentage;
+        m_transformer->m_random_subsample_percentage=0.0;
+        cloud=m_transformer->transform(cloud);
+        m_transformer->m_random_subsample_percentage=prob_of_death;
+    }
+
     return cloud;
 }
 
 bool DataLoaderPhenorob::is_finished(){
-    //check if this loader has loaded everything
-    if(m_idx_cloud_to_read<m_sample_filenames.size()){
-        return false; //there is still more files to read
-    }
 
-    //check that there is nothing in the ring buffers
-    if(m_clouds_buffer.peek()!=nullptr){
-        return false; //there is still something in the buffer
-    }
 
-    return true; //there is nothing more to read and nothing more in the buffer so we are finished
+    if(m_preload){
+        if (m_idx_cloud_to_return>=m_clouds_vec.size()){
+            return true;
+        }else{
+            return false;
+        }
+
+
+    }else{
+        //check if this loader has loaded everything
+        if(m_idx_cloud_to_read<m_sample_filenames.size()){
+            return false; //there is still more files to read
+        }
+
+        //check that there is nothing in the ring buffers
+        if(m_clouds_buffer.peek()!=nullptr){
+            return false; //there is still something in the buffer
+        }
+
+        return true; //there is nothing more to read and nothing more in the buffer so we are finished
+    }
 
 }
 
 
 bool DataLoaderPhenorob::is_finished_reading(){
-    //check if this loader has loaded everything
-    if(m_idx_cloud_to_read<m_sample_filenames.size()){
-        return false; //there is still more files to read
-    }
 
-    return true; //there is nothing more to read and so we are finished reading
+    if (m_preload){
+        if (m_idx_cloud_to_return>=m_clouds_vec.size()){
+            return true;
+        }else{
+            return false;
+        }
+
+    }else{
+
+        //check if this loader has loaded everything
+        if(m_idx_cloud_to_read<m_sample_filenames.size()){
+            return false; //there is still more files to read
+        }
+
+        return true; //there is nothing more to read and so we are finished reading
+
+    }
 
 }
 
@@ -461,13 +564,19 @@ void DataLoaderPhenorob::reset(){
         unsigned seed = m_nr_resets;
         auto rng = std::default_random_engine(seed);
         std::shuffle(std::begin(m_sample_filenames), std::end(m_sample_filenames), rng);
+        std::shuffle(std::begin(m_clouds_vec), std::end(m_clouds_vec), rng);
     }
 
     m_idx_cloud_to_read=0;
+    m_idx_cloud_to_return=0;
 }
 
 int DataLoaderPhenorob::nr_samples(){
-    return m_sample_filenames.size();
+    if (m_preload){
+        return m_clouds_vec.size();
+    }else{
+        return m_sample_filenames.size();
+    }
 }
 std::shared_ptr<LabelMngr> DataLoaderPhenorob::label_mngr(){
     CHECK(m_label_mngr) << "label_mngr was not created";
@@ -516,6 +625,9 @@ void DataLoaderPhenorob::set_do_augmentation(const bool val){
 void DataLoaderPhenorob::set_segmentation_method(const std::string method ){
     m_segmentation_method=method;
     CHECK(m_segmentation_method=="leaf_tip" || m_segmentation_method=="leaf_collar") << "Segmentation type should be leaf_tip or leaf_collar but it is set to " << m_segmentation_method;
+}
+void DataLoaderPhenorob::set_preload(const bool val){
+    m_preload=val;
 }
 
 

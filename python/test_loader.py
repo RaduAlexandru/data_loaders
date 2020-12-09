@@ -198,9 +198,11 @@ def test_nerf():
 def test_phenorob():
     loader=DataLoaderPhenorob(config_path)
     loader.start()
+    loader.set_do_augmentation(True)
 
     while True:
         if(loader.has_data() ): 
+            # print("has data")
 
             cloud=loader.get_cloud()
 
