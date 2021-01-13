@@ -39,7 +39,8 @@ DataLoaderShapeNetImg::DataLoaderShapeNetImg(const std::string config_file):
     m_is_running(false),
     m_idx_scene_to_read(0),
     m_nr_resets(0),
-    m_rand_gen(new RandGenerator)
+    m_rand_gen(new RandGenerator),
+    m_nr_scenes_read_so_far(0)
 {
     init_params(config_file);
     // if(m_autostart){
@@ -178,9 +179,22 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
     m_frames_for_scene.clear();
 
-    //load all the scene for the chosen object
+    std::vector<fs::path> paths;
     for (fs::directory_iterator itr(scene_path); itr!=fs::directory_iterator(); ++itr){
         fs::path img_path= itr->path();
+        paths.push_back(img_path);
+    }
+
+    //shuffle the images from this scene 
+    unsigned seed1 = m_nr_scenes_read_so_far;
+    auto rng_1 = std::default_random_engine(seed1);
+    std::shuffle(std::begin(paths), std::end(paths), rng_1);
+
+    //load all the scene for the chosen object
+    // for (fs::directory_iterator itr(scene_path); itr!=fs::directory_iterator(); ++itr){
+    for (size_t i=0; i<paths.size(); i++){
+        // fs::path img_path= itr->path();
+        fs::path img_path= paths[i];
         //get only files that end in png
         // VLOG(1) << "img_path" <<img_path;
         if(img_path.filename().string().find("png")!= std::string::npos){
@@ -341,8 +355,10 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
     // VLOG(1) << "loaded a scene with nr of frames " << m_frames_for_scene.size();
     CHECK(m_frames_for_scene.size()!=0) << "Clouldn't load any images for this scene in path " << scene_path; 
 
+    m_nr_scenes_read_so_far++;
+
     //shuffle the images from this scene 
-    unsigned seed = m_nr_resets;
+    unsigned seed = m_nr_scenes_read_so_far;
     auto rng_0 = std::default_random_engine(seed);
     std::shuffle(std::begin(m_frames_for_scene), std::end(m_frames_for_scene), rng_0);
 

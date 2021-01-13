@@ -81,8 +81,10 @@ private:
     int m_idx_scene_to_read;
 
 
+
     //internal
     std::vector<boost::filesystem::path> m_scene_folders; //contains all the folders of the scenes for this objects
     std::vector< easy_pbr::Frame > m_frames_for_scene;
+    int m_nr_scenes_read_so_far;
 
 };
