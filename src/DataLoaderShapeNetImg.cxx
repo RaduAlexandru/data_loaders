@@ -73,6 +73,7 @@ void DataLoaderShapeNetImg::init_params(const std::string config_file){
     // m_autostart=loader_config["autostart"];
     m_nr_samples_to_skip=loader_config["nr_samples_to_skip"];
     m_nr_samples_to_read=loader_config["nr_samples_to_read"];
+    m_nr_imgs_to_read=loader_config["nr_imgs_to_read"];
     m_shuffle=loader_config["shuffle"];
     m_subsample_factor=loader_config["subsample_factor"];
     m_do_overfit=loader_config["do_overfit"];
@@ -225,7 +226,8 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             fs::path depth_path = m_dataset_depth_path/object_name/scene_name/m_difficulty/ (filename.string() + ".exr" );
             CHECK( fs::is_regular_file(depth_path) ) << "Could not find depth under " << depth_path;
             // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_UNCHANGED);
-            cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+            // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+            cv::Mat depth=cv::imread(depth_path.string() ,  cv::IMREAD_UNCHANGED  );
             // cv::Mat depth=cv::imread(depth_path.string() , CV_LOAD_IMAGE_ANYDEPTH );
             // VLOG(1) << "depth has type " << radu::utils::type2string(depth.type());
             // VLOG(1) << "depth has rows and cols " << depth.rows << " " << depth.cols;
@@ -329,9 +331,14 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
             m_frames_for_scene.push_back(frame);
 
+            if(m_nr_imgs_to_read>0 && m_frames_for_scene.size()>=m_nr_imgs_to_read){
+                break; //we finished reading how many images we need so we stop the thread
+            }
+
         }
     }
 
+    // VLOG(1) << "loaded a scene with nr of frames " << m_frames_for_scene.size();
     CHECK(m_frames_for_scene.size()!=0) << "Clouldn't load any images for this scene in path " << scene_path; 
 
     //shuffle the images from this scene 

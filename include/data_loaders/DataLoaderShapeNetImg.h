@@ -68,6 +68,7 @@ private:
     // std::string m_mode; // train or test or val
     int m_nr_samples_to_skip;
     int m_nr_samples_to_read;
+    int m_nr_imgs_to_read;
     int m_subsample_factor;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just images from the the first scene of that specified object class
