@@ -209,7 +209,7 @@ def test_phenorob():
             Scene.show(cloud, "cloud" )
         
         if loader.is_finished():
-            print("resetting")
+            # print("resetting")
             loader.reset()
 
         view.update()
@@ -234,8 +234,8 @@ def test_cloud_ros():
 # test_semantickitti()
 # test_scannet()
 # test_stanford3dscene()
-test_shapenet_img()
-# test_nerf()
+# test_shapenet_img()
+test_nerf()
 # test_phenorob()
 
 
