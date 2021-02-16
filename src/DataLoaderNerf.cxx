@@ -1,5 +1,7 @@
 #include "data_loaders/DataLoaderNerf.h"
 
+#include <limits>
+
 //loguru
 #define LOGURU_REPLACE_GLOG 1
 #include <loguru.hpp>
@@ -262,6 +264,13 @@ Frame DataLoaderNerf::get_next_frame(){
 
     return frame;
 }
+Frame DataLoaderNerf::get_frame_at_idx( const int idx){
+    CHECK(idx<m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
+
+    Frame  frame= m_frames[idx];
+
+    return frame;
+}
 
 Frame DataLoaderNerf::get_random_frame(){
     CHECK(m_frames.size()>0 ) << "m_frames has size 0";
@@ -270,6 +279,23 @@ Frame DataLoaderNerf::get_random_frame(){
     Frame  frame= m_frames[random_idx];
 
     return frame;
+}
+Frame DataLoaderNerf::get_closest_frame( const easy_pbr::Frame& frame){
+
+    float closest_distance=std::numeric_limits<float>::max();
+    int closest_idx=-1;
+    for(size_t i=0; i<m_frames.size(); i++){
+        float dist =  ( m_frames[i].tf_cam_world.inverse().translation() - frame.tf_cam_world.inverse().translation() ).norm();
+        if (dist < closest_distance && dist>1e-7){
+            closest_distance=dist;
+            closest_idx=i;
+        }
+    }
+
+    Frame  frame_closest= m_frames[closest_idx];
+
+    return frame_closest;
+    
 }
 
 
