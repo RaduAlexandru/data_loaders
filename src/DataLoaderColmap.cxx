@@ -286,19 +286,16 @@ void DataLoaderColmap::read_data(){
       rot.setIdentity();
       rot.linear()=q_rot.toRotationMatrix();
       tf_cam_world=tf_cam_world*rot;
+      //flip the y axis because for some reason colmap stores the positive Y towards down but I want it towards up
+      Eigen::Affine3d tf_world_cam =tf_cam_world.inverse();
+      tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
+      tf_cam_world=tf_world_cam.inverse();
 
 
       frame.tf_cam_world=tf_cam_world.cast<float>();
 
-
       // //intrinsics we get later whne we read the cameras.bin
-      // frame.K.setIdentity();
-      // float focal = 0.5 * frame.width / std::tan(0.5 * m_camera_angle_x);
-      // frame.K(0,0) = focal;
-      // frame.K(1,1) = focal;
-      // frame.K(0,2) = frame.width/2.0; //no need to subsample the cx and cy because the frame width already refers to the subsampled iamge
-      // frame.K(1,2) = frame.height/2.0;
-      // frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+
 
       m_frames.push_back(frame);
 
