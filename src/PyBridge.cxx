@@ -17,6 +17,7 @@
 #include "data_loaders/DataLoaderPhenorob.h"
 #include "data_loaders/DataLoaderScanNet.h"
 #include "data_loaders/DataLoaderNerf.h"
+#include "data_loaders/DataLoaderColmap.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -207,6 +208,20 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderNerf::set_mode_train ) 
     .def("set_mode_test", &DataLoaderNerf::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderNerf::set_mode_validation )
+    ;
+
+    //DataLoaderColmap
+    py::class_<DataLoaderColmap> (m, "DataLoaderColmap")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderColmap::start ) 
+    .def("has_data", &DataLoaderColmap::has_data ) 
+    .def("get_next_frame", &DataLoaderColmap::get_next_frame ) 
+    .def("get_frame_at_idx", &DataLoaderColmap::get_frame_at_idx ) 
+    .def("get_random_frame", &DataLoaderColmap::get_random_frame ) 
+    .def("get_closest_frame", &DataLoaderColmap::get_closest_frame ) 
+    .def("is_finished", &DataLoaderColmap::is_finished ) 
+    .def("reset", &DataLoaderColmap::reset ) 
+    .def("nr_samples", &DataLoaderColmap::nr_samples ) 
     ;
 
     #ifdef WITH_ROS

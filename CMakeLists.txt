@@ -88,6 +88,7 @@ set(MY_SRC
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderModelNet40.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderStanford3DScene.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderNerf.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderColmap.cxx
 )
 set(DEPS_SRC 
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp
