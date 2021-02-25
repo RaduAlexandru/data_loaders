@@ -230,6 +230,11 @@ void DataLoaderNerf::read_data(){
         //     // frame.depth=1.0/frame.depth; //seems to be the inverse depth
         // }
 
+        //load gradients 
+        cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+        cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
+        cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
+
 
         //extrinsics
         frame.tf_cam_world=m_filename2pose[img_path.stem().string()].cast<float>();

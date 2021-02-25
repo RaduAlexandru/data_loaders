@@ -255,13 +255,32 @@ void DataLoaderColmap::read_data(){
 
       Frame frame;
 
+
       fs::path img_path=m_dataset_path/"images"/image_name;
+      // image_name.erase(image_name.length()-3);
+      // image_name=image_name+"png";
+      // fs::path img_path=m_dataset_path/"images_transparency"/image_name;
 
       //get the idx
       frame.cam_id=camera_id;
       frame.frame_idx=i;
+
+      // //load actually the TRANSAPRENCY ONE
+      // cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
+      // if(m_subsample_factor>1){
+      //     cv::Mat resized;
+      //     cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+      //     rgba_8u=resized;
+      // }
+      // std::vector<cv::Mat> channels(4);
+      // cv::split(rgba_8u, channels);
+      // cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+      // channels.pop_back();
+      // cv::merge(channels, frame.rgb_8u);
+
+
       
-      //read rgba and split into rgb and alpha mask
+      // read rgb
       frame.rgb_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
       if(m_subsample_factor>1){
           cv::Mat resized;
@@ -269,11 +288,18 @@ void DataLoaderColmap::read_data(){
           frame.rgb_8u=resized;
       }
 
+
+
       cv::cvtColor(frame.rgb_8u, frame.gray_8u, CV_BGR2GRAY);
       frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
       // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
       frame.width=frame.rgb_32f.cols;
       frame.height=frame.rgb_32f.rows;
+
+      //load gradients 
+      cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+      cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
+      cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
 
 
       //extrinsics
@@ -289,6 +315,8 @@ void DataLoaderColmap::read_data(){
       //flip the y axis because for some reason colmap stores the positive Y towards down but I want it towards up
       Eigen::Affine3d tf_world_cam =tf_cam_world.inverse();
       tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
+      tf_world_cam.translation()/=15.0;
+      // tf_world_cam.translation()/=3.0;
       tf_cam_world=tf_world_cam.inverse();
 
 

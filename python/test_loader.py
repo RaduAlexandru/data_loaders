@@ -235,6 +235,7 @@ def test_colmap():
 
             # print("got frame")
             frame=loader.get_next_frame()
+            print("loaded frame with width and height ", frame.height)
 
 
             Gui.show(frame.rgb_32f, "rgb")
