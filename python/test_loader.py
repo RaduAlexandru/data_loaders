@@ -177,6 +177,7 @@ def test_nerf():
 
             # print("got frame")
             frame=loader.get_next_frame()
+            # print("frame width and height is ", frame.width, " ", frame.height)
 
 
             Gui.show(frame.rgb_32f, "rgb")
@@ -192,6 +193,7 @@ def test_nerf():
         if loader.is_finished():
             print("resetting")
             loader.reset()
+            print("scene scale is ", Scene.get_scale())
 
         view.update()
 
@@ -235,13 +237,13 @@ def test_colmap():
 
             # print("got frame")
             frame=loader.get_next_frame()
-            print("loaded frame with width and height ", frame.height)
+            # print("loaded frame with width and height ", frame.width, " ", frame.height)
 
 
             Gui.show(frame.rgb_32f, "rgb")
 
             # print("frame k is ", frame.K)
-            frustum_mesh=frame.create_frustum_mesh(0.2)
+            frustum_mesh=frame.create_frustum_mesh(0.02)
             frustum_mesh.m_vis.m_line_width=1
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
 
@@ -251,6 +253,7 @@ def test_colmap():
         if loader.is_finished():
             print("resetting")
             loader.reset()
+            print("scene scale is ", Scene.get_scale())
 
         view.update()
 
@@ -262,9 +265,9 @@ def test_colmap():
 # test_scannet()
 # test_stanford3dscene()
 # test_shapenet_img()
-# test_nerf()
+test_nerf()
 # test_phenorob()
-test_colmap()
+# test_colmap()
 
 
 

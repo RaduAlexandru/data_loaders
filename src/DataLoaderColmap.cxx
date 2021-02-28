@@ -74,6 +74,7 @@ void DataLoaderColmap::init_params(const std::string config_file){
     m_subsample_factor=loader_config["subsample_factor"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
+    m_load_imgs_with_transparency=loader_config["load_imgs_with_transparency"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
 
@@ -256,37 +257,44 @@ void DataLoaderColmap::read_data(){
       Frame frame;
 
 
-      fs::path img_path=m_dataset_path/"images"/image_name;
-      // image_name.erase(image_name.length()-3);
-      // image_name=image_name+"png";
-      // fs::path img_path=m_dataset_path/"images_transparency"/image_name;
+      fs::path img_path;
+      if(m_load_imgs_with_transparency){
+        image_name.erase(image_name.length()-3);
+        image_name=image_name+"png";
+        img_path=m_dataset_path/"images_transparency"/image_name;
+      }else{
+        img_path=m_dataset_path/"images"/image_name;
+      }
 
       //get the idx
       frame.cam_id=camera_id;
       frame.frame_idx=i;
 
-      // //load actually the TRANSAPRENCY ONE
-      // cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
-      // if(m_subsample_factor>1){
-      //     cv::Mat resized;
-      //     cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
-      //     rgba_8u=resized;
-      // }
-      // std::vector<cv::Mat> channels(4);
-      // cv::split(rgba_8u, channels);
-      // cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
-      // channels.pop_back();
-      // cv::merge(channels, frame.rgb_8u);
+      //load actually the TRANSAPRENCY ONE
+      if (m_load_imgs_with_transparency){
+        cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
+        if(m_subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+            rgba_8u=resized;
+        }
+        std::vector<cv::Mat> channels(4);
+        cv::split(rgba_8u, channels);
+        cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+        channels.pop_back();
+        cv::merge(channels, frame.rgb_8u);
+      }else{
+        // read rgb
+        frame.rgb_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
+        if(m_subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(frame.rgb_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+            frame.rgb_8u=resized;
+        }
+      }
 
 
       
-      // read rgb
-      frame.rgb_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
-      if(m_subsample_factor>1){
-          cv::Mat resized;
-          cv::resize(frame.rgb_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
-          frame.rgb_8u=resized;
-      }
 
 
 
