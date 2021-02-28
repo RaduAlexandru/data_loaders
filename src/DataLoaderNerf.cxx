@@ -74,6 +74,7 @@ void DataLoaderNerf::init_params(const std::string config_file){
     m_subsample_factor=loader_config["subsample_factor"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
+    m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
@@ -247,6 +248,14 @@ void DataLoaderNerf::read_data(){
         frame.K(0,2) = frame.width/2.0; //no need to subsample the cx and cy because the frame width already refers to the subsampled iamge
         frame.K(1,2) = frame.height/2.0;
         frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+
+
+        //rescale things if necessary
+        if(m_scene_scale_multiplier>0.0){
+            Eigen::Affine3f tf_world_cam_rescaled = frame.tf_cam_world.inverse();
+            tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+            frame.tf_cam_world=tf_world_cam_rescaled.inverse();
+        }
 
         m_frames.push_back(frame);
         // VLOG(1) << "pushback and frames is " << m_frames.size();

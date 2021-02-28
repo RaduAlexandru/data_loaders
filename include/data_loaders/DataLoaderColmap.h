@@ -92,6 +92,7 @@ private:
     int m_subsample_factor;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just the first image
+    float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     bool m_load_imgs_with_transparency; //loads images with transparency and therefore also loads the frame.mask or without which is faster and only loads the rgb part of the frame
     // std::string m_restrict_to_object;  //makes it load clouds only from a specific object
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are 

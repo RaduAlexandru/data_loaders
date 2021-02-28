@@ -72,6 +72,7 @@ private:
     std::string m_mode; // train or test or val
     bool m_shuffle;
     bool m_do_overfit; // return all the time just the first image
+    float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     // std::string m_restrict_to_object;  //makes it load clouds only from a specific object
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
     // std::thread m_loader_thread;

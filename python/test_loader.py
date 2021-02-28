@@ -183,7 +183,7 @@ def test_nerf():
             Gui.show(frame.rgb_32f, "rgb")
 
 
-            frustum_mesh=frame.create_frustum_mesh(0.2)
+            frustum_mesh=frame.create_frustum_mesh(0.02)
             frustum_mesh.m_vis.m_line_width=1
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
 
@@ -265,9 +265,9 @@ def test_colmap():
 # test_scannet()
 # test_stanford3dscene()
 # test_shapenet_img()
-test_nerf()
+# test_nerf()
 # test_phenorob()
-# test_colmap()
+test_colmap()
 
 
 

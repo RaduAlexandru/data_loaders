@@ -74,6 +74,7 @@ void DataLoaderColmap::init_params(const std::string config_file){
     m_subsample_factor=loader_config["subsample_factor"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
+    m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_load_imgs_with_transparency=loader_config["load_imgs_with_transparency"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
@@ -323,7 +324,6 @@ void DataLoaderColmap::read_data(){
       //flip the y axis because for some reason colmap stores the positive Y towards down but I want it towards up
       Eigen::Affine3d tf_world_cam =tf_cam_world.inverse();
       tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
-      tf_world_cam.translation()/=15.0;
       // tf_world_cam.translation()/=3.0;
       tf_cam_world=tf_world_cam.inverse();
 
@@ -331,6 +331,13 @@ void DataLoaderColmap::read_data(){
       frame.tf_cam_world=tf_cam_world.cast<float>();
 
       // //intrinsics we get later whne we read the cameras.bin
+
+      //rescale things if necessary
+      if(m_scene_scale_multiplier>0.0){
+          Eigen::Affine3f tf_world_cam_rescaled = frame.tf_cam_world.inverse();
+          tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+          frame.tf_cam_world=tf_world_cam_rescaled.inverse();
+      }
 
 
       m_frames.push_back(frame);
