@@ -40,7 +40,8 @@ public:
     void start(); //starts reading the data from disk. This gets called automatically if we have autostart=true
     easy_pbr::Frame get_next_frame();
     easy_pbr::Frame get_frame_at_idx( const int idx);
-    easy_pbr::Frame get_closest_frame( const easy_pbr::Frame& frame);
+    easy_pbr::Frame get_closest_frame( const easy_pbr::Frame& frame); //return the one closest frame
+    std::vector<easy_pbr::Frame> get_close_frames( const easy_pbr::Frame& frame, const int nr_frames ); //return a certain number of frames ordered by proximity, 
     easy_pbr::Frame get_random_frame();
     bool has_data(); //will reeturn always true because this dataloader preloads all the frames and keeps them in memory all the time. They are not so many
     void reset(); //starts reading from the beggining
