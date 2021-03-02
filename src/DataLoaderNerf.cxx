@@ -114,7 +114,7 @@ void DataLoaderNerf::init_data_reading(){
 
 
     // shuffle the data if neccsary
-    if(m_shuffle){
+    if(m_shuffle && m_mode=="train"){
         unsigned seed = m_nr_resets;
         auto rng_0 = std::default_random_engine(seed);
         std::shuffle(std::begin(m_imgs_paths), std::end(m_imgs_paths), rng_0);
@@ -313,7 +313,7 @@ Frame DataLoaderNerf::get_closest_frame( const easy_pbr::Frame& frame){
 }
 
 
-std::vector<easy_pbr::Frame>  DataLoaderNerf::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames){
+std::vector<easy_pbr::Frame>  DataLoaderNerf::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx){
 
     CHECK(nr_frames<m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
 
@@ -327,8 +327,10 @@ std::vector<easy_pbr::Frame>  DataLoaderNerf::get_close_frames( const easy_pbr::
         for(size_t j=0; j<m_frames.size(); j++){
 
             //ignore if the current frame we are checking is THIS
-            if( m_frames[j].frame_idx == frame.frame_idx ){ 
-                continue;
+            if (discard_same_idx){
+                if( m_frames[j].frame_idx == frame.frame_idx ){ 
+                    continue;
+                }
             }
 
             //ignore the current frame that we are checking if it's any of the ones already selected
