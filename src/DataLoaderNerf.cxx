@@ -37,6 +37,20 @@ using namespace radu::utils;
 using namespace easy_pbr;
 
 
+struct {
+    bool operator()(fs::path a, fs::path b) const {
+        std::string a_filename=a.stem().string();
+        std::string b_filename=b.stem().string();
+        //The files have a format of r_NUMBER so we want to get the number
+        std::vector<std::string> a_tokens=split(a_filename,"_");
+        std::vector<std::string> b_tokens=split(b_filename,"_");
+        int a_nr=std::stoi(a_tokens[1]);
+        int b_nr=std::stoi(b_tokens[1]);
+        return a_nr < b_nr; 
+    }
+} FileComparatorFunc;
+
+
 DataLoaderNerf::DataLoaderNerf(const std::string config_file):
     // m_is_running(false),
     m_idx_img_to_read(0),
@@ -111,6 +125,8 @@ void DataLoaderNerf::init_data_reading(){
         }
     }
     CHECK( !m_imgs_paths.empty() ) << "Could not find any images in path " << m_dataset_path/m_mode;
+
+    std::sort(m_imgs_paths.begin(), m_imgs_paths.end(), FileComparatorFunc);
 
 
     // shuffle the data if neccsary
@@ -385,7 +401,7 @@ void DataLoaderNerf::reset(){
     m_nr_resets++;
 
     //reshuffle for the next epoch
-    if(m_shuffle){
+    if(m_shuffle && m_mode=="train"){
         unsigned seed = m_nr_resets;
         auto rng_0 = std::default_random_engine(seed); 
         std::shuffle(std::begin(m_frames), std::end(m_frames), rng_0);

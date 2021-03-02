@@ -170,6 +170,7 @@ def test_shapenet_img():
 def test_nerf():
     loader=DataLoaderNerf(config_path)
     loader.set_mode_train()
+    # loader.set_mode_test()
     loader.start()
 
     while True:
@@ -265,9 +266,9 @@ def test_colmap():
 # test_scannet()
 # test_stanford3dscene()
 # test_shapenet_img()
-# test_nerf()
+test_nerf()
 # test_phenorob()
-test_colmap()
+# test_colmap()
 
 
 
