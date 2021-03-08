@@ -525,6 +525,58 @@ Frame DataLoaderColmap::get_closest_frame( const easy_pbr::Frame& frame){
     
 }
 
+std::vector<easy_pbr::Frame>  DataLoaderColmap::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx){
+
+    CHECK(nr_frames<m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
+
+    std::vector<easy_pbr::Frame> selected_close_frames;
+
+    for(size_t i=0; i<nr_frames; i++){
+
+        //select a close frame
+        float closest_distance=std::numeric_limits<float>::max();
+        int closest_idx=-1;
+        for(size_t j=0; j<m_frames.size(); j++){
+
+            //ignore if the current frame we are checking is THIS
+            if (discard_same_idx){
+                if( m_frames[j].frame_idx == frame.frame_idx ){ 
+                    continue;
+                }
+            }
+
+            //ignore the current frame that we are checking if it's any of the ones already selected
+            bool is_already_selected=false;
+            for(size_t k=0; k<selected_close_frames.size(); k++){
+                if( m_frames[j].frame_idx == selected_close_frames[k].frame_idx ){
+                    is_already_selected=true;
+                }
+            }
+            if(is_already_selected){
+                continue;
+            }
+
+            //now get the closest one
+            // float dist =  ( m_frames[j].tf_cam_world.inverse().translation() - frame.tf_cam_world.inverse().translation() ).norm();
+            float dist = 1.0 -  m_frames[j].look_dir().dot(frame.look_dir());
+            if (dist < closest_distance){
+                closest_distance=dist;
+                closest_idx=j;
+            }
+        }
+
+        Frame  frame_closest= m_frames[closest_idx];
+        selected_close_frames.push_back(frame_closest);
+
+
+    }
+
+
+    return selected_close_frames;
+   
+    
+}
+
 
 
 
@@ -562,6 +614,19 @@ int DataLoaderColmap::nr_samples(){
 bool DataLoaderColmap::has_data(){
     return true; //we always have data since the loader stores all the image in memory and keeps them there
 }
+
+
+void DataLoaderColmap::set_mode_train(){
+    m_mode="train";
+}
+void DataLoaderColmap::set_mode_test(){
+    m_mode="test";
+}
+void DataLoaderColmap::set_mode_validation(){
+    m_mode="val";
+}
+
+
 
 
 //Bunch of functions required to read binary files

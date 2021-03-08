@@ -220,9 +220,13 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("get_frame_at_idx", &DataLoaderColmap::get_frame_at_idx ) 
     .def("get_random_frame", &DataLoaderColmap::get_random_frame ) 
     .def("get_closest_frame", &DataLoaderColmap::get_closest_frame ) 
+    .def("get_close_frames", &DataLoaderColmap::get_close_frames ) 
     .def("is_finished", &DataLoaderColmap::is_finished ) 
     .def("reset", &DataLoaderColmap::reset ) 
     .def("nr_samples", &DataLoaderColmap::nr_samples ) 
+    .def("set_mode_train", &DataLoaderColmap::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderColmap::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderColmap::set_mode_validation )
     ;
 
     #ifdef WITH_ROS
