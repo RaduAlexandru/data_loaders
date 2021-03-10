@@ -251,7 +251,6 @@ void DataLoaderColmap::read_data(){
 
 
       //NOW we finished reading everything from the binary file regarding this image,  so now we can read the image itself
-      VLOG(1) << "Read pose for image " << image_name;
       // VLOG(1) << "Read pose for frame_idx " << camera_id;
 
 
@@ -270,6 +269,16 @@ void DataLoaderColmap::read_data(){
       //get the idx
       frame.cam_id=camera_id;
       frame.frame_idx=i;
+
+      //depending on the mode we read this image or not 
+      if (m_mode=="train" && frame.frame_idx%3==0){
+        continue;
+      }
+      if (m_mode=="test" && frame.frame_idx%3!=0){
+        continue;
+      }
+
+      VLOG(1) << "Read pose for image " << image_name;
 
       //load actually the TRANSAPRENCY ONE
       if (m_load_imgs_with_transparency){
