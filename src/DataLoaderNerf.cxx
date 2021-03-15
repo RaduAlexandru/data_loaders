@@ -231,7 +231,57 @@ void DataLoaderNerf::read_data(){
         frame.width=frame.rgb_32f.cols;
         frame.height=frame.rgb_32f.rows;
 
-        // //if we are loading the test one, get also the depth
+        //if we are loading the test, get also the normals
+        // BUG WE CANNOT LOAD THE NORMAL BECAUSE THEY ARE STORED AS PNG AND THEREFORE FROM THE range of [-1,1], only the [0,1] is stored...
+        // if(m_mode=="test"){
+        //     fs::path parent=img_path.parent_path();
+        //     std::string img_filename=img_path.stem().string();
+        //     fs::path normal_img_path=parent/(img_filename+"_normal_0001.png");
+        //     // VLOG(1) << "normal img path" << normal_img_path;
+            
+        //     cv::Mat normal=cv::imread(normal_img_path.string() ,  cv::IMREAD_UNCHANGED );
+        //     VLOG(1) << "normal type is " << radu::utils::type2string(normal.type());
+        //     //get the normal form 4 channels( with alpha, to just 3 channels)
+        //     std::vector<cv::Mat> channels(4);
+        //     cv::split(normal, channels);
+        //     channels.pop_back();
+        //     cv::merge(channels, normal);
+        //     normal.convertTo(normal, CV_32FC3, 1.0/255.0);
+        //     CHECK(!normal.empty()) << "The normal image is empty at path " << normal_img_path;
+        //     //subsample the normals and renormalzie them
+        //     if(m_subsample_factor>1){
+        //         cv::Mat resized;
+        //         cv::resize(normal, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+        //         normal=resized;
+        //         //normalize becuase we subsample and therefore the normal may not be equal to 1 anymore 
+        //         // for(int y=0; y<normal.rows; y++){
+        //     //         for(int x=0; x<normal.cols; x++){
+        //     //             Eigen::Vector3f normal_vec;
+        //     //             normal_vec.x()= normal.at<cv::Vec3f>(y,x)[0];
+        //     //             normal_vec.y()= normal.at<cv::Vec3f>(y,x)[1];
+        //     //             normal_vec.z()= normal.at<cv::Vec3f>(y,x)[2];
+        //     //             // normal_vec=normal_vec.normalized();
+        //     //             // normal_vec.normalize();
+        //     //             // normal_vec=(normal_vec.array()+1.0)*0.5;
+        //     //             // if (!normal_vec.isZero()){
+        //     //                 // VLOG(1) << "norm is " << normal_vec.norm();
+        //     //             // }
+        //     //             normal_vec.x()=(normal_vec.x()+1.0)*0.5;
+        //     //             normal_vec.y()=(normal_vec.y()+1.0)*0.5;
+        //     //             normal_vec.z()=(normal_vec.z()+1.0)*0.5;
+
+        //     //             normal.at<cv::Vec3f>(y,x)[0]=normal_vec.x();
+        //     //             normal.at<cv::Vec3f>(y,x)[1]=normal_vec.y();
+        //     //             normal.at<cv::Vec3f>(y,x)[2]=normal_vec.z();
+        //     //         }
+        //     //     }
+        //     }
+
+        //     frame.normal_32f=normal;
+        // }
+
+        //if we are loading the test one, get also the depth
+        // THE DEPTH is shitty because is stored as png therefore discretized in 0,255 so it has stepwise artifacts
         // if(m_mode=="test"){
         //     fs::path parent=img_path.parent_path();
         //     std::string img_filename=img_path.stem().string();
@@ -244,7 +294,8 @@ void DataLoaderNerf::read_data(){
         //     CHECK(!depth.empty()) << "The depth image is empty at path " << depth_img_path;
         //     // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
         //     depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in cm but we want it in meters
-        //     // frame.depth=1.0/frame.depth; //seems to be the inverse depth
+        //     frame.depth=1.0/frame.depth; //seems to be the inverse depth
+
         // }
 
         //load gradients 
@@ -293,6 +344,9 @@ Frame DataLoaderNerf::get_next_frame(){
     }
 
     return frame;
+}
+std::vector<easy_pbr::Frame> DataLoaderNerf::get_all_frames(){
+    return m_frames;
 }
 Frame DataLoaderNerf::get_frame_at_idx( const int idx){
     CHECK(idx<m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
@@ -380,6 +434,49 @@ std::vector<easy_pbr::Frame>  DataLoaderNerf::get_close_frames( const easy_pbr::
    
     
 }
+
+// //compute weights 
+// std::vector<float> DataLoaderNerf::compute_frame_weights( const easy_pbr::Frame& frame, std::vector<easy_pbr::Frame>& close_frames){
+//     // https://people.cs.clemson.edu/~dhouse/courses/404/notes/barycentric.pdf
+//     // https://stackoverflow.com/questions/2924795/fastest-way-to-compute-point-to-triangle-distance-in-3d
+//     // https://math.stackexchange.com/questions/544946/determine-if-projection-of-3d-point-onto-plane-is-within-a-triangle
+
+//     //to compute the weights we use barycentric coordinates. 
+//     //this has several steps, first project the current frame into the triangle defiend by the close_frames. 
+//     //compute barycentric coords
+//     //if the barycentric coords are not within [0,1], clamp them
+
+//     //checks
+//     CHECK(close_frames.size()==3) <<"This assumes we are using 3 frames as close frames because we want to compute barycentric coords";
+
+//     //make triangle
+//     Eigen::Vector3d cur_pos= frame.pos_in_world().cast<double>();
+//     Eigen::Vector3d p1= close_frames[0].pos_in_world().cast<double>();
+//     Eigen::Vector3d p2= close_frames[1].pos_in_world().cast<double>();
+//     Eigen::Vector3d p3= close_frames[2].pos_in_world().cast<double>();
+
+//     //get barycentirc coords of the projection https://math.stackexchange.com/a/544947
+//     Eigen::Vector3d u=p2-p1;
+//     Eigen::Vector3d v=p3-p1;
+//     Eigen::Vector3d n=u.cross(v);
+//     Eigen::Vector3d w=cur_pos-p1;
+
+//     float w_p3= u.cross(w).dot(n)/ (n.dot(n));
+//     float w_p2= w.cross(v).dot(n)/ (n.dot(n));
+//     float w_p1= 1.0-w_p2-w_p3;
+
+//     //to get weights as if the point was inside the triangle, we clamp the barycentric coordinates (I don't know if this is needed yeat)
+
+//     //return tha values
+//     std::vector<float> vals;
+//     vals.push_back(w_p1);
+//     vals.push_back(w_p2);
+//     vals.push_back(w_p3);
+
+//     return vals;
+
+
+// }
 
 
 
