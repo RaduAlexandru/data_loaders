@@ -229,6 +229,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderColmap::set_mode_train ) 
     .def("set_mode_test", &DataLoaderColmap::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderColmap::set_mode_validation )
+    .def("set_mode_all", &DataLoaderColmap::set_mode_all )
     ;
 
     #ifdef WITH_ROS

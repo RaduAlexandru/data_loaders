@@ -634,6 +634,10 @@ void DataLoaderColmap::set_mode_test(){
 void DataLoaderColmap::set_mode_validation(){
     m_mode="val";
 }
+void DataLoaderColmap::set_mode_all(){
+    m_mode="all";
+}
+
 
 
 

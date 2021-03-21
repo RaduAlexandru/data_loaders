@@ -213,6 +213,7 @@ void DataLoaderNerf::read_data(){
         
         //read rgba and split into rgb and alpha mask
         cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
+        cv::Mat rgb_8u;
         if(m_subsample_factor>1){
             cv::Mat resized;
             cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
@@ -222,11 +223,11 @@ void DataLoaderNerf::read_data(){
         cv::split(rgba_8u, channels);
         cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
         channels.pop_back();
-        cv::merge(channels, frame.rgb_8u);
+        cv::merge(channels, rgb_8u);
 
 
-        cv::cvtColor(frame.rgb_8u, frame.gray_8u, CV_BGR2GRAY);
-        frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
+        // cv::cvtColor(frame.rgb_8u, frame.gray_8u, CV_BGR2GRAY);
+        rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
         // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
         frame.width=frame.rgb_32f.cols;
         frame.height=frame.rgb_32f.rows;
@@ -299,9 +300,9 @@ void DataLoaderNerf::read_data(){
         // }
 
         //load gradients 
-        cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
-        cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
-        cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
+        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+        // cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
+        // cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
 
 
         //extrinsics
