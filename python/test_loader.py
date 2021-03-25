@@ -139,24 +139,19 @@ def test_shapenet_img():
         if(loader.finished_reading_scene() ): 
             frame=loader.get_random_frame()
 
-            # if i==0:
-            # if i==35:
-            # if (frame.frame_idx==35):
-            # if (frame.frame_idx==34):
-            # if (frame.frame_idx==34 or frame.frame_idx==35):
-            if True:
+            if i%10==0:
                 loader.start_reading_next_scene()
 
-                Gui.show(frame.rgb_32f, "rgb")
-                Gui.show(frame.mask, "mask")
-                Gui.show(frame.depth, "depth")
-                frustum=frame.create_frustum_mesh(0.1)
-                # Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
-                Scene.show(frustum, "frustum" )
+            Gui.show(frame.rgb_32f, "rgb")
+            Gui.show(frame.mask, "mask")
+            Gui.show(frame.depth, "depth")
+            frustum=frame.create_frustum_mesh(0.1)
+            # Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
+            Scene.show(frustum, "frustum" )
 
-                cloud=frame.depth2world_xyz_mesh()
-                cloud=frame.assign_color(cloud)
-                Scene.show(cloud, "cloud")
+            cloud=frame.depth2world_xyz_mesh()
+            cloud=frame.assign_color(cloud)
+            Scene.show(cloud, "cloud")
 
             i+=1
 
@@ -265,8 +260,8 @@ def test_colmap():
 # test_semantickitti()
 # test_scannet()
 # test_stanford3dscene()
-# test_shapenet_img()
-test_nerf()
+test_shapenet_img()
+# test_nerf()
 # test_phenorob()
 # test_colmap()
 
