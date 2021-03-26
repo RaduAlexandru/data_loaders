@@ -38,6 +38,7 @@ public:
     DataLoaderShapeNetImg(const std::string config_file);
     ~DataLoaderShapeNetImg();
     easy_pbr::Frame get_random_frame();
+    easy_pbr::Frame get_frame_at_idx( const int idx);
     void start_reading_next_scene(); //switch to another scene from this object and start reading it
     bool finished_reading_scene(); //returns true when we have finished reading everything for that one scene of the corresponding object and we can safely use get_random_frame
     void reset(); //starts reading from the beggining

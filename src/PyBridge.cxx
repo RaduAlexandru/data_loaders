@@ -86,6 +86,7 @@ PYBIND11_MODULE(dataloaders, m) {
     py::class_<DataLoaderShapeNetImg> (m, "DataLoaderShapeNetImg")
     .def(py::init<const std::string>())
     .def("get_random_frame", &DataLoaderShapeNetImg::get_random_frame ) 
+    .def("get_frame_at_idx", &DataLoaderShapeNetImg::get_frame_at_idx ) 
     .def("start_reading_next_scene", &DataLoaderShapeNetImg::start_reading_next_scene ) 
     .def("finished_reading_scene", &DataLoaderShapeNetImg::finished_reading_scene ) 
     .def("is_finished", &DataLoaderShapeNetImg::is_finished ) 

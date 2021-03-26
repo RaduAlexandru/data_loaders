@@ -376,6 +376,14 @@ Frame DataLoaderShapeNetImg::get_random_frame(){
     return m_frames_for_scene[random_idx];
 }
 
+Frame DataLoaderShapeNetImg::get_frame_at_idx( const int idx){
+    CHECK(idx<m_frames_for_scene.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames_for_scene.size();
+
+    Frame  frame= m_frames_for_scene[idx];
+
+    return frame;
+}
+
 
 
 
@@ -406,7 +414,7 @@ void DataLoaderShapeNetImg::reset(){
 }
 
 int DataLoaderShapeNetImg::nr_samples(){
-    return m_scene_folders.size();
+    return m_frames_for_scene.size();
 }
 
 std::unordered_map<std::string, std::string> DataLoaderShapeNetImg::create_mapping_classnr2classname(){
