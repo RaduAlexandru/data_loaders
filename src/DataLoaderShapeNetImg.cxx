@@ -82,6 +82,8 @@ void DataLoaderShapeNetImg::init_params(const std::string config_file){
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
     m_dataset_depth_path =(std::string)loader_config["dataset_depth_path"];
     m_difficulty =(std::string)loader_config["difficulty"];
+    m_load_depth= loader_config["load_depth"];
+    m_load_as_shell= loader_config["load_as_shell"];
 
     CHECK(m_difficulty=="easy") << "We only implemented the reader for the easy dataset. The hard version just moves the model randomly but maybe you can do that by just moving the mesh";
 
@@ -206,63 +208,31 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             Frame frame;
             frame.frame_idx=img_idx;
 
-            //get rgba image and get the alpha in a mask
-            cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED ); //correct 
-            // cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
-            if(m_subsample_factor>1){
-                cv::Mat resized;
-                cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
-                rgba_8u=resized;
+            //sets the paths and all the things necessary for the loading of images 
+            frame.rgb_path=img_path.string();
+            if (m_load_depth){
+                fs::path filename=img_path.stem();
+                fs::path scene_name=img_path.parent_path().parent_path().filename();
+                fs::path object_name=img_path.parent_path().parent_path().parent_path().filename();
+                // VLOG(1) << "filename " << filename << " " << scene_name << " " << object_name ;
+                fs::path depth_path = m_dataset_depth_path/object_name/scene_name/m_difficulty/ (filename.string() + ".exr" );
+                frame.depth_path=depth_path.string();
             }
-            std::vector<cv::Mat> channels(4);
-            cv::split(rgba_8u, channels);
-            // cv::threshold( channels[3], frame.mask, 0.01, 1.0, cv::THRESH_BINARY);
-            // frame.mask=channels[3];
-            channels[3].convertTo(frame.mask, CV_32FC1, 1.0/255.0);
-            cv::threshold( frame.mask, frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
-            channels.pop_back();
-            cv::merge(channels, frame.rgb_8u);
-
-            // frame.rgb_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED );
-            // VLOG(1) << "img type is " << radu::utils::type2string( frame.rgb_8u.type() );
-            frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
-            frame.width=frame.rgb_32f.cols;
-            frame.height=frame.rgb_32f.rows;
-            // VLOG(1) << " frame width ad height " << frame.width << " " << frame.height;
+            frame.subsample_factor=m_subsample_factor;
 
 
-
-            //read also the depth
-            fs::path filename=img_path.stem();
-            fs::path scene_name=img_path.parent_path().parent_path().filename();
-            fs::path object_name=img_path.parent_path().parent_path().parent_path().filename();
-            // VLOG(1) << "filename " << filename << " " << scene_name << " " << object_name ;
-            fs::path depth_path = m_dataset_depth_path/object_name/scene_name/m_difficulty/ (filename.string() + ".exr" );
-            CHECK( fs::is_regular_file(depth_path) ) << "Could not find depth under " << depth_path;
-            // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_UNCHANGED);
-            // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
-            cv::Mat depth=cv::imread(depth_path.string() ,  cv::IMREAD_UNCHANGED  );
-            // cv::Mat depth=cv::imread(depth_path.string() , CV_LOAD_IMAGE_ANYDEPTH );
-            // VLOG(1) << "depth has type " << radu::utils::type2string(depth.type());
-            // VLOG(1) << "depth has rows and cols " << depth.rows << " " << depth.cols;
-            cv::threshold( depth, depth, 99999, 0.0, cv::THRESH_TOZERO_INV ); //vlaues above 9999 are set to zero depth
-            // double min, max;
-            // cv::minMaxLoc(depth, &min, &max);
-            // VLOG(1) << "min max is " << min <<" " << max;
-            std::vector<cv::Mat> channels_depth(3);
-            cv::split(depth, channels_depth);
-            // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
-            // channels_depth[0].convertTo(frame.depth, CV_32FC1, 1.0/1.0); //the depth was stored in mm but we want it in meters
-            frame.depth=channels_depth[0];
-            // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in cm but we want it in meters
-            // frame.depth=1.0/frame.depth; //seems to be the inverse depth
-            if(m_subsample_factor>1){
-                cv::Mat resized;
-                cv::resize(frame.depth, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_NEAREST);
-                frame.depth=resized;
+            //load the images if necessary or delay it for whne it's needed
+            frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
+            if (m_load_as_shell){
+                //set the function to load the images whenever it's neede 
+                frame.is_shell=true;
+            }else{
+                frame.is_shell=false;
+                frame.load_images(frame);
             }
- 
-            // m_dataset_depth_path 
+
+
+
 
 
 
@@ -322,25 +292,9 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             // frame.tf_cam_world=tf.inverse();
 
 
-            // VLOG(1) << "dist to origin is " << frame.tf_cam_world.inverse().translation().norm();
-            // VLOG(1) << "for frame idx " << img_idx << " tf_cam_world is " << frame.tf_cam_world.matrix();
-            // VLOG(1) << "for frame idx " << img_idx << " tf_cam_world inverse is " << frame.tf_cam_world.inverse().matrix();
+  
 
 
-
-
-
-
-            /////debug
-            // frame.tf_cam_world.setIdentity();
-
-            // //K back to p is 
-            // Eigen::Matrix4f proj=intrinsics_to_opengl_proj(frame.K, frame.width, frame.height, 0.1*1, 2.5*1);
-            // Eigen::Matrix4f view= frame.tf_cam_world.matrix().cast<float>();
-            // Eigen::Matrix4f view_projection= proj*view;
-            // Eigen::Matrix4f view_projection_inv=view_projection.inverse();
-            // VLOG(1) << "proj is \n" << proj;
-            // VLOG(1) << "view_projection_inv is \n" << view_projection_inv;
 
 
             m_frames_for_scene.push_back(frame);
@@ -363,6 +317,69 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
     std::shuffle(std::begin(m_frames_for_scene), std::end(m_frames_for_scene), rng_0);
 
     m_is_running=false;
+}
+
+void DataLoaderShapeNetImg::load_images_in_frame(easy_pbr::Frame& frame){
+
+    frame.is_shell=false;
+
+
+    // VLOG(1) << "load image from" << frame.rgb_path ;
+    cv::Mat rgba_8u=cv::imread(frame.rgb_path, cv::IMREAD_UNCHANGED ); //correct 
+    // cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+    if(frame.subsample_factor>1){
+        cv::Mat resized;
+        cv::resize(rgba_8u, resized, cv::Size(), 1.0/frame.subsample_factor, 1.0/frame.subsample_factor, cv::INTER_AREA);
+        rgba_8u=resized;
+    }
+    std::vector<cv::Mat> channels(4);
+    cv::split(rgba_8u, channels);
+    // cv::threshold( channels[3], frame.mask, 0.01, 1.0, cv::THRESH_BINARY);
+    // frame.mask=channels[3];
+    channels[3].convertTo(frame.mask, CV_32FC1, 1.0/255.0);
+    cv::threshold( frame.mask, frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+    channels.pop_back();
+    cv::merge(channels, frame.rgb_8u);
+
+    // frame.rgb_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED );
+    // VLOG(1) << "img type is " << radu::utils::type2string( frame.rgb_8u.type() );
+    frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
+    frame.width=frame.rgb_32f.cols;
+    frame.height=frame.rgb_32f.rows;
+    // VLOG(1) << " frame width ad height " << frame.width << " " << frame.height;
+
+
+
+    //read also the depth
+    if (m_load_depth){
+        fs::path depth_path= frame.depth_path;
+        CHECK( fs::is_regular_file(depth_path) ) << "Could not find depth under " << depth_path;
+        // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_UNCHANGED);
+        // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+        cv::Mat depth=cv::imread(depth_path.string() ,  cv::IMREAD_UNCHANGED  );
+        // cv::Mat depth=cv::imread(depth_path.string() , CV_LOAD_IMAGE_ANYDEPTH );
+        // VLOG(1) << "depth has type " << radu::utils::type2string(depth.type());
+        // VLOG(1) << "depth has rows and cols " << depth.rows << " " << depth.cols;
+        cv::threshold( depth, depth, 99999, 0.0, cv::THRESH_TOZERO_INV ); //vlaues above 9999 are set to zero depth
+        // double min, max;
+        // cv::minMaxLoc(depth, &min, &max);
+        // VLOG(1) << "min max is " << min <<" " << max;
+        std::vector<cv::Mat> channels_depth(3);
+        cv::split(depth, channels_depth);
+        // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
+        // channels_depth[0].convertTo(frame.depth, CV_32FC1, 1.0/1.0); //the depth was stored in mm but we want it in meters
+        frame.depth=channels_depth[0];
+        // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in cm but we want it in meters
+        // frame.depth=1.0/frame.depth; //seems to be the inverse depth
+        if(frame.subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(frame.depth, resized, cv::Size(), 1.0/frame.subsample_factor, 1.0/frame.subsample_factor, cv::INTER_NEAREST);
+            frame.depth=resized;
+        }
+    }
+
+
+
 }
 
 

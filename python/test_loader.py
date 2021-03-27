@@ -139,8 +139,11 @@ def test_shapenet_img():
         if(loader.finished_reading_scene() ): 
             frame=loader.get_random_frame()
 
-            if i%10==0:
+            if i%1==0:
                 loader.start_reading_next_scene()
+
+            if frame.is_shell:
+                frame.load_images()
 
             Gui.show(frame.rgb_32f, "rgb")
             Gui.show(frame.mask, "mask")
@@ -149,9 +152,9 @@ def test_shapenet_img():
             # Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
             Scene.show(frustum, "frustum" )
 
-            cloud=frame.depth2world_xyz_mesh()
-            cloud=frame.assign_color(cloud)
-            Scene.show(cloud, "cloud")
+            # cloud=frame.depth2world_xyz_mesh()
+            # cloud=frame.assign_color(cloud)
+            # Scene.show(cloud, "cloud")
 
             i+=1
 

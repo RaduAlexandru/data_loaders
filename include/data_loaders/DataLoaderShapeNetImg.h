@@ -57,6 +57,7 @@ private:
     void read_scene(const std::string scene_path); //a path to the scene which contains all the  images and the pose and so on
     std::unordered_map<std::string, std::string> create_mapping_classnr2classname(); //create the mapping between the weird nr of a class to the actual class name
     Eigen::Affine3f process_extrinsics_line(const std::string line);
+    void load_images_in_frame(easy_pbr::Frame& frame);
     
 
     //objects
@@ -77,6 +78,8 @@ private:
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
     boost::filesystem::path m_dataset_depth_path;  //get the path where all the off files are 
     std::string m_difficulty;
+    bool m_load_depth;
+    bool m_load_as_shell;
     std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_scene_to_read;
