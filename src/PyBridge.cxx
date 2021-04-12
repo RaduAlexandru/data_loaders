@@ -89,6 +89,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("get_frame_at_idx", &DataLoaderShapeNetImg::get_frame_at_idx ) 
     .def("start_reading_next_scene", &DataLoaderShapeNetImg::start_reading_next_scene ) 
     .def("finished_reading_scene", &DataLoaderShapeNetImg::finished_reading_scene ) 
+    .def("has_data", &DataLoaderShapeNetImg::has_data ) 
     .def("is_finished", &DataLoaderShapeNetImg::is_finished ) 
     .def("reset", &DataLoaderShapeNetImg::reset ) 
     .def("nr_samples", &DataLoaderShapeNetImg::nr_samples ) 

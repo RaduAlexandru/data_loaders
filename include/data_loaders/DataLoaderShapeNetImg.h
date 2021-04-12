@@ -41,6 +41,7 @@ public:
     easy_pbr::Frame get_frame_at_idx( const int idx);
     void start_reading_next_scene(); //switch to another scene from this object and start reading it
     bool finished_reading_scene(); //returns true when we have finished reading everything for that one scene of the corresponding object and we can safely use get_random_frame
+    bool has_data(); //calls internally finished_reading scene. It's mostly a convenience function 
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
     bool is_finished(); //check if we finished reading all the scenes

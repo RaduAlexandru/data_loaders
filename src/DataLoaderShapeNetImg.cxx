@@ -386,6 +386,9 @@ void DataLoaderShapeNetImg::load_images_in_frame(easy_pbr::Frame& frame){
 bool DataLoaderShapeNetImg::finished_reading_scene(){
     return !m_is_running;
 }
+bool DataLoaderShapeNetImg::has_data(){
+    return finished_reading_scene();
+}
 
 Frame DataLoaderShapeNetImg::get_random_frame(){
     int random_idx=m_rand_gen->rand_int(0, m_frames_for_scene.size()-1);
