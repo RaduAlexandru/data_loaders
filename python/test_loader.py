@@ -44,6 +44,11 @@ def test_volref():
             cloud=frame_depth.depth2world_xyz_mesh()
             frame_color.assign_color(cloud) #project the cloud into this frame and creates a color matrix for it
             Scene.show(cloud, "cloud")
+
+        if loader.is_finished():
+            # print("resetting")
+            loader.reset()
+        
         view.update()
 
 
@@ -256,14 +261,14 @@ def test_colmap():
 
         view.update()
 
-# test_volref()
+test_volref()
 # test_img()
 # test_img_ros()
 # test_cloud_ros()
 # test_semantickitti()
 # test_scannet()
 # test_stanford3dscene()
-test_shapenet_img()
+# test_shapenet_img()
 # test_nerf()
 # test_phenorob()
 # test_colmap()

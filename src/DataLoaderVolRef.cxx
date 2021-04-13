@@ -38,7 +38,10 @@ DataLoaderVolRef::DataLoaderVolRef(const std::string config_file):
     m_nr_resets(0),
     m_rand_gen(new RandGenerator),
     m_rgb_subsample_factor(1),
-    m_depth_subsample_factor(1)
+    m_depth_subsample_factor(1),
+    m_idx_colorframe_to_return(0),
+    m_idx_depthframe_to_return(0)
+    
 {
 
     init_params(config_file);
@@ -70,6 +73,7 @@ void DataLoaderVolRef::init_params(const std::string config_file){
 
     Config loader_config=cfg["loader_vol_ref"];
     m_autostart=loader_config["autostart"];
+    m_preload=loader_config["preload"];
     m_nr_samples_to_skip=loader_config["nr_samples_to_skip"];
     m_nr_samples_to_read=loader_config["nr_samples_to_read"];
     m_shuffle=loader_config["shuffle"];
@@ -86,7 +90,11 @@ void DataLoaderVolRef::start(){
     init_data_reading();
 
     m_is_running=true;
-    m_loader_thread=std::thread(&DataLoaderVolRef::read_data, this);  //starts the spin in another thread
+     if (m_preload){
+        read_data(); //if we prelaod we don't need to use any threads and it may cause some other issues
+    }else{
+        m_loader_thread=std::thread(&DataLoaderVolRef::read_data, this);  //starts the spin in another thread
+    }
 }
 
 void DataLoaderVolRef::init_data_reading(){
@@ -174,37 +182,64 @@ void DataLoaderVolRef::read_data(){
 
     loguru::set_thread_name("loader_thread_vol_ref");
 
-
-    while (m_is_running ) {
-
-        //we finished reading so we wait here for a reset
-        if(m_idx_sample_to_read>=m_samples_filenames.size()){
-            std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            continue;
-        }
-
-        // std::cout << "size approx is " << m_queue.size_approx() << '\n';
-        // std::cout << "m_idx_img_to_read is " << m_idx_img_to_read << '\n';
-        if(m_frames_color_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
-            //read the frame and everything else and push it to the queue
+    //if we preload, we just read the meshes and store them in memory, data transformation will be done while reading the mesh
+    if (m_preload){
+        for(int i=0; i<m_samples_filenames.size(); i++ ){
 
             fs::path sample_filename=m_samples_filenames[ m_idx_sample_to_read ];
+            VLOG(1) << "preloading from " << sample_filename;
             if(!m_do_overfit){
                 m_idx_sample_to_read++;
             }
+            // MeshSharedPtr cloud=read_sample(sample_filename);
+            // m_clouds_vec.push_back(cloud);
 
-
-
-
+            
             //read frame color and frame depth
             Frame frame_color;
             Frame frame_depth;
             read_sample(frame_color, frame_depth, sample_filename);
 
+            m_frames_color_vec.push_back(frame_color);
+            m_frames_depth_vec.push_back(frame_depth);
+
+        }
+
+    }else{ //we continously read from disk
 
 
-            m_frames_color_buffer.enqueue(frame_color);
-            m_frames_depth_buffer.enqueue(frame_depth);
+        while (m_is_running ) {
+
+            //we finished reading so we wait here for a reset
+            if(m_idx_sample_to_read>=m_samples_filenames.size()){
+                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                continue;
+            }
+
+            // std::cout << "size approx is " << m_queue.size_approx() << '\n';
+            // std::cout << "m_idx_img_to_read is " << m_idx_img_to_read << '\n';
+            if(m_frames_color_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
+                //read the frame and everything else and push it to the queue
+
+                fs::path sample_filename=m_samples_filenames[ m_idx_sample_to_read ];
+                if(!m_do_overfit){
+                    m_idx_sample_to_read++;
+                }
+
+
+
+
+                //read frame color and frame depth
+                Frame frame_color;
+                Frame frame_depth;
+                read_sample(frame_color, frame_depth, sample_filename);
+
+
+
+                m_frames_color_buffer.enqueue(frame_color);
+                m_frames_depth_buffer.enqueue(frame_depth);
+
+            }
 
         }
 
@@ -429,54 +464,114 @@ Eigen::Matrix3d DataLoaderVolRef::read_intrinsics_file(std::string intrinsics_fi
 
 
 bool DataLoaderVolRef::has_data(){
-    if(m_frames_color_buffer.peek()==nullptr || m_frames_depth_buffer.peek()==nullptr){
-        return false;
-    }else{
+    if (m_preload){
         return true;
+    }else{
+
+        if(m_frames_color_buffer.peek()==nullptr || m_frames_depth_buffer.peek()==nullptr){
+            return false;
+        }else{
+            return true;
+        }
+
     }
 }
 
 
 Frame DataLoaderVolRef::get_color_frame(){
 
-    Frame frame;
-    m_frames_color_buffer.try_dequeue(frame);
+    if (m_preload){
+        CHECK(m_idx_colorframe_to_return<m_frames_color_vec.size()) << " m_idx_colorframe_to_return is out of bounds. m_idx_colorframe_to_return is " << m_idx_colorframe_to_return << " and colorframe vec is " << m_frames_color_vec.size();
 
-    return frame;
+        Frame frame =  m_frames_color_vec[m_idx_colorframe_to_return];
+
+        m_idx_colorframe_to_return++;
+
+        return frame;
+
+
+    }else{
+
+        Frame frame;
+        m_frames_color_buffer.try_dequeue(frame);
+
+        return frame;
+    }
 }
 
 Frame DataLoaderVolRef::get_depth_frame(){
 
-    Frame frame;
-    m_frames_depth_buffer.try_dequeue(frame);
+    if (m_preload){
+        CHECK(m_idx_depthframe_to_return<m_frames_depth_vec.size()) << " m_idx_depthframe_to_return is out of bounds. m_idx_depthframe_to_return is " << m_idx_depthframe_to_return << " and depthframe vec is " << m_frames_depth_vec.size();
 
-    return frame;
+        Frame frame =  m_frames_depth_vec[m_idx_depthframe_to_return];
+
+        m_idx_depthframe_to_return++;
+
+        return frame;
+
+
+    }else{
+
+        Frame frame;
+        m_frames_depth_buffer.try_dequeue(frame);
+
+        return frame;
+
+    }
 }
 
 
 bool DataLoaderVolRef::is_finished(){
-    //check if this loader has loaded everything
-    if(m_idx_sample_to_read<m_samples_filenames.size()){
-        return false; //there is still more files to read
-    }
 
-    //if ANY of the two frame buffers is empty then we say that we finished reading. This is because not always we want to read the depth bffer
-    if(m_frames_color_buffer.peek()==nullptr || m_frames_depth_buffer.peek()==nullptr){
-        return true; 
-    }
+    if(m_preload){
+        if (m_idx_colorframe_to_return>=m_frames_color_vec.size() || m_idx_depthframe_to_return>m_frames_depth_vec.size()  ){
+            return true;
+        }else{
+            return false;
+        }
 
-    return false; //there is still something in at least one of the buffers
+
+    }else{
+
+
+        //check if this loader has loaded everything
+        if(m_idx_sample_to_read<m_samples_filenames.size()){
+            return false; //there is still more files to read
+        }
+
+        //if ANY of the two frame buffers is empty then we say that we finished reading. This is because not always we want to read the depth bffer
+        if(m_frames_color_buffer.peek()==nullptr || m_frames_depth_buffer.peek()==nullptr){
+            return true; 
+        }
+
+        return false; //there is still something in at least one of the buffers
+
+    }
 
 }
 
 
 bool DataLoaderVolRef::is_finished_reading(){
-    //check if this loader has loaded everything
-    if(m_idx_sample_to_read<m_samples_filenames.size()){
-        return false; //there is still more files to read
-    }
 
-    return true; //there is nothing more to read and so we are finished reading
+    if(m_preload){
+        if (m_idx_colorframe_to_return>=m_frames_color_vec.size() || m_idx_depthframe_to_return>m_frames_depth_vec.size()  ){
+            return true;
+        }else{
+            return false;
+        }
+
+
+    }else{
+
+        //check if this loader has loaded everything
+        if(m_idx_sample_to_read<m_samples_filenames.size()){
+            return false; //there is still more files to read
+        }
+
+        return true; //there is nothing more to read and so we are finished reading
+
+    }
 
 }
 
@@ -492,6 +587,8 @@ void DataLoaderVolRef::reset(){
     }
 
     m_idx_sample_to_read=0;
+    m_idx_colorframe_to_return=0;
+    m_idx_depthframe_to_return=0;
 }
 
 int DataLoaderVolRef::nr_samples(){

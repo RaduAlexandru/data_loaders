@@ -58,6 +58,7 @@ private:
 
     //params
     bool m_autostart;
+    bool m_preload;
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     fs::path m_dataset_path; 
     int m_nr_samples_to_skip;
@@ -76,9 +77,13 @@ private:
     std::vector<fs::path> m_samples_filenames;
     moodycamel::ReaderWriterQueue<easy_pbr::Frame> m_frames_color_buffer;
     moodycamel::ReaderWriterQueue<easy_pbr::Frame> m_frames_depth_buffer;
+    std::vector<easy_pbr::Frame> m_frames_color_vec;
+    std::vector<easy_pbr::Frame> m_frames_depth_vec;
     Eigen::Affine3d m_tf_worldGL_worldROS;
     Eigen::MatrixXd m_K_color;
     Eigen::MatrixXd m_K_depth;
     Eigen::VectorXi m_load_from_idxs;
+    uint32_t m_idx_colorframe_to_return;
+    uint32_t m_idx_depthframe_to_return;
 
 };
