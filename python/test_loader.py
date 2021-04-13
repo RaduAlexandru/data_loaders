@@ -39,7 +39,8 @@ def test_volref():
             frustum_mesh=frame_color.create_frustum_mesh(0.1)
             frustum_mesh.m_vis.m_line_width=3
             frustum_name="frustum"
-            Scene.show(frustum_mesh, frustum_name)
+            # Scene.show(frustum_mesh, frustum_name)
+            Scene.show(frustum_mesh, "frustum_"+str(frame_color.frame_idx) )
 
             cloud=frame_depth.depth2world_xyz_mesh()
             frame_color.assign_color(cloud) #project the cloud into this frame and creates a color matrix for it

@@ -30,6 +30,7 @@ public:
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
     easy_pbr::Frame get_color_frame();
     easy_pbr::Frame get_depth_frame();
+    easy_pbr::Frame get_frame_at_idx( const int idx); //convenience function so that it has the same API as the other loaders. WARNING returns only the color frame
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing

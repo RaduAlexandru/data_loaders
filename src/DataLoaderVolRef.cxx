@@ -23,6 +23,7 @@ namespace fs = boost::filesystem;
 
 //my stuff 
 #include "RandGenerator.h"
+#include "string_utils.h"
 
 using namespace radu::utils;
 using namespace easy_pbr;
@@ -249,6 +250,14 @@ void DataLoaderVolRef::read_data(){
 
 
 void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const boost::filesystem::path& sample_filename){
+
+    //get frame idx 
+    std::string sample_filename_basename= sample_filename.stem().string(); //the stem has format frame-00000.color.png  We want just the number
+    //remove the frame and color so we are left only with the number
+    std::string frame_idx_str=  radu::utils::erase_substrings(sample_filename_basename, {".color", "frame-"});
+    frame_color.frame_idx= std::stoi(frame_idx_str);
+    frame_depth.frame_idx= std::stoi(frame_idx_str);
+
     //read color img
     frame_color.rgb_8u=cv::imread(sample_filename.string());
     if(m_rgb_subsample_factor>1){
@@ -521,6 +530,14 @@ Frame DataLoaderVolRef::get_depth_frame(){
     }
 }
 
+Frame DataLoaderVolRef::get_frame_at_idx( const int idx){
+    CHECK(idx<m_frames_color_vec.size()) << "idx is out of bounds. It is " << idx << " while m_frames_color_vec has size " << m_frames_color_vec.size();
+    CHECK(m_preload) <<"Getting frame of a certain index only works when preloading";
+
+    Frame  frame= m_frames_color_vec[idx];
+
+    return frame;
+}
 
 bool DataLoaderVolRef::is_finished(){
 
