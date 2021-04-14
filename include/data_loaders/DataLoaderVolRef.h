@@ -71,6 +71,8 @@ private:
     int m_nr_resets;
     int m_rgb_subsample_factor; //reduces the size of the color frames
     int m_depth_subsample_factor; //reduces the size of the depth frames
+    Eigen::Vector3f m_scene_translation; //moves the scene so that we have it at the origin more or less
+    float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
 
 
     //internal

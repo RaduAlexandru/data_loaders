@@ -83,6 +83,9 @@ void DataLoaderVolRef::init_params(const std::string config_file){
     m_rgb_subsample_factor=loader_config["rgb_subsample_factor"];
     m_depth_subsample_factor=loader_config["depth_subsample_factor"];
 
+    m_scene_translation=loader_config["scene_translation"];
+    m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
+
 }
 
 void DataLoaderVolRef::start(){
@@ -316,39 +319,54 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
         frame_color.mask=mask;
         frame_depth.mask=mask;
     }
+
+    //rescale things if necessary
+    if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
+        Eigen::Affine3f tf_world_cam_rescaled = frame_color.tf_cam_world.inverse().cast<float>();
+        tf_world_cam_rescaled.translation()+=m_scene_translation;
+        tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+        frame_color.tf_cam_world=tf_world_cam_rescaled.inverse();
+        frame_depth.tf_cam_world=tf_world_cam_rescaled.inverse();
+    }
+    //if the scene is rescaled the depth map also needs to be
+    if(m_scene_scale_multiplier>0.0 ){
+        frame_depth.depth*= m_scene_scale_multiplier;
+
+    }
+
 }
 
 Frame DataLoaderVolRef::closest_color_frame(const Frame& frame){
 
-    double lowest_score=std::numeric_limits<double>::max();
-    fs::path best_path;
+double lowest_score=std::numeric_limits<double>::max();
+fs::path best_path;
 
-    for(int i=0; i<(int)m_samples_filenames.size(); i++){
-        fs::path sample_filename=m_samples_filenames[i];
+for(int i=0; i<(int)m_samples_filenames.size(); i++){
+    fs::path sample_filename=m_samples_filenames[i];
 
-        std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
-        std::string pose_file=name+"pose.txt";
-        Eigen::Affine3d tf_worldros_cam=read_pose_file(pose_file);
+    std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
+    std::string pose_file=name+"pose.txt";
+    Eigen::Affine3d tf_worldros_cam=read_pose_file(pose_file);
 
-        //get the difference in transaltion and difference in angle of looking at
-        Eigen::Affine3d m_tf_worldGL_world;
-        m_tf_worldGL_world.setIdentity();
-        Eigen::Matrix3d worldGL_world_rot;
-        worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
-        m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
-        Eigen::Affine3d other_tf_cam_world= tf_worldros_cam.cast<double>().inverse() * m_tf_worldGL_world.inverse(); //from worldgl to world ros, from world ros to cam 
+    //get the difference in transaltion and difference in angle of looking at
+    Eigen::Affine3d m_tf_worldGL_world;
+    m_tf_worldGL_world.setIdentity();
+    Eigen::Matrix3d worldGL_world_rot;
+    worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
+    m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
+    Eigen::Affine3d other_tf_cam_world= tf_worldros_cam.cast<double>().inverse() * m_tf_worldGL_world.inverse(); //from worldgl to world ros, from world ros to cam 
 
-        double diff_translation= (frame.tf_cam_world.cast<double>().inverse().translation() - other_tf_cam_world.inverse().translation()).norm();
+    double diff_translation= (frame.tf_cam_world.cast<double>().inverse().translation() - other_tf_cam_world.inverse().translation()).norm();
 
-        //diff in angle 
-        double diff_angle= 1.0- frame.tf_cam_world.cast<double>().inverse().linear().col(2).dot( other_tf_cam_world.inverse().linear().col(2) );
+    //diff in angle 
+    double diff_angle= 1.0- frame.tf_cam_world.cast<double>().inverse().linear().col(2).dot( other_tf_cam_world.inverse().linear().col(2) );
 
-        double score= 0.5*diff_translation + 0.5*diff_angle;
+    double score= 0.5*diff_translation + 0.5*diff_angle;
 
-        if (score<0.00001){
-            //if the score is exactly zero then we are just comparing with the same frame
-            continue;
-        }
+    if (score<0.00001){
+        //if the score is exactly zero then we are just comparing with the same frame
+        continue;
+    }
 
         if (score<lowest_score){
             best_path=sample_filename;
