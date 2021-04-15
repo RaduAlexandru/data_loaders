@@ -75,6 +75,7 @@ void DataLoaderVolRef::init_params(const std::string config_file){
     Config loader_config=cfg["loader_vol_ref"];
     m_autostart=loader_config["autostart"];
     m_preload=loader_config["preload"];
+    m_load_rgb_with_valid_depth= loader_config["load_rgb_with_valid_depth"];
     m_nr_samples_to_skip=loader_config["nr_samples_to_skip"];
     m_nr_samples_to_read=loader_config["nr_samples_to_read"];
     m_shuffle=loader_config["shuffle"];
@@ -318,6 +319,12 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
         cv::threshold( frame_depth.depth, mask, 0.0, 1.0, cv::THRESH_BINARY);
         frame_color.mask=mask;
         frame_depth.mask=mask;
+    }
+
+    //if we want we can get the RGB onyl for the valid part which means the parts that has a depth
+    if(m_load_rgb_with_valid_depth){
+        cv::Mat rgb_with_valid_depth=frame_color.rgb_with_valid_depth(frame_depth);
+        frame_color.rgb_32f= rgb_with_valid_depth;
     }
 
     //rescale things if necessary

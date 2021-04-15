@@ -62,6 +62,7 @@ private:
     bool m_preload;
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     fs::path m_dataset_path; 
+    bool m_load_rgb_with_valid_depth;
     int m_nr_samples_to_skip;
     int m_nr_samples_to_read;
     bool m_shuffle;
