@@ -17,6 +17,7 @@
 #include "data_loaders/DataLoaderPhenorob.h"
 #include "data_loaders/DataLoaderScanNet.h"
 #include "data_loaders/DataLoaderNerf.h"
+#include "data_loaders/DataLoaderEasyPBR.h"
 #include "data_loaders/DataLoaderColmap.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
@@ -215,6 +216,27 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_test", &DataLoaderNerf::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderNerf::set_mode_validation )
     ;
+
+    //DataLoaderEasyPBR
+    py::class_<DataLoaderEasyPBR> (m, "DataLoaderEasyPBR")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderEasyPBR::start ) 
+    .def("has_data", &DataLoaderEasyPBR::has_data ) 
+    .def("get_next_frame", &DataLoaderEasyPBR::get_next_frame ) 
+    .def("get_all_frames", &DataLoaderEasyPBR::get_all_frames ) 
+    .def("get_frame_at_idx", &DataLoaderEasyPBR::get_frame_at_idx ) 
+    .def("get_random_frame", &DataLoaderEasyPBR::get_random_frame ) 
+    .def("get_closest_frame", &DataLoaderEasyPBR::get_closest_frame ) 
+    .def("get_close_frames", &DataLoaderEasyPBR::get_close_frames ) 
+    // .def("compute_frame_weights", &DataLoaderNerf::compute_frame_weights ) 
+    .def("is_finished", &DataLoaderEasyPBR::is_finished ) 
+    .def("reset", &DataLoaderEasyPBR::reset ) 
+    .def("nr_samples", &DataLoaderEasyPBR::nr_samples ) 
+    .def("set_mode_train", &DataLoaderEasyPBR::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderEasyPBR::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderEasyPBR::set_mode_validation )
+    ;
+
 
     //DataLoaderColmap
     py::class_<DataLoaderColmap> (m, "DataLoaderColmap")

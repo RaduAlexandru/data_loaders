@@ -262,7 +262,38 @@ def test_colmap():
 
         view.update()
 
-test_volref()
+def test_easypbr():
+    loader=DataLoaderEasyPBR(config_path)
+    # loader.set_mode_train()
+    loader.set_mode_test()
+    loader.start()
+
+    while True:
+        if(loader.has_data() ): 
+
+            # print("got frame")
+            frame=loader.get_next_frame()
+            # print("frame width and height is ", frame.width, " ", frame.height)
+
+
+            Gui.show(frame.rgb_32f, "rgb")
+
+
+            frustum_mesh=frame.create_frustum_mesh(0.1)
+            frustum_mesh.m_vis.m_line_width=1
+            Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+
+            # cloud=frame.depth2world_xyz_mesh()
+            # Scene.show(cloud, "cloud")
+        
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
+            print("scene scale is ", Scene.get_scale())
+
+        view.update()
+
+# test_volref()
 # test_img()
 # test_img_ros()
 # test_cloud_ros()
@@ -273,6 +304,7 @@ test_volref()
 # test_nerf()
 # test_phenorob()
 # test_colmap()
+test_easypbr()
 
 
 
