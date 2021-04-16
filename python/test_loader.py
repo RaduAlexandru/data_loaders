@@ -295,6 +295,9 @@ def test_easypbr():
 
 def test_srn():
     loader=DataLoaderSRN(config_path)
+    # loader.set_mode_train()
+    loader.set_mode_test()
+    loader.start()
 
     i=0
 

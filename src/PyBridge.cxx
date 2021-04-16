@@ -261,6 +261,7 @@ PYBIND11_MODULE(dataloaders, m) {
     //DataLoaderSRN
     py::class_<DataLoaderSRN> (m, "DataLoaderSRN")
     .def(py::init<const std::string>())
+    .def("start", &DataLoaderSRN::start ) 
     .def("get_random_frame", &DataLoaderSRN::get_random_frame ) 
     .def("get_frame_at_idx", &DataLoaderSRN::get_frame_at_idx ) 
     .def("start_reading_next_scene", &DataLoaderSRN::start_reading_next_scene ) 

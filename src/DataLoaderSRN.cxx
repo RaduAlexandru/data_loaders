@@ -37,18 +37,19 @@ using namespace easy_pbr;
 
 DataLoaderSRN::DataLoaderSRN(const std::string config_file):
     m_is_running(false),
+    m_autostart(false),
     m_idx_scene_to_read(0),
     m_nr_resets(0),
     m_rand_gen(new RandGenerator),
     m_nr_scenes_read_so_far(0)
 {
     init_params(config_file);
-    // if(m_autostart){
-        // start();
-    // }
+    if(m_autostart){
+        start();
+    }
 
-    init_data_reading();
-    start_reading_next_scene();
+    // init_data_reading();
+    // start_reading_next_scene();
 
 }
 
@@ -71,7 +72,7 @@ void DataLoaderSRN::init_params(const std::string config_file){
     Config cfg = configuru::parse_file(config_file_abs, CFG);
     Config loader_config=cfg["loader_srn"];
 
-    // m_autostart=loader_config["autostart"];
+    m_autostart=loader_config["autostart"];
     m_nr_samples_to_skip=loader_config["nr_samples_to_skip"];
     m_nr_samples_to_read=loader_config["nr_samples_to_read"];
     m_nr_imgs_to_read=loader_config["nr_imgs_to_read"];
@@ -110,7 +111,12 @@ void DataLoaderSRN::init_params(const std::string config_file){
 
 }
 
-
+void DataLoaderSRN::start(){
+    CHECK(m_scene_folders.empty()) << " The loader has already been started before. Make sure that you have m_autostart to false";
+    
+    init_data_reading();
+    start_reading_next_scene();
+}
 
 void DataLoaderSRN::init_data_reading(){
     
