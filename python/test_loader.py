@@ -279,7 +279,7 @@ def test_easypbr():
             Gui.show(frame.rgb_32f, "rgb")
 
 
-            frustum_mesh=frame.create_frustum_mesh(0.1)
+            frustum_mesh=frame.create_frustum_mesh(0.02)
             frustum_mesh.m_vis.m_line_width=1
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
 

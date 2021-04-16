@@ -78,6 +78,7 @@ private:
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     // std::string m_restrict_to_object;  //makes it load clouds only from a specific object
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
+    std::string m_object_name;
     // std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_img_to_read; //corresponds to the idx of the frame we will return since we have them all in memory

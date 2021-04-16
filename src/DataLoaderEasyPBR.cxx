@@ -85,11 +85,24 @@ void DataLoaderEasyPBR::init_params(const std::string config_file){
     m_subsample_factor=loader_config["subsample_factor"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
-    m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
+    m_object_name= (std::string)loader_config["object_name"]; 
 
+    // m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
+    bool found_scene_multiplier_for_cur_obj=false;
+    for (auto& p : loader_config["scene_scale_multiplier"].as_object()) {
+        std::cout << "Key: " << p.key() << std::endl;
+        std::cout << "Value: " << p.value() << std::endl;
+        // p.value() = "new value";
+        if( p.key() == m_object_name){
+            found_scene_multiplier_for_cur_obj=true;
+            m_scene_scale_multiplier= p.value();
+            break;
+        }
+    }
+    CHECK(found_scene_multiplier_for_cur_obj)  << "Could not find a scene scale multiplier for the object " << m_object_name;
 
     //data transformer
     // Config transformer_config=loader_config["transformer"];
@@ -111,7 +124,7 @@ void DataLoaderEasyPBR::init_data_reading(){
     }
     
     //go to the folder of train val or test depending on the mode in which we are one
-    for (fs::directory_iterator itr(m_dataset_path/"imgs"); itr!=fs::directory_iterator(); ++itr){
+    for (fs::directory_iterator itr(m_dataset_path/m_object_name/"imgs"); itr!=fs::directory_iterator(); ++itr){
         fs::path img_path= itr->path();
         //we disregard the images that contain depth and normals, we load only the rgb
         if (fs::is_regular_file(img_path) && 
@@ -119,7 +132,7 @@ void DataLoaderEasyPBR::init_data_reading(){
             m_imgs_paths.push_back(img_path);
         }
     }
-    CHECK( !m_imgs_paths.empty() ) << "Could not find any images in path " << m_dataset_path;
+    CHECK( !m_imgs_paths.empty() ) << "Could not find any images in path " << m_dataset_path/m_object_name;
 
     std::sort(m_imgs_paths.begin(), m_imgs_paths.end(), FileComparatorFunc);
 
@@ -140,7 +153,7 @@ void DataLoaderEasyPBR::init_poses(){
     //the file post_and_instrincis.txt has format filename tx ty tz qx qy qz qw fx fy cx cy
 
     //get the path to this json file
-    fs::path pose_and_intrinsics_path= m_dataset_path/"poses_and_intrinsics.txt";
+    fs::path pose_and_intrinsics_path= m_dataset_path/m_object_name/"poses_and_intrinsics.txt";
     if(!fs::is_regular_file(pose_and_intrinsics_path) ) { 
         LOG(FATAL) << "File for the poses could not be found in " << pose_and_intrinsics_path;
     }
@@ -150,6 +163,7 @@ void DataLoaderEasyPBR::init_poses(){
     if(! file.is_open()){
         LOG(FATAL) << "Could not open labels file " << pose_and_intrinsics_path;
     }
+    int nr_poses_read=0;
     for( std::string line; getline( file, line ); ){
         //skip lines that start with # because that's a comment
         if( (ltrim_copy(line)).at(0)!='#' && !line.empty() ){
@@ -198,56 +212,13 @@ void DataLoaderEasyPBR::init_poses(){
             // VLOG(1) << "pushing for filename " << filename << " pose " <<tf_world_cam.matrix();
             m_filename2pose[filename]=tf_world_cam;
             m_filename2intrinsics[filename]=K;
+            nr_poses_read++;
 
         }
     }
 
+    CHECK(nr_poses_read!=0) << "There are not poses written in the pose_file " << pose_and_intrinsics_path;
 
-    // //read json
-    // std::string file_list_string=radu::utils::file_to_string(pose_file_json.string());
-    // std::string err;
-    // const auto json = json11::Json::parse(file_list_string, err);
-    // m_camera_angle_x = json["camera_angle_x"].number_value();
-
-    // //read all the poses
-    // for (auto &k : json["frames"].array_items()) {
-    //     fs::path key= k.string_value();
-
-    //     std::string file_path=k["file_path"].string_value(); //will be something like ./test/r_0 but we only want the r_0 part
-    //     std::vector<std::string> tokens= radu::utils::split(file_path, "/");
-    //     std::string file_name= tokens[2];
-    //     // VLOG(1) << "filename is" << file_name;
-
-
-    //     //read the psoe as a 4x4 matrix
-    //     Eigen::Affine3d tf_world_cam;
-    //     int rows=4;
-    //     for (int r = 0; r < 4; r++){
-    //         for (int c = 0; c < 4; c++){
-    //             // VLOG(1) << "tf matri is " << k["transform_matrix"][r][c].number_value();
-    //             tf_world_cam.matrix()(r,c) =k["transform_matrix"][r][c].number_value();
-    //         }
-    //     }
-    //     tf_world_cam.linear().col(2)=-tf_world_cam.linear().col(2); //make it look in the correct direction
-
-    //     //rotate from their world to our opengl world by rotating along the x axis
-    //     Eigen::Affine3d tf_worldGL_worldROS;
-    //     tf_worldGL_worldROS.setIdentity();
-    //     Eigen::Matrix3d worldGL_worldROS_rot;
-    //     worldGL_worldROS_rot = Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitX());
-    //     tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
-    //     // transform_vertices_cpu(tf_worldGL_worldROS);
-    //     tf_world_cam=tf_worldGL_worldROS*tf_world_cam;
-
-
-    //     Eigen::Affine3d tf_cam_world=tf_world_cam.inverse();
-
-
-
-    //     m_filename2pose[file_name]=tf_cam_world; //we want to store here the transrom from world to cam so the tf_cam_world
-        
-      
-    // }
 
 }
 
@@ -289,7 +260,11 @@ void DataLoaderEasyPBR::read_data(){
 
         //extrinsics
         VLOG(1) << "img_path " <<img_path.filename().string();
-        frame.tf_cam_world=m_filename2pose[img_path.filename().string()].cast<float>().inverse();
+        std::string key=img_path.filename().string();
+        CHECK( m_filename2pose.find(key) != m_filename2pose.end() ) <<"Could not find the key " << key << " in the pose hashmap";
+        CHECK( m_filename2intrinsics.find(key) != m_filename2intrinsics.end() ) <<"Could not find the key " << key << " in the intrinsics hashmap";
+
+        frame.tf_cam_world=m_filename2pose[key].cast<float>().inverse();
 
         //flip z axis 
         Eigen::Affine3f tf_world_cam=frame.tf_cam_world.inverse();
@@ -301,7 +276,7 @@ void DataLoaderEasyPBR::read_data(){
         
 
         //intrinsics 
-        frame.K=m_filename2intrinsics[img_path.filename().string()].cast<float>();
+        frame.K=m_filename2intrinsics[key].cast<float>();
         if(m_subsample_factor>1){
             frame.K/=m_subsample_factor;
             frame.K(2,2)=1.0;
