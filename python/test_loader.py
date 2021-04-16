@@ -309,7 +309,7 @@ def test_srn():
                 frame.load_images()
 
             Gui.show(frame.rgb_32f, "rgb")
-            frustum=frame.create_frustum_mesh(0.1)
+            frustum=frame.create_frustum_mesh(0.02)
             Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
             # Scene.show(frustum, "frustum" )
 

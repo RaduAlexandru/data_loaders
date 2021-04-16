@@ -302,6 +302,14 @@ void DataLoaderSRN::read_scene(const std::string scene_path){
             frame.tf_cam_world=tf_world_cam.inverse();
 
 
+            //rescale things if necessary
+            if(m_scene_scale_multiplier>0.0){
+                Eigen::Affine3f tf_world_cam_rescaled = frame.tf_cam_world.inverse();
+                tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+                frame.tf_cam_world=tf_world_cam_rescaled.inverse();
+            }
+
+
 
 
   
