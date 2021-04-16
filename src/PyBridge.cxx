@@ -19,6 +19,7 @@
 #include "data_loaders/DataLoaderNerf.h"
 #include "data_loaders/DataLoaderEasyPBR.h"
 #include "data_loaders/DataLoaderColmap.h"
+#include "data_loaders/DataLoaderSRN.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -255,6 +256,22 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_test", &DataLoaderColmap::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderColmap::set_mode_validation )
     .def("set_mode_all", &DataLoaderColmap::set_mode_all )
+    ;
+
+    //DataLoaderSRN
+    py::class_<DataLoaderSRN> (m, "DataLoaderSRN")
+    .def(py::init<const std::string>())
+    .def("get_random_frame", &DataLoaderSRN::get_random_frame ) 
+    .def("get_frame_at_idx", &DataLoaderSRN::get_frame_at_idx ) 
+    .def("start_reading_next_scene", &DataLoaderSRN::start_reading_next_scene ) 
+    .def("finished_reading_scene", &DataLoaderSRN::finished_reading_scene ) 
+    .def("has_data", &DataLoaderSRN::has_data ) 
+    .def("is_finished", &DataLoaderSRN::is_finished ) 
+    .def("reset", &DataLoaderSRN::reset ) 
+    .def("nr_samples", &DataLoaderSRN::nr_samples ) 
+    .def("set_mode_train", &DataLoaderSRN::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderSRN::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderSRN::set_mode_validation )
     ;
 
     #ifdef WITH_ROS

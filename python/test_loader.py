@@ -293,6 +293,40 @@ def test_easypbr():
 
         view.update()
 
+def test_srn():
+    loader=DataLoaderSRN(config_path)
+
+    i=0
+
+    while True:
+        if(loader.finished_reading_scene() ): 
+            frame=loader.get_random_frame()
+
+            if i%1==0:
+                loader.start_reading_next_scene()
+
+            if frame.is_shell:
+                frame.load_images()
+
+            Gui.show(frame.rgb_32f, "rgb")
+            frustum=frame.create_frustum_mesh(0.1)
+            Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
+            # Scene.show(frustum, "frustum" )
+
+            # cloud=frame.depth2world_xyz_mesh()
+            # cloud=frame.assign_color(cloud)
+            # Scene.show(cloud, "cloud")
+
+            i+=1
+
+
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
+
+        view.update()
+
+
 # test_volref()
 # test_img()
 # test_img_ros()
@@ -304,7 +338,8 @@ def test_easypbr():
 # test_nerf()
 # test_phenorob()
 # test_colmap()
-test_easypbr()
+# test_easypbr()
+test_srn()
 
 
 
