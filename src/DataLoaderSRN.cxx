@@ -80,11 +80,26 @@ void DataLoaderSRN::init_params(const std::string config_file){
     m_do_overfit=loader_config["do_overfit"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
+    m_object_name= (std::string)loader_config["object_name"]; 
     // m_dataset_depth_path =(std::string)loader_config["dataset_depth_path"];
     // m_difficulty =(std::string)loader_config["difficulty"];
     // m_load_depth= loader_config["load_depth"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_mode= (std::string)loader_config["mode"];
+
+    bool found_scene_multiplier_for_cur_obj=false;
+    for (auto& p : loader_config["scene_scale_multiplier"].as_object()) {
+        std::cout << "Key: " << p.key() << std::endl;
+        std::cout << "Value: " << p.value() << std::endl;
+        // p.value() = "new value";
+        if( p.key() == m_object_name){
+            found_scene_multiplier_for_cur_obj=true;
+            m_scene_scale_multiplier= p.value();
+            break;
+        }
+    }
+    CHECK(found_scene_multiplier_for_cur_obj)  << "Could not find a scene scale multiplier for the object " << m_object_name;
+
 
     // CHECK(m_difficulty=="easy") << "We only implemented the reader for the easy dataset. The hard version just moves the model randomly but maybe you can do that by just moving the mesh";
 
@@ -107,11 +122,15 @@ void DataLoaderSRN::init_data_reading(){
 
     //find the folder for this mode (train, test, val)
     fs::path dataset_for_mode;
-    for (fs::directory_iterator itr(m_dataset_path); itr!=fs::directory_iterator(); ++itr){
+    for (fs::directory_iterator itr(m_dataset_path/("srn_"+m_object_name+"s")  ); itr!=fs::directory_iterator(); ++itr){
         std::string basename=itr->path().filename().string();
         VLOG(1) << "checking basename" << basename;
         if ( radu::utils::contains(basename, m_mode)  ){
             dataset_for_mode=itr->path();
+            //if the filename is chairs_train we need to go one level deeper into chairs_2.0_train because whoever made the dataset just really wanted to make life for other people difficult...
+            if (dataset_for_mode.filename().string()=="chairs_train"){
+                dataset_for_mode=dataset_for_mode/"chairs_2.0_train";
+            }
             break;
         }
     }
@@ -318,58 +337,20 @@ void DataLoaderSRN::load_images_in_frame(easy_pbr::Frame& frame){
 
 
     // VLOG(1) << "load image from" << frame.rgb_path ;
-    cv::Mat rgba_8u=cv::imread(frame.rgb_path, cv::IMREAD_UNCHANGED ); //correct 
-    // cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+    cv::Mat rgb_8u=cv::imread(frame.rgb_path );
     if(frame.subsample_factor>1){
         cv::Mat resized;
-        cv::resize(rgba_8u, resized, cv::Size(), 1.0/frame.subsample_factor, 1.0/frame.subsample_factor, cv::INTER_AREA);
-        rgba_8u=resized;
+        cv::resize(rgb_8u, resized, cv::Size(), 1.0/frame.subsample_factor, 1.0/frame.subsample_factor, cv::INTER_AREA);
+        rgb_8u=resized;
     }
-    std::vector<cv::Mat> channels(4);
-    cv::split(rgba_8u, channels);
-    // cv::threshold( channels[3], frame.mask, 0.01, 1.0, cv::THRESH_BINARY);
-    // frame.mask=channels[3];
-    channels[3].convertTo(frame.mask, CV_32FC1, 1.0/255.0);
-    cv::threshold( frame.mask, frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
-    channels.pop_back();
-    cv::merge(channels, frame.rgb_8u);
-
-    // frame.rgb_8u=cv::imread(img_path.string(), cv::IMREAD_UNCHANGED );
+    frame.rgb_8u=rgb_8u;
+   
     // VLOG(1) << "img type is " << radu::utils::type2string( frame.rgb_8u.type() );
     frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
     frame.width=frame.rgb_32f.cols;
     frame.height=frame.rgb_32f.rows;
     // VLOG(1) << " frame width ad height " << frame.width << " " << frame.height;
 
-
-
-    //read also the depth
-    if (m_load_depth){
-        fs::path depth_path= frame.depth_path;
-        CHECK( fs::is_regular_file(depth_path) ) << "Could not find depth under " << depth_path;
-        // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_UNCHANGED);
-        // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
-        cv::Mat depth=cv::imread(depth_path.string() ,  cv::IMREAD_UNCHANGED  );
-        // cv::Mat depth=cv::imread(depth_path.string() , CV_LOAD_IMAGE_ANYDEPTH );
-        // VLOG(1) << "depth has type " << radu::utils::type2string(depth.type());
-        // VLOG(1) << "depth has rows and cols " << depth.rows << " " << depth.cols;
-        cv::threshold( depth, depth, 99999, 0.0, cv::THRESH_TOZERO_INV ); //vlaues above 9999 are set to zero depth
-        // double min, max;
-        // cv::minMaxLoc(depth, &min, &max);
-        // VLOG(1) << "min max is " << min <<" " << max;
-        std::vector<cv::Mat> channels_depth(3);
-        cv::split(depth, channels_depth);
-        // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
-        // channels_depth[0].convertTo(frame.depth, CV_32FC1, 1.0/1.0); //the depth was stored in mm but we want it in meters
-        frame.depth=channels_depth[0];
-        // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in cm but we want it in meters
-        // frame.depth=1.0/frame.depth; //seems to be the inverse depth
-        if(frame.subsample_factor>1){
-            cv::Mat resized;
-            cv::resize(frame.depth, resized, cv::Size(), 1.0/frame.subsample_factor, 1.0/frame.subsample_factor, cv::INTER_NEAREST);
-            frame.depth=resized;
-        }
-    }
 
 
 
