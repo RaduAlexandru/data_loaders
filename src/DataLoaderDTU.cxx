@@ -221,25 +221,25 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             cnpy::NpyArray projection_mat_array = npz_file["world_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
             cnpy::NpyArray scale_array = npz_file["scale_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
 
-            VLOG(1) << " projection_mat_array size" <<  projection_mat_array.shape.size();
-            VLOG(1) << " scale_array size" <<  scale_array.shape.size();
-            VLOG(1) << " projection_mat_array shape0 " <<  projection_mat_array.shape[0];
-            VLOG(1) << " projection_mat_array shape1 " <<  projection_mat_array.shape[1];
-            VLOG(1) << " scale_array shape0 " <<  scale_array.shape[0];
-            VLOG(1) << " scale_array shape1 " <<  scale_array.shape[1];
+            // VLOG(1) << " projection_mat_array size" <<  projection_mat_array.shape.size();
+            // VLOG(1) << " scale_array size" <<  scale_array.shape.size();
+            // VLOG(1) << " projection_mat_array shape0 " <<  projection_mat_array.shape[0];
+            // VLOG(1) << " projection_mat_array shape1 " <<  projection_mat_array.shape[1];
+            // VLOG(1) << " scale_array shape0 " <<  scale_array.shape[0];
+            // VLOG(1) << " scale_array shape1 " <<  scale_array.shape[1];
 
             //get the P matrix which containst both K and the pose
             Eigen::Affine3d P; 
             double* projection_mat_data = projection_mat_array.data<double>();
             P.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(projection_mat_data);
-            VLOG(1) << "P is " << P.matrix();
+            // VLOG(1) << "P is " << P.matrix();
             Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
-            VLOG(1) << P_block;
+            // VLOG(1) << P_block;
             //get scale
             Eigen::Affine3d S; 
             double* scale_array_data = scale_array.data<double>();
             S.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(scale_array_data);
-            VLOG(1) << "S is " << S.matrix();
+            // VLOG(1) << "S is " << S.matrix();
 
 
             //Get the P_block into K and R and T as done in this line: K, R, t = cv2.decomposeProjectionMatrix(P)[:3]
@@ -247,42 +247,42 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             cv::eigen2cv(P_block, P_mat);
             cv::Mat K_mat, R_mat, t_mat;
             cv::decomposeProjectionMatrix(P_mat, K_mat, R_mat, t_mat);
-            VLOG(1) << "K_Mat has size " << K_mat.rows << " " << K_mat.cols;
-            VLOG(1) << "T_Mat has size " << R_mat.rows << " " << R_mat.cols;
-            VLOG(1) << "t_Mat has size " << t_mat.rows << " " << t_mat.cols;
+            // VLOG(1) << "K_Mat has size " << K_mat.rows << " " << K_mat.cols;
+            // VLOG(1) << "T_Mat has size " << R_mat.rows << " " << R_mat.cols;
+            // VLOG(1) << "t_Mat has size " << t_mat.rows << " " << t_mat.cols;
             Eigen::Matrix3d K, R;
             Eigen::Vector4d t_full;
             cv::cv2eigen(K_mat, K);
             cv::cv2eigen(R_mat, R);
             cv::cv2eigen(t_mat, t_full);
             K = K / K(2, 2);
-            VLOG(1) << "K is " << K;
-            VLOG(1) << "R is " << R;
-            VLOG(1) << "t_full is " << t_full;
+            // VLOG(1) << "K is " << K;
+            // VLOG(1) << "R is " << R;
+            // VLOG(1) << "t_full is " << t_full;
             Eigen::Vector3d t;
             t.x()= t_full.x()/t_full.w();
             t.y()= t_full.y()/t_full.w();
             t.z()= t_full.z()/t_full.w();
-            VLOG(1) << "t is "<<t;
+            // VLOG(1) << "t is "<<t;
 
 
             // //get the pose into a mat
             Eigen::Affine3f tf_cam_world;
             tf_cam_world.linear() = R.transpose().cast<float>();
             tf_cam_world.translation() = t.cast<float>();
-            VLOG(1) << "tf_cam_world " << tf_cam_world.matrix();
+            // VLOG(1) << "tf_cam_world " << tf_cam_world.matrix();
 
 
             //get S 
             // Eigen::Matrix3d S_block=
             Eigen::Vector3d norm_trans=S.translation();
-            VLOG(1) << "norm trans is " << norm_trans;
+            // VLOG(1) << "norm trans is " << norm_trans;
             Eigen::Vector3d norm_scale; 
             norm_scale << S(0,0), S(1,1), S(2,2);
-            VLOG(1) << "norm scale " << norm_scale;
+            // VLOG(1) << "norm scale " << norm_scale;
             tf_cam_world.translation()-=norm_trans.cast<float>();
             tf_cam_world.translation()=tf_cam_world.translation().array()/norm_scale.cast<float>().array();
-            VLOG(1) << "pose after the weird scaling " << tf_cam_world.matrix();
+            // VLOG(1) << "pose after the weird scaling " << tf_cam_world.matrix();
 
 
             //transform so the up is in the positive y for a right handed system 
