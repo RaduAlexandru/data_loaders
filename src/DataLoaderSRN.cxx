@@ -87,6 +87,7 @@ void DataLoaderSRN::init_params(const std::string config_file){
     // m_load_depth= loader_config["load_depth"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_mode= (std::string)loader_config["mode"];
+    m_get_spiral_test_else_split_train= loader_config["get_spiral_test_else_split_train"];
 
     bool found_scene_multiplier_for_cur_obj=false;
     for (auto& p : loader_config["scene_scale_multiplier"].as_object()) {
@@ -124,14 +125,17 @@ void DataLoaderSRN::init_data_reading(){
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
     
- 
+    std::string mode_to_load=m_mode;
+    if(!m_get_spiral_test_else_split_train){
+        mode_to_load="train"; // we load the train set and we split it differntly 
+    }
 
     //find the folder for this mode (train, test, val)
     fs::path dataset_for_mode;
     for (fs::directory_iterator itr(m_dataset_path/("srn_"+m_object_name+"s")  ); itr!=fs::directory_iterator(); ++itr){
         std::string basename=itr->path().filename().string();
         VLOG(1) << "checking basename" << basename;
-        if ( radu::utils::contains(basename, m_mode)  ){
+        if ( radu::utils::contains(basename, mode_to_load)  ){
             dataset_for_mode=itr->path();
             //if the filename is chairs_train we need to go one level deeper into chairs_2.0_train because whoever made the dataset just really wanted to make life for other people difficult...
             if (dataset_for_mode.filename().string()=="chairs_train"){
@@ -148,13 +152,29 @@ void DataLoaderSRN::init_data_reading(){
     //load all the scene for the chosen object
     int nr_read=0;
     for (fs::directory_iterator itr(dataset_for_mode); itr!=fs::directory_iterator(); ++itr){
+        nr_read++;
+
+        if(!m_get_spiral_test_else_split_train){
+            if(m_mode=="train"){
+                //allow about 66% to be added
+                if(nr_read%3==0){ //skip the 3 from a sequence of 1,2,3
+                    continue;
+                }
+            }else if(m_mode=="test"){
+                //allow about 33% to be added
+                if(nr_read%3!=0){ //skip 1 and 2 but adds the 3
+                    continue;
+                }
+            }
+        }
+
         if( nr_read>=m_nr_samples_to_skip && ((int)m_scene_folders.size()<m_nr_samples_to_read || m_nr_samples_to_read<0 ) ){
             // fs::path scene_path= itr->path()/"rendering";
             fs::path scene_path= itr->path();
             m_scene_folders.push_back(scene_path);
         }
-        nr_read++;
     }
+    VLOG(1) << "loaded nr of scenes " << m_scene_folders.size() << " for mode " << m_mode;
 
     // shuffle the data if neccsary
     if(m_shuffle){
