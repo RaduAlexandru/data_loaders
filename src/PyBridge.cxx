@@ -20,6 +20,7 @@
 #include "data_loaders/DataLoaderEasyPBR.h"
 #include "data_loaders/DataLoaderColmap.h"
 #include "data_loaders/DataLoaderSRN.h"
+#include "data_loaders/DataLoaderDTU.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -273,6 +274,23 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderSRN::set_mode_train ) 
     .def("set_mode_test", &DataLoaderSRN::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderSRN::set_mode_validation )
+    ;
+
+    //DataLoaderDTU
+    py::class_<DataLoaderDTU> (m, "DataLoaderDTU")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderDTU::start ) 
+    .def("get_random_frame", &DataLoaderDTU::get_random_frame ) 
+    .def("get_frame_at_idx", &DataLoaderDTU::get_frame_at_idx ) 
+    .def("start_reading_next_scene", &DataLoaderDTU::start_reading_next_scene ) 
+    .def("finished_reading_scene", &DataLoaderDTU::finished_reading_scene ) 
+    .def("has_data", &DataLoaderDTU::has_data ) 
+    .def("is_finished", &DataLoaderDTU::is_finished ) 
+    .def("reset", &DataLoaderDTU::reset ) 
+    .def("nr_samples", &DataLoaderDTU::nr_samples ) 
+    .def("set_mode_train", &DataLoaderDTU::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderDTU::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderDTU::set_mode_validation )
     ;
 
     #ifdef WITH_ROS
