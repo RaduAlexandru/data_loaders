@@ -163,6 +163,8 @@ void DataLoaderDTU::start_reading_next_scene(){
 void DataLoaderDTU::read_scene(const std::string scene_path){
     // VLOG(1) <<" read from path " << scene_path;
 
+    TIME_SCOPE("read_scene");
+
     m_frames_for_scene.clear();
 
     std::vector<fs::path> paths;
@@ -309,8 +311,10 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             Eigen::DiagonalMatrix<float, 4> diag;
             diag.diagonal() <<1, -1, 1, 1;
             tf_world_cam.matrix()=diag*tf_world_cam.matrix()*diag; 
+            //flip again the x
+            diag.diagonal() <<-1, 1, 1, 1;
+            tf_world_cam.matrix()=tf_world_cam.matrix()*diag; 
             //flip locally
-            //
             tf_cam_world=tf_world_cam.inverse();
 
 
