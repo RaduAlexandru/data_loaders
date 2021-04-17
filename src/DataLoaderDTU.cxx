@@ -94,6 +94,7 @@ void DataLoaderDTU::start(){
     CHECK(m_scene_folders.empty()) << " The loader has already been started before. Make sure that you have m_autostart to false";
     
     init_data_reading();
+    read_poses_and_intrinsics();
     start_reading_next_scene();
 }
 
@@ -215,115 +216,127 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
 
 
 
-            //read pose and camera params needs to be read from the camera.npz
-            std::string pose_and_intrinsics_path=(fs::path(scene_path)/"cameras.npz").string();
+            // //read pose and camera params needs to be read from the camera.npz
+            // std::string pose_and_intrinsics_path=(fs::path(scene_path)/"cameras.npz").string();
 
-            //read npz 
-            cnpy::npz_t npz_file = cnpy::npz_load( pose_and_intrinsics_path );
-            cnpy::NpyArray projection_mat_array = npz_file["world_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
-            cnpy::NpyArray scale_array = npz_file["scale_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
+            // //read npz 
+            // cnpy::npz_t npz_file = cnpy::npz_load( pose_and_intrinsics_path );
+            // cnpy::NpyArray projection_mat_array = npz_file["world_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
+            // cnpy::NpyArray scale_array = npz_file["scale_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
 
-            // VLOG(1) << " projection_mat_array size" <<  projection_mat_array.shape.size();
-            // VLOG(1) << " scale_array size" <<  scale_array.shape.size();
-            // VLOG(1) << " projection_mat_array shape0 " <<  projection_mat_array.shape[0];
-            // VLOG(1) << " projection_mat_array shape1 " <<  projection_mat_array.shape[1];
-            // VLOG(1) << " scale_array shape0 " <<  scale_array.shape[0];
-            // VLOG(1) << " scale_array shape1 " <<  scale_array.shape[1];
+            // // VLOG(1) << " projection_mat_array size" <<  projection_mat_array.shape.size();
+            // // VLOG(1) << " scale_array size" <<  scale_array.shape.size();
+            // // VLOG(1) << " projection_mat_array shape0 " <<  projection_mat_array.shape[0];
+            // // VLOG(1) << " projection_mat_array shape1 " <<  projection_mat_array.shape[1];
+            // // VLOG(1) << " scale_array shape0 " <<  scale_array.shape[0];
+            // // VLOG(1) << " scale_array shape1 " <<  scale_array.shape[1];
 
-            //get the P matrix which containst both K and the pose
-            Eigen::Affine3d P; 
-            double* projection_mat_data = projection_mat_array.data<double>();
-            P.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(projection_mat_data);
-            // VLOG(1) << "P is " << P.matrix();
-            Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
-            // VLOG(1) << P_block;
-            //get scale
-            Eigen::Affine3d S; 
-            double* scale_array_data = scale_array.data<double>();
-            S.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(scale_array_data);
-            // VLOG(1) << "S is " << S.matrix();
-
-
-            //Get the P_block into K and R and T as done in this line: K, R, t = cv2.decomposeProjectionMatrix(P)[:3]
-            cv::Mat P_mat;
-            cv::eigen2cv(P_block, P_mat);
-            cv::Mat K_mat, R_mat, t_mat;
-            cv::decomposeProjectionMatrix(P_mat, K_mat, R_mat, t_mat);
-            // VLOG(1) << "K_Mat has size " << K_mat.rows << " " << K_mat.cols;
-            // VLOG(1) << "T_Mat has size " << R_mat.rows << " " << R_mat.cols;
-            // VLOG(1) << "t_Mat has size " << t_mat.rows << " " << t_mat.cols;
-            Eigen::Matrix3d K, R;
-            Eigen::Vector4d t_full;
-            cv::cv2eigen(K_mat, K);
-            cv::cv2eigen(R_mat, R);
-            cv::cv2eigen(t_mat, t_full);
-            K = K / K(2, 2);
-            // VLOG(1) << "K is " << K;
-            // VLOG(1) << "R is " << R;
-            // VLOG(1) << "t_full is " << t_full;
-            Eigen::Vector3d t;
-            t.x()= t_full.x()/t_full.w();
-            t.y()= t_full.y()/t_full.w();
-            t.z()= t_full.z()/t_full.w();
-            // VLOG(1) << "t is "<<t;
+            // //get the P matrix which containst both K and the pose
+            // Eigen::Affine3d P; 
+            // double* projection_mat_data = projection_mat_array.data<double>();
+            // P.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(projection_mat_data);
+            // // VLOG(1) << "P is " << P.matrix();
+            // Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
+            // // VLOG(1) << P_block;
+            // //get scale
+            // Eigen::Affine3d S; 
+            // double* scale_array_data = scale_array.data<double>();
+            // S.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(scale_array_data);
+            // // VLOG(1) << "S is " << S.matrix();
 
 
-            // //get the pose into a mat
-            Eigen::Affine3f tf_cam_world;
-            tf_cam_world.linear() = R.transpose().cast<float>();
-            tf_cam_world.translation() = t.cast<float>();
-            // VLOG(1) << "tf_cam_world " << tf_cam_world.matrix();
+            // //Get the P_block into K and R and T as done in this line: K, R, t = cv2.decomposeProjectionMatrix(P)[:3]
+            // cv::Mat P_mat;
+            // cv::eigen2cv(P_block, P_mat);
+            // cv::Mat K_mat, R_mat, t_mat;
+            // cv::decomposeProjectionMatrix(P_mat, K_mat, R_mat, t_mat);
+            // // VLOG(1) << "K_Mat has size " << K_mat.rows << " " << K_mat.cols;
+            // // VLOG(1) << "T_Mat has size " << R_mat.rows << " " << R_mat.cols;
+            // // VLOG(1) << "t_Mat has size " << t_mat.rows << " " << t_mat.cols;
+            // Eigen::Matrix3d K, R;
+            // Eigen::Vector4d t_full;
+            // cv::cv2eigen(K_mat, K);
+            // cv::cv2eigen(R_mat, R);
+            // cv::cv2eigen(t_mat, t_full);
+            // K = K / K(2, 2);
+            // // VLOG(1) << "K is " << K;
+            // // VLOG(1) << "R is " << R;
+            // // VLOG(1) << "t_full is " << t_full;
+            // Eigen::Vector3d t;
+            // t.x()= t_full.x()/t_full.w();
+            // t.y()= t_full.y()/t_full.w();
+            // t.z()= t_full.z()/t_full.w();
+            // // VLOG(1) << "t is "<<t;
 
 
-            //get S 
-            // Eigen::Matrix3d S_block=
-            Eigen::Vector3d norm_trans=S.translation();
-            // VLOG(1) << "norm trans is " << norm_trans;
-            Eigen::Vector3d norm_scale; 
-            norm_scale << S(0,0), S(1,1), S(2,2);
-            // VLOG(1) << "norm scale " << norm_scale;
-            tf_cam_world.translation()-=norm_trans.cast<float>();
-            tf_cam_world.translation()=tf_cam_world.translation().array()/norm_scale.cast<float>().array();
-            // VLOG(1) << "pose after the weird scaling " << tf_cam_world.matrix();
+            // // //get the pose into a mat
+            // Eigen::Affine3f tf_cam_world;
+            // tf_cam_world.linear() = R.transpose().cast<float>();
+            // tf_cam_world.translation() = t.cast<float>();
+            // // VLOG(1) << "tf_cam_world " << tf_cam_world.matrix();
 
 
-            //transform so the up is in the positive y for a right handed system 
-            // self._coord_trans_world = torch.tensor(
-                // [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]],
-                // dtype=torch.float32,
-            // )
-            // Eigen::Affine3f rot_world, rot_cam;
-            // rot_world.matrix()<< 1, 0, 0, 0, 0, -1, 0, 0,  0, 0, -1, 0,  0, 0, 0, 1;
-            // rot_cam.matrix()<< 1, 0, 0, 0, 0, -1, 0, 0,  0, 0, -1, 0,  0, 0, 0, 1;
-            // tf_cam_world= rot_world*tf_cam_world*rot_cam;
+            // //get S 
+            // // Eigen::Matrix3d S_block=
+            // Eigen::Vector3d norm_trans=S.translation();
+            // // VLOG(1) << "norm trans is " << norm_trans;
+            // Eigen::Vector3d norm_scale; 
+            // norm_scale << S(0,0), S(1,1), S(2,2);
+            // // VLOG(1) << "norm scale " << norm_scale;
+            // tf_cam_world.translation()-=norm_trans.cast<float>();
+            // tf_cam_world.translation()=tf_cam_world.translation().array()/norm_scale.cast<float>().array();
+            // // VLOG(1) << "pose after the weird scaling " << tf_cam_world.matrix();
 
 
-            //atteptm2
-            //rotate 
-            Eigen::Quaternionf q = Eigen::Quaternionf( Eigen::AngleAxis<float>( -60 * M_PI / 180.0 ,  Eigen::Vector3f::UnitX() ) );
-            Eigen::Affine3f tf_rot;
-            tf_rot.setIdentity();
-            tf_rot.linear()=q.toRotationMatrix();
-            // tf_world_cam=tf_rot*tf_world_cam;
-            tf_cam_world=tf_rot*tf_cam_world;
-            //flip
-            Eigen::Affine3f tf_world_cam=tf_cam_world.inverse();
-            Eigen::DiagonalMatrix<float, 4> diag;
-            diag.diagonal() <<1, -1, 1, 1;
-            tf_world_cam.matrix()=diag*tf_world_cam.matrix()*diag; 
-            //flip again the x
-            diag.diagonal() <<-1, 1, 1, 1;
-            tf_world_cam.matrix()=tf_world_cam.matrix()*diag; 
-            //flip locally
-            tf_cam_world=tf_world_cam.inverse();
+            // //transform so the up is in the positive y for a right handed system 
+            // // self._coord_trans_world = torch.tensor(
+            //     // [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]],
+            //     // dtype=torch.float32,
+            // // )
+            // // Eigen::Affine3f rot_world, rot_cam;
+            // // rot_world.matrix()<< 1, 0, 0, 0, 0, -1, 0, 0,  0, 0, -1, 0,  0, 0, 0, 1;
+            // // rot_cam.matrix()<< 1, 0, 0, 0, 0, -1, 0, 0,  0, 0, -1, 0,  0, 0, 0, 1;
+            // // tf_cam_world= rot_world*tf_cam_world*rot_cam;
+
+
+            // //atteptm2
+            // //rotate 
+            // Eigen::Quaternionf q = Eigen::Quaternionf( Eigen::AngleAxis<float>( -60 * M_PI / 180.0 ,  Eigen::Vector3f::UnitX() ) );
+            // Eigen::Affine3f tf_rot;
+            // tf_rot.setIdentity();
+            // tf_rot.linear()=q.toRotationMatrix();
+            // // tf_world_cam=tf_rot*tf_world_cam;
+            // tf_cam_world=tf_rot*tf_cam_world;
+            // //flip
+            // Eigen::Affine3f tf_world_cam=tf_cam_world.inverse();
+            // Eigen::DiagonalMatrix<float, 4> diag;
+            // diag.diagonal() <<1, -1, 1, 1;
+            // tf_world_cam.matrix()=diag*tf_world_cam.matrix()*diag; 
+            // //flip again the x
+            // diag.diagonal() <<-1, 1, 1, 1;
+            // tf_world_cam.matrix()=tf_world_cam.matrix()*diag; 
+            // //flip locally
+            // tf_cam_world=tf_world_cam.inverse();
 
 
  
 
 
-            frame.K=K.cast<float>();
-            // frame.tf_cam_world=tf_cam_world;
-            frame.tf_cam_world=tf_cam_world.inverse();
+            // frame.K=K.cast<float>();
+            // frame.tf_cam_world=tf_cam_world.inverse();
+
+
+
+            ///////////////////////////////////////just get it from the hashmap
+            frame.K = m_scene2frame_idx2K[scene_path][img_idx];
+            frame.tf_cam_world = m_scene2frame_idx2tf_cam_world[scene_path][img_idx];
+
+
+            if(m_subsample_factor>1){
+                frame.K/=m_subsample_factor;
+                frame.K(2,2)=1.0;
+            }
+
 
 
 
@@ -450,6 +463,148 @@ void DataLoaderDTU::load_images_in_frame(easy_pbr::Frame& frame){
 
 
 }
+
+void DataLoaderDTU::read_poses_and_intrinsics(){
+
+    // std::unordered_map<std::string,      std::unordered_map<int, Eigen::Affine3f>     > m_scene2frame_idx2tf_cam_world;
+    // std::unordered_map<std::string,      std::unordered_map<int, Eigen::Matrix3f>    > m_scene2frame_idx2K;
+
+
+    for(size_t scene_idx; scene_idx<m_scene_folders.size(); scene_idx++){
+
+        std::string scene_path=m_scene_folders[scene_idx].string();
+        VLOG(1) << "reading poses and intrinsics for scene " << fs::path(scene_path).stem();
+
+
+        std::vector<fs::path> paths;
+        for (fs::directory_iterator itr( fs::path(scene_path)/"image"); itr!=fs::directory_iterator(); ++itr){
+            fs::path img_path= itr->path();
+            paths.push_back(img_path);
+        }
+
+        //load all the scene for the chosen object
+        // for (fs::directory_iterator itr(scene_path); itr!=fs::directory_iterator(); ++itr){
+        for (size_t i=0; i<paths.size(); i++){
+            // fs::path img_path= itr->path();
+            fs::path img_path= paths[i];
+            //get only files that end in png
+            // VLOG(1) << "img_path" <<img_path;
+            if(img_path.filename().string().find("png")!= std::string::npos){
+                // VLOG(1) << "png img path " << img_path;
+
+                int img_idx=std::stoi( img_path.stem().string() );
+                // VLOG(1) << "img idx is " << img_idx;
+
+
+                //read pose and camera params needs to be read from the camera.npz
+                std::string pose_and_intrinsics_path=(fs::path(scene_path)/"cameras.npz").string();
+
+                //read npz 
+                cnpy::npz_t npz_file = cnpy::npz_load( pose_and_intrinsics_path );
+                cnpy::NpyArray projection_mat_array = npz_file["world_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
+                cnpy::NpyArray scale_array = npz_file["scale_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
+
+                // VLOG(1) << " projection_mat_array size" <<  projection_mat_array.shape.size();
+                // VLOG(1) << " scale_array size" <<  scale_array.shape.size();
+                // VLOG(1) << " projection_mat_array shape0 " <<  projection_mat_array.shape[0];
+                // VLOG(1) << " projection_mat_array shape1 " <<  projection_mat_array.shape[1];
+                // VLOG(1) << " scale_array shape0 " <<  scale_array.shape[0];
+                // VLOG(1) << " scale_array shape1 " <<  scale_array.shape[1];
+
+                //get the P matrix which containst both K and the pose
+                Eigen::Affine3d P; 
+                double* projection_mat_data = projection_mat_array.data<double>();
+                P.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(projection_mat_data);
+                // VLOG(1) << "P is " << P.matrix();
+                Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
+                // VLOG(1) << P_block;
+                //get scale
+                Eigen::Affine3d S; 
+                double* scale_array_data = scale_array.data<double>();
+                S.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(scale_array_data);
+                // VLOG(1) << "S is " << S.matrix();
+
+
+                //Get the P_block into K and R and T as done in this line: K, R, t = cv2.decomposeProjectionMatrix(P)[:3]
+                cv::Mat P_mat;
+                cv::eigen2cv(P_block, P_mat);
+                cv::Mat K_mat, R_mat, t_mat;
+                cv::decomposeProjectionMatrix(P_mat, K_mat, R_mat, t_mat);
+                // VLOG(1) << "K_Mat has size " << K_mat.rows << " " << K_mat.cols;
+                // VLOG(1) << "T_Mat has size " << R_mat.rows << " " << R_mat.cols;
+                // VLOG(1) << "t_Mat has size " << t_mat.rows << " " << t_mat.cols;
+                Eigen::Matrix3d K, R;
+                Eigen::Vector4d t_full;
+                cv::cv2eigen(K_mat, K);
+                cv::cv2eigen(R_mat, R);
+                cv::cv2eigen(t_mat, t_full);
+                K = K / K(2, 2);
+                // VLOG(1) << "K is " << K;
+                // VLOG(1) << "R is " << R;
+                // VLOG(1) << "t_full is " << t_full;
+                Eigen::Vector3d t;
+                t.x()= t_full.x()/t_full.w();
+                t.y()= t_full.y()/t_full.w();
+                t.z()= t_full.z()/t_full.w();
+                // VLOG(1) << "t is "<<t;
+
+
+                // //get the pose into a mat
+                Eigen::Affine3f tf_world_cam;
+                tf_world_cam.linear() = R.transpose().cast<float>();
+                tf_world_cam.translation() = t.cast<float>();
+                // VLOG(1) << "tf_world_cam " << tf_world_cam.matrix();
+
+
+                //get S 
+                // Eigen::Matrix3d S_block=
+                Eigen::Vector3d norm_trans=S.translation();
+                // VLOG(1) << "norm trans is " << norm_trans;
+                Eigen::Vector3d norm_scale; 
+                norm_scale << S(0,0), S(1,1), S(2,2);
+                // VLOG(1) << "norm scale " << norm_scale;
+                tf_world_cam.translation()-=norm_trans.cast<float>();
+                tf_world_cam.translation()=tf_world_cam.translation().array()/norm_scale.cast<float>().array();
+                // VLOG(1) << "pose after the weird scaling " << tf_world_cam.matrix();
+
+
+
+                //atteptm2
+                //rotate 
+                Eigen::Quaternionf q = Eigen::Quaternionf( Eigen::AngleAxis<float>( -60 * M_PI / 180.0 ,  Eigen::Vector3f::UnitX() ) );
+                Eigen::Affine3f tf_rot;
+                tf_rot.setIdentity();
+                tf_rot.linear()=q.toRotationMatrix();
+                // tf_world_cam=tf_rot*tf_world_cam;
+                tf_world_cam=tf_rot*tf_world_cam;
+                //flip
+                Eigen::Affine3f tf_cam_world=tf_world_cam.inverse();
+                Eigen::DiagonalMatrix<float, 4> diag;
+                diag.diagonal() <<1, -1, 1, 1;
+                tf_cam_world.matrix()=diag*tf_cam_world.matrix()*diag; 
+                //flip again the x
+                diag.diagonal() <<-1, 1, 1, 1;
+                tf_cam_world.matrix()=tf_cam_world.matrix()*diag; 
+                //flip locally
+                // tf_world_cam=tf_cam_world.inverse();
+
+                //add it to the hashmaps 
+                m_scene2frame_idx2tf_cam_world[scene_path][img_idx]=tf_cam_world;
+                m_scene2frame_idx2K[scene_path][img_idx]=K.cast<float>();
+           
+
+            }
+        }
+
+
+
+
+
+    }
+
+}
+
+
 
 
 bool DataLoaderDTU::finished_reading_scene(){

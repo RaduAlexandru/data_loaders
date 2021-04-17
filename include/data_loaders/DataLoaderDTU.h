@@ -63,6 +63,7 @@ private:
     std::unordered_map<std::string, std::string> create_mapping_classnr2classname(); //create the mapping between the weird nr of a class to the actual class name
     Eigen::Affine3f process_extrinsics_line(const std::string line);
     void load_images_in_frame(easy_pbr::Frame& frame);
+    void read_poses_and_intrinsics();
     
 
     //objects
@@ -90,6 +91,9 @@ private:
     //internal
     std::vector<boost::filesystem::path> m_scene_folders; //contains all the folders of the scenes for this objects
     std::vector< easy_pbr::Frame > m_frames_for_scene;
+    std::unordered_map<std::string,      std::unordered_map<int, Eigen::Affine3f>     > m_scene2frame_idx2tf_cam_world;
+    std::unordered_map<std::string,      std::unordered_map<int, Eigen::Matrix3f>    > m_scene2frame_idx2K;
+
     int m_nr_scenes_read_so_far;
 
 };
