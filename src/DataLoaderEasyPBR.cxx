@@ -124,7 +124,7 @@ void DataLoaderEasyPBR::init_data_reading(){
     }
     
     //go to the folder of train val or test depending on the mode in which we are one
-    for (fs::directory_iterator itr(m_dataset_path/m_object_name/"imgs"); itr!=fs::directory_iterator(); ++itr){
+    for (fs::directory_iterator itr(m_dataset_path/m_object_name/("imgs_"+m_mode) ); itr!=fs::directory_iterator(); ++itr){
         fs::path img_path= itr->path();
         //we disregard the images that contain depth and normals, we load only the rgb
         if (fs::is_regular_file(img_path) && 

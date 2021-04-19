@@ -264,8 +264,8 @@ def test_colmap():
 
 def test_easypbr():
     loader=DataLoaderEasyPBR(config_path)
-    # loader.set_mode_train()
-    loader.set_mode_test()
+    loader.set_mode_train()
+    # loader.set_mode_test()
     loader.start()
 
     while True:
@@ -378,9 +378,9 @@ def test_dtu():
 # test_nerf()
 # test_phenorob()
 # test_colmap()
-# test_easypbr()
+test_easypbr()
 # test_srn()
-test_dtu()
+# test_dtu()
 
 
 
