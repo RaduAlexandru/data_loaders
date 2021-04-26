@@ -78,7 +78,7 @@ private:
     int m_subsample_factor;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just images from the the first scene of that specified object class
-    std::string m_object_name;
+    int m_restrict_to_scan_idx; //restrict to only one of the scans
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
     bool m_load_as_shell;

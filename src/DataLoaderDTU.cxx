@@ -83,6 +83,7 @@ void DataLoaderDTU::init_params(const std::string config_file){
     m_do_overfit=loader_config["do_overfit"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
+    m_restrict_to_scan_idx= loader_config["restrict_to_scan_idx"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_mode= (std::string)loader_config["mode"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
@@ -112,13 +113,27 @@ void DataLoaderDTU::init_data_reading(){
     if(!scene_file.is_open()){
         LOG(FATAL) << "Could not open labels file " << scene_file_path;
     }
+    int nr_scenes_read=0;
     for( std::string line; getline( scene_file, line ); ){
         if(line.empty()){
             continue;
         }
         std::string scan=trim_copy(line); 
-        m_scene_folders.push_back(m_dataset_path/scan);
+        //if we want to load only one of the scans except for all of them 
+        //push only one of the scenes
+        if(m_restrict_to_scan_idx>=0){
+            if(m_restrict_to_scan_idx==nr_scenes_read){
+                m_scene_folders.push_back(m_dataset_path/scan);;
+            }
+        }else{
+            //push all scenes
+            m_scene_folders.push_back(m_dataset_path/scan);
+        }
+
+        nr_scenes_read++;
     }
+
+
 
     VLOG(1) << "loaded nr of scenes " << m_scene_folders.size() << " for mode " << m_mode;
 

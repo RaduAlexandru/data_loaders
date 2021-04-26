@@ -378,9 +378,9 @@ def test_dtu():
 # test_nerf()
 # test_phenorob()
 # test_colmap()
-test_easypbr()
+# test_easypbr()
 # test_srn()
-# test_dtu()
+test_dtu()
 
 
 
