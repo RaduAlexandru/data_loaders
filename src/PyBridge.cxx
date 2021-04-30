@@ -21,6 +21,7 @@
 #include "data_loaders/DataLoaderColmap.h"
 #include "data_loaders/DataLoaderSRN.h"
 #include "data_loaders/DataLoaderDTU.h"
+#include "data_loaders/DataLoaderDeepVoxels.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -292,6 +293,27 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_test", &DataLoaderDTU::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderDTU::set_mode_validation )
     ;
+
+    //DataLoaderDeepVoxels
+    py::class_<DataLoaderDeepVoxels> (m, "DataLoaderDeepVoxels")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderDeepVoxels::start ) 
+    .def("has_data", &DataLoaderDeepVoxels::has_data ) 
+    .def("get_next_frame", &DataLoaderDeepVoxels::get_next_frame ) 
+    .def("get_all_frames", &DataLoaderDeepVoxels::get_all_frames ) 
+    .def("get_frame_at_idx", &DataLoaderDeepVoxels::get_frame_at_idx ) 
+    .def("get_random_frame", &DataLoaderDeepVoxels::get_random_frame ) 
+    .def("get_closest_frame", &DataLoaderDeepVoxels::get_closest_frame ) 
+    .def("get_close_frames", &DataLoaderDeepVoxels::get_close_frames ) 
+    // .def("compute_frame_weights", &DataLoaderNerf::compute_frame_weights ) 
+    .def("is_finished", &DataLoaderDeepVoxels::is_finished ) 
+    .def("reset", &DataLoaderDeepVoxels::reset ) 
+    .def("nr_samples", &DataLoaderDeepVoxels::nr_samples ) 
+    .def("set_mode_train", &DataLoaderDeepVoxels::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderDeepVoxels::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderDeepVoxels::set_mode_validation )
+    ;
+
 
     #ifdef WITH_ROS
         py::class_<DataLoaderImgRos> (m, "DataLoaderImgRos")

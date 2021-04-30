@@ -92,6 +92,7 @@ set(MY_SRC
     ${PROJECT_SOURCE_DIR}/src/DataLoaderColmap.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderSRN.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderDTU.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderDeepVoxels.cxx
 )
 set(DEPS_SRC 
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp
