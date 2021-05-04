@@ -497,6 +497,14 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
             paths.push_back(img_path);
         }
 
+
+
+        //read pose and camera params needs to be read from the camera.npz
+        std::string pose_and_intrinsics_path=(fs::path(scene_path)/"cameras.npz").string();
+        cnpy::npz_t npz_file = cnpy::npz_load( pose_and_intrinsics_path );
+
+
+
         //load all the scene for the chosen object
         // for (fs::directory_iterator itr(scene_path); itr!=fs::directory_iterator(); ++itr){
         for (size_t i=0; i<paths.size(); i++){
@@ -511,11 +519,8 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 // VLOG(1) << "img idx is " << img_idx;
 
 
-                //read pose and camera params needs to be read from the camera.npz
-                std::string pose_and_intrinsics_path=(fs::path(scene_path)/"cameras.npz").string();
 
                 //read npz 
-                cnpy::npz_t npz_file = cnpy::npz_load( pose_and_intrinsics_path );
                 cnpy::NpyArray projection_mat_array = npz_file["world_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
                 cnpy::NpyArray scale_array = npz_file["scale_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
 
