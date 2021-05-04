@@ -266,7 +266,7 @@ void DataLoaderLLFF::read_data(){
         tf_cam_world.linear()=q.toRotationMatrix();
         tf_cam_world.translation()=t;
         //rotate it a bit 
-        Eigen::Quaterniond q_rot = Eigen::Quaterniond( Eigen::AngleAxis<double>( -90 * M_PI / 180.0 ,  Eigen::Vector3d::UnitX() ) );
+        Eigen::Quaterniond q_rot = Eigen::Quaterniond( Eigen::AngleAxis<double>( -180 * M_PI / 180.0 ,  Eigen::Vector3d::UnitX() ) );
         Eigen::Affine3d rot;
         rot.setIdentity();
         rot.linear()=q_rot.toRotationMatrix();
