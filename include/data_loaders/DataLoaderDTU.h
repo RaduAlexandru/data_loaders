@@ -40,6 +40,7 @@ public:
     void start(); //starts reading the data from disk. This gets called automatically if we have autostart=true
     easy_pbr::Frame get_random_frame();
     easy_pbr::Frame get_frame_at_idx( const int idx);
+    easy_pbr::Frame get_closest_frame( const easy_pbr::Frame& frame);
     void start_reading_next_scene(); //switch to another scene from this object and start reading it
     bool finished_reading_scene(); //returns true when we have finished reading everything for that one scene of the corresponding object and we can safely use get_random_frame
     bool has_data(); //calls internally finished_reading scene. It's mostly a convenience function 

@@ -398,6 +398,35 @@ def test_deep_voxels():
 
         view.update()
 
+def test_llff():
+    loader=DataLoaderLLFF(config_path)
+    loader.start()
+
+    while True:
+        if(loader.has_data() ): 
+
+            # print("got frame")
+            frame=loader.get_next_frame()
+            # print("loaded frame with width and height ", frame.width, " ", frame.height)
+
+
+            Gui.show(frame.rgb_32f, "rgb")
+
+            # print("frame k is ", frame.K)
+            frustum_mesh=frame.create_frustum_mesh(0.02)
+            frustum_mesh.m_vis.m_line_width=1
+            Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+
+            # cloud=frame.depth2world_xyz_mesh()
+            # Scene.show(cloud, "cloud")
+        
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
+            print("scene scale is ", Scene.get_scale())
+
+        view.update()
+
 
 # test_volref()
 # test_img()
@@ -413,7 +442,8 @@ def test_deep_voxels():
 # test_easypbr()
 # test_srn()
 # test_dtu()
-test_deep_voxels()
+# test_deep_voxels()
+test_llff()
 
 
 

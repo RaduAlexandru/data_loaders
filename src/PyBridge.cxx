@@ -22,6 +22,7 @@
 #include "data_loaders/DataLoaderSRN.h"
 #include "data_loaders/DataLoaderDTU.h"
 #include "data_loaders/DataLoaderDeepVoxels.h"
+#include "data_loaders/DataLoaderLLFF.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -312,6 +313,26 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderDeepVoxels::set_mode_train ) 
     .def("set_mode_test", &DataLoaderDeepVoxels::set_mode_test ) 
     .def("set_mode_validation", &DataLoaderDeepVoxels::set_mode_validation )
+    ;
+
+    
+    //DataLoaderLLFF
+    py::class_<DataLoaderLLFF> (m, "DataLoaderLLFF")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderLLFF::start ) 
+    .def("has_data", &DataLoaderLLFF::has_data ) 
+    .def("get_next_frame", &DataLoaderLLFF::get_next_frame ) 
+    .def("get_frame_at_idx", &DataLoaderLLFF::get_frame_at_idx ) 
+    .def("get_random_frame", &DataLoaderLLFF::get_random_frame ) 
+    .def("get_closest_frame", &DataLoaderLLFF::get_closest_frame ) 
+    .def("get_close_frames", &DataLoaderLLFF::get_close_frames ) 
+    .def("is_finished", &DataLoaderLLFF::is_finished ) 
+    .def("reset", &DataLoaderLLFF::reset ) 
+    .def("nr_samples", &DataLoaderLLFF::nr_samples ) 
+    .def("set_mode_train", &DataLoaderLLFF::set_mode_train ) 
+    .def("set_mode_test", &DataLoaderLLFF::set_mode_test ) 
+    .def("set_mode_validation", &DataLoaderLLFF::set_mode_validation )
+    .def("set_mode_all", &DataLoaderLLFF::set_mode_all )
     ;
 
 

@@ -93,6 +93,7 @@ set(MY_SRC
     ${PROJECT_SOURCE_DIR}/src/DataLoaderSRN.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderDTU.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderDeepVoxels.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderLLFF.cxx
 )
 set(DEPS_SRC 
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp
