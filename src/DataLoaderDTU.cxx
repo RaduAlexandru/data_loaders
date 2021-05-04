@@ -78,6 +78,7 @@ void DataLoaderDTU::init_params(const std::string config_file){
     Config loader_config=cfg["loader_dtu"];
 
     m_autostart=loader_config["autostart"];
+    m_read_with_bg_thread = loader_config["read_with_bg_thread"];
     m_shuffle=loader_config["shuffle"];
     m_subsample_factor=loader_config["subsample_factor"];
     m_do_overfit=loader_config["do_overfit"];
@@ -157,6 +158,7 @@ void DataLoaderDTU::start_reading_next_scene(){
         scene_path=m_scene_folders[m_idx_scene_to_read].string();
     }
 
+    // VLOG(1) << " mode "<< m_mode << "m dof overfit" << m_do_overfit << " scnee size "<< m_scene_folders.size() << " scnee path is " << scene_path;
 
 
     if(!m_do_overfit){
@@ -170,8 +172,12 @@ void DataLoaderDTU::start_reading_next_scene(){
         m_loader_thread.join(); //join the thread from the previous iteration of running
     }
     if(!scene_path.empty()){
-        m_is_running=true;
-        m_loader_thread=std::thread(&DataLoaderDTU::read_scene, this, scene_path);  //starts to read in another thread
+        if(m_read_with_bg_thread){
+            m_is_running=true;
+            m_loader_thread=std::thread(&DataLoaderDTU::read_scene, this, scene_path);  //starts to read in another thread
+        }else{
+            read_scene(scene_path);
+        }
     }
 }
 
@@ -192,7 +198,9 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
     //shuffle the images from this scene 
     unsigned seed1 = m_nr_scenes_read_so_far;
     auto rng_1 = std::default_random_engine(seed1);
-    std::shuffle(std::begin(paths), std::end(paths), rng_1);
+    if(m_mode=="train"){
+        std::shuffle(std::begin(paths), std::end(paths), rng_1);
+    }
 
     //load all the scene for the chosen object
     // for (fs::directory_iterator itr(scene_path); itr!=fs::directory_iterator(); ++itr){
@@ -680,6 +688,10 @@ void DataLoaderDTU::reset(){
 int DataLoaderDTU::nr_samples(){
     return m_frames_for_scene.size();
 }
+int DataLoaderDTU::nr_scenes(){
+    return m_scene_folders.size();
+}
+
 
 void DataLoaderDTU::set_mode_train(){
     m_mode="train";

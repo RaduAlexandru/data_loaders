@@ -45,7 +45,8 @@ public:
     bool finished_reading_scene(); //returns true when we have finished reading everything for that one scene of the corresponding object and we can safely use get_random_frame
     bool has_data(); //calls internally finished_reading scene. It's mostly a convenience function 
     void reset(); //starts reading from the beggining
-    int nr_samples(); //returns the number of scenes for the object that we selected
+    int nr_samples(); //returns the number of images for the object that we selected
+    int nr_scenes(); //returns the number of scenes that we have for this mode
     bool is_finished(); //check if we finished reading all the scenes
     std::string get_object_name();
     void set_object_name(const std::string object_name);
@@ -75,6 +76,7 @@ private:
     // bool m_autostart;
     std::atomic<bool> m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     bool m_autostart;
+    bool m_read_with_bg_thread;
     std::string m_mode; // train or test or val
     int m_subsample_factor;
     bool m_shuffle;

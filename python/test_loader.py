@@ -342,8 +342,10 @@ def test_dtu():
         if(loader.finished_reading_scene() ): 
             frame=loader.get_random_frame()
 
-            if i%1==0:
-                loader.start_reading_next_scene()
+            # if i%1==0:
+                # loader.start_reading_next_scene()
+
+            print("frame rgb path is ", frame.rgb_path)
 
             if frame.is_shell:
                 frame.load_images()
@@ -353,9 +355,10 @@ def test_dtu():
             Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
             # Scene.show(frustum, "frustum" )
 
-            # cloud=frame.depth2world_xyz_mesh()
-            # cloud=frame.assign_color(cloud)
-            # Scene.show(cloud, "cloud")
+            loader.start_reading_next_scene()
+            while True:
+                if(loader.finished_reading_scene()): 
+                    break
 
             i+=1
 
@@ -441,9 +444,9 @@ def test_llff():
 # test_colmap()
 # test_easypbr()
 # test_srn()
-# test_dtu()
+test_dtu()
 # test_deep_voxels()
-test_llff()
+# test_llff()
 
 
 
