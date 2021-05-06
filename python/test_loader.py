@@ -403,6 +403,7 @@ def test_deep_voxels():
 
 def test_llff():
     loader=DataLoaderLLFF(config_path)
+    loader.set_mode_train()
     loader.start()
 
     while True:
@@ -444,9 +445,9 @@ def test_llff():
 # test_colmap()
 # test_easypbr()
 # test_srn()
-test_dtu()
+# test_dtu()
 # test_deep_voxels()
-# test_llff()
+test_llff()
 
 
 

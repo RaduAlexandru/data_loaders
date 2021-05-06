@@ -229,14 +229,15 @@ void DataLoaderLLFF::read_data(){
         frame.frame_idx=i;
 
         //depending on the mode we read this image or not 
-        if (m_mode=="train" && frame.frame_idx%3==0){
+        //we use every 8th image because that is what IBRNet uses also since we use a modulo we actually need to do a modulo 9 to get the same results, we tested this using the dataloader llff_test from ibrner
+        if (m_mode=="train" && frame.frame_idx%9==0){
             continue;
         }
-        if (m_mode=="test" && frame.frame_idx%3!=0){
+        if (m_mode=="test" && frame.frame_idx%9!=0){
             continue;
         }
 
-        VLOG(1) << "Read pose for image " << image_name;
+        VLOG(1) << "For mode " << m_mode << " read pose for image " << image_name;
 
         // read rgb
         frame.rgb_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
