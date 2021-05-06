@@ -230,6 +230,7 @@ void DataLoaderLLFF::read_data(){
 
         //depending on the mode we read this image or not 
         //we use every 8th image because that is what IBRNet uses also since we use a modulo we actually need to do a modulo 9 to get the same results, we tested this using the dataloader llff_test from ibrner
+        //so what it does is that the first frames counts as test then the next 8 for training, then one for test, next 8 for training and so on
         if (m_mode=="train" && frame.frame_idx%9==0){
             continue;
         }
