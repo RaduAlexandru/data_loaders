@@ -106,37 +106,41 @@ void DataLoaderLLFF::read_data(){
 
 
     //following the convention from https://github.com/googleinterns/IBRNet/blob/master/ibrnet/data_loaders/llff_data_utils.py
-    // std::string pose_path=(scene_path/"poses_bounds.npy").string();
+    std::string pose_path=(m_dataset_path/"poses_bounds.npy").string();
 
-    // //read npz 
-    // cnpy::NpyArray arr = cnpy::npy_load( pose_path );
+    //read npz 
+    cnpy::NpyArray arr = cnpy::npy_load( pose_path );
 
     // VLOG(1) << " array size" <<  arr.shape.size(); //returns 2
-    // VLOG(1) << " array shape0 " <<  arr.shape[0]; //rreturns 20
-    // VLOG(1) << " array shape1 " <<  arr.shape[1]; //returns 17
-    // int rows = arr.shape[0];
-    // int cols = arr.shape[1];
+    // VLOG(1) << " array shape0 " <<  arr.shape[0]; //rreturns nr_poses
+    // VLOG(1) << " array shape1 " <<  arr.shape[1]; //returns 17 , the first 15 are a 3x5 pose matrix and then 2 depth values fro near and far
+    int rows = arr.shape[0];
+    int cols = arr.shape[1];
 
-    // Eigen::MatrixXd arr_eigen;
-    // arr_eigen.resize( arr.shape[0], arr.shape[1] );
-    // const double* arr_data = arr.data<double>();
-    // for(int i=0; i<rows; i++){
-    //     for(int j=0; j<cols; j++){
-    //         double val = arr_data[j+i*cols];
-    //         arr_eigen(i,j) = val;
-    //     }
-    // }
-    // arr_eigen.transposeInPlace();
-    // rows = arr.shape[1];
-    // cols = arr.shape[0];
+    Eigen::MatrixXd arr_eigen;
+    arr_eigen.resize( arr.shape[0], arr.shape[1] );
+    const double* arr_data = arr.data<double>();
+    for(int i=0; i<rows; i++){
+        for(int j=0; j<cols; j++){
+            double val = arr_data[j+i*cols];
+            arr_eigen(i,j) = val;
+        }
+    }
+    arr_eigen.transposeInPlace();
+    rows = arr.shape[1];
+    cols = arr.shape[0];
 
 
     // VLOG(1) << "arr_eigen" << arr_eigen;
 
-    // Eigen::MatrixXd bounds;
-    // bounds.resize(rows, cols);
+    //last to rows are 2xnr_poses for the near and far bound
+    Eigen::MatrixXd bounds;
+    bounds.resize(2, cols);
     // bounds = arr_eigen.block(rows-2,0,rows,2);
-    // bounds.transposeInPlace();
+    bounds = arr_eigen.block(rows-2,0,2,cols);
+    bounds.transposeInPlace();
+    bounds.array()*=m_scene_scale_multiplier;
+
     // VLOG(1) << "bounds " << bounds;
 
 
@@ -290,6 +294,20 @@ void DataLoaderLLFF::read_data(){
             tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
             frame.tf_cam_world=tf_world_cam_rescaled.inverse();
         }
+
+        //also add the near and far bound for the frame
+        float near =  bounds(i,0);
+        float far =  bounds(i,1);
+        frame.add_extra_field("near", near);
+        frame.add_extra_field("far", far);
+        VLOG(1) << "Near and far that we have set is " << frame.get_extra_field<float>("near") << " " << frame.get_extra_field<float>("far");
+        //add also the average of the near and far fields so that we can use the same near and far for all cameras and that the NDC calculated for each camera is the same
+        float avg_near =bounds.col(0).mean();
+        float avg_far =bounds.col(1).mean();
+        frame.add_extra_field("avg_near", avg_near );
+        frame.add_extra_field("avg_far", avg_far );
+        VLOG(1) << "Average Near and far that we have set is " << frame.get_extra_field<float>("avg_near") << " " << frame.get_extra_field<float>("avg_far");
+
 
 
         m_frames.push_back(frame);
