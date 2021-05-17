@@ -307,6 +307,11 @@ void DataLoaderLLFF::read_data(){
         frame.add_extra_field("avg_near", avg_near );
         frame.add_extra_field("avg_far", avg_far );
         VLOG(1) << "Average Near and far that we have set is " << frame.get_extra_field<float>("avg_near") << " " << frame.get_extra_field<float>("avg_far");
+        float min_near =bounds.col(0).minCoeff();
+        float max_far =bounds.col(1).maxCoeff();
+        frame.add_extra_field("min_near", min_near );
+        frame.add_extra_field("max_far", max_far );
+        VLOG(1) << "Min and Max Near and far that we have set is " << frame.get_extra_field<float>("min_near") << " " << frame.get_extra_field<float>("max_far");
 
 
 
