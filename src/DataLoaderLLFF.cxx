@@ -78,7 +78,7 @@ void DataLoaderLLFF::init_params(const std::string config_file){
     m_subsample_factor=loader_config["subsample_factor"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
-    m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
+    m_scene_scale_multiplier= loader_config.get_float_else_nan("scene_scale_multiplier");
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
 
@@ -139,6 +139,12 @@ void DataLoaderLLFF::read_data(){
     // bounds = arr_eigen.block(rows-2,0,rows,2);
     bounds = arr_eigen.block(rows-2,0,2,cols);
     bounds.transposeInPlace();
+    //if the scene_scale_multiplier was set to auto, thne we use a scene scale multiplier so that the far plane is at 1.0, so the scene is in the unit cube
+    if (std::isnan(m_scene_scale_multiplier)){
+        float max_far =bounds.col(1).maxCoeff();
+        m_scene_scale_multiplier= 1.0/max_far;
+    }
+
     bounds.array()*=m_scene_scale_multiplier;
 
     // VLOG(1) << "bounds " << bounds;

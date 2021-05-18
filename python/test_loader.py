@@ -429,8 +429,10 @@ def test_llff():
             # cloud=frame.depth2world_xyz_mesh()
             # Scene.show(cloud, "cloud")
 
-            near = frame.get_extra_field_float("near")
+            near = frame.get_extra_field_float("min_near")
+            far = frame.get_extra_field_float("max_far")
             print("near is ", near)
+            print("far is ", far)
             # frame.add_extra_field("test", 54.0)
             # roundback= frame.get_extra_field_float("test")
             # print("roundback is ", roundback)
@@ -443,7 +445,7 @@ def test_llff():
         view.update()
 
 
-test_volref()
+# test_volref()
 # test_img()
 # test_img_ros()
 # test_cloud_ros()
@@ -458,7 +460,7 @@ test_volref()
 # test_srn()
 # test_dtu()
 # test_deep_voxels()
-# test_llff()
+test_llff()
 
 
 
