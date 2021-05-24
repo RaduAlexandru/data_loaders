@@ -450,8 +450,8 @@ std::vector<easy_pbr::Frame>  DataLoaderDeepVoxels::get_close_frames( const easy
             }
 
             //now get the closest one
-            // float dist =  ( m_frames[j].tf_cam_world.inverse().translation() - frame.tf_cam_world.inverse().translation() ).norm();
-            float dist = 1.0 -  m_frames[j].look_dir().dot(frame.look_dir());
+            float dist =  ( m_frames[j].tf_cam_world.inverse().translation() - frame.tf_cam_world.inverse().translation() ).norm();
+            // float dist = 1.0 -  m_frames[j].look_dir().dot(frame.look_dir());
             if (dist < closest_distance){
                 closest_distance=dist;
                 closest_idx=j;
