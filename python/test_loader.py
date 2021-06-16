@@ -446,7 +446,7 @@ def test_llff():
 
 def test_blender_fb():
     loader=DataLoaderBlenderFB(config_path)
-    loader.set_mode_train()
+    # loader.set_mode_train()
     # loader.set_mode_test()
     loader.start()
 

@@ -104,7 +104,7 @@ void DataLoaderBlenderFB::init_params(const std::string config_file){
 void DataLoaderBlenderFB::start(){
     init_data_reading();
     init_poses();
-    // read_data();
+    read_data();
 }
 
 
@@ -227,6 +227,11 @@ void DataLoaderBlenderFB::init_poses(){
         // if (!(iss >> a >> b)) { break; } // error
 
         // process pair (a,b)
+
+        //push things
+        m_camidx2pose[cam_idx]=pose_affine;
+        m_camidx2intrinsics[cam_idx]=K;
+        m_camidx2distorsion[cam_idx]=distorsion;
     }
 
 
@@ -295,6 +300,7 @@ void DataLoaderBlenderFB::read_data(){
 
         //read rgba and split into rgb and alpha mask
         cv::Mat rgba_32f = cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+        VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
         if(m_subsample_factor>1){
             cv::Mat resized;
             cv::resize(rgba_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
@@ -387,7 +393,10 @@ void DataLoaderBlenderFB::read_data(){
 
 
         //extrinsics
-        // frame.tf_cam_world=m_filename2pose[img_path.stem().string()].cast<float>();
+        Eigen::Affine3f tf_world_cam = m_camidx2pose[frame.frame_idx].cast<float>();
+        tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
+        // tf_cam_world=tf_world_cam.inverse()
+        frame.tf_cam_world=tf_world_cam;
 
         //intrinsics got mostly from here https://github.com/bmild/nerf/blob/0247d6e7ede8d918bc1fab2711f845669aee5e03/load_blender.py
         // frame.K.setIdentity();
@@ -397,6 +406,11 @@ void DataLoaderBlenderFB::read_data(){
         // frame.K(0,2) = frame.width/2.0; //no need to subsample the cx and cy because the frame width already refers to the subsampled iamge
         // frame.K(1,2) = frame.height/2.0;
         // frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+        frame.K=m_camidx2intrinsics[frame.frame_idx].cast<float>();
+
+        //distorsion
+
+        frame.distort_coeffs=m_camidx2distorsion[frame.frame_idx].cast<float>();
 
 
         //rescale things if necessary
