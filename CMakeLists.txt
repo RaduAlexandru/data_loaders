@@ -29,7 +29,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 # unset(PYTHON_MODULE_PREFIX CACHE)
 # unset(PYTHON_MODULE_EXTENSION CACHE)
 # unset(PYTHON_LIBRARY CACHE)
-# set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "" FORCE) 
+# set(PYBIND11_PYTHON_VERSION 3.6 CACHE STRING "" FORCE)
 # message("PYBIND11_PYTHON_VERSION is" , ${PYBIND11_PYTHON_VERSION})
 
 
@@ -69,7 +69,7 @@ endif()
 
 
 ###   SOURCES   #################################################################
-set(MY_SRC  
+set(MY_SRC
     # ${PROJECT_SOURCE_DIR}/src/Frame.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderVolRef.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderImgRos.cxx
@@ -94,15 +94,17 @@ set(MY_SRC
     ${PROJECT_SOURCE_DIR}/src/DataLoaderDTU.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderDeepVoxels.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderLLFF.cxx
+    #fb
+    ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderBlenderFB.cxx
 )
-set(DEPS_SRC 
+set(DEPS_SRC
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp
     ${PROJECT_SOURCE_DIR}/deps/cnpy/cnpy.cpp
     # ${PROJECT_SOURCE_DIR}/extern/pybind_casters/ndarray_converter.cpp
     )
 if (${catkin_FOUND} )
-    set(MY_SRC ${MY_SRC} 
-        ${PROJECT_SOURCE_DIR}/src/DataLoaderImgRos.cxx 
+    set(MY_SRC ${MY_SRC}
+        ${PROJECT_SOURCE_DIR}/src/DataLoaderImgRos.cxx
         ${PROJECT_SOURCE_DIR}/src/DataLoaderCloudRos.cxx
         ${PROJECT_SOURCE_DIR}/src/RosBagPlayer.cxx
     )
@@ -118,7 +120,7 @@ else()
 endif()
 
 
-#lib 
+#lib
 add_library( dataloaders_cpp SHARED ${MY_SRC}  ${DEPS_SRC}  )
 
 
@@ -149,5 +151,3 @@ target_link_libraries(dataloaders PRIVATE dataloaders_cpp )
 #definitions for cmake variables that are necesarry during runtime
 target_compile_definitions(dataloaders_cpp PRIVATE PROJECT_SOURCE_DIR="${PROJECT_SOURCE_DIR}") #point to the cmakelist folder of the easy_pbr
 target_compile_definitions(dataloaders_cpp PRIVATE CMAKE_SOURCE_DIR="${CMAKE_SOURCE_DIR}") # points to the CMakeList folder of whichever project included easy_pbr
-
-

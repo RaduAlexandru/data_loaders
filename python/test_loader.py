@@ -23,11 +23,11 @@ def test_volref():
 
 
     while True:
-        if(loader.has_data()  ): 
+        if(loader.has_data()  ):
 
             first=True
 
-            #volref 
+            #volref
             # print("got frame")
             frame_color=loader.get_color_frame()
             frame_depth=loader.get_depth_frame()
@@ -54,7 +54,7 @@ def test_volref():
         if loader.is_finished():
             # print("resetting")
             loader.reset()
-        
+
         view.update()
 
 
@@ -64,7 +64,7 @@ def test_img():
 
     while True:
         for cam_idx in range(loader.get_nr_cams()):
-            if(loader.has_data_for_cam(cam_idx)): 
+            if(loader.has_data_for_cam(cam_idx)):
                 # print("data")
                 frame=loader.get_frame_for_cam(cam_idx)
                 Gui.show(frame.rgb_32f, "rgb")
@@ -72,7 +72,7 @@ def test_img():
                 rgb_tensor=frame.rgb2tensor()
                 rgb_tensor=rgb_tensor.to("cuda")
 
-           
+
         view.update()
 
 def test_semantickitti():
@@ -80,7 +80,7 @@ def test_semantickitti():
     loader.start()
 
     while True:
-        if(loader.has_data()): 
+        if(loader.has_data()):
             cloud=loader.get_cloud()
             Scene.show(cloud, "cloud")
 
@@ -88,7 +88,7 @@ def test_semantickitti():
                 # print("found")
         if loader.is_finished():
             loader.reset()
-           
+
         view.update()
 
 def test_scannet():
@@ -96,11 +96,11 @@ def test_scannet():
     loader.start()
 
     while True:
-        if(loader.has_data()): 
+        if(loader.has_data()):
             cloud=loader.get_cloud()
             Scene.show(cloud, "cloud")
 
-           
+
         view.update()
 
 def test_stanford3dscene():
@@ -108,7 +108,7 @@ def test_stanford3dscene():
     loader.start()
 
     while True:
-        if(loader.has_data() ): 
+        if(loader.has_data() ):
 
             print("got frame")
             frame_color=loader.get_color_frame()
@@ -147,7 +147,7 @@ def test_shapenet_img():
     i=0
 
     while True:
-        if(loader.finished_reading_scene() ): 
+        if(loader.finished_reading_scene() ):
             frame=loader.get_random_frame()
 
             if i%1==0:
@@ -183,7 +183,7 @@ def test_nerf():
     loader.start()
 
     while True:
-        if(loader.has_data() ): 
+        if(loader.has_data() ):
 
             # print("got frame")
             frame=loader.get_next_frame()
@@ -199,7 +199,7 @@ def test_nerf():
 
             # cloud=frame.depth2world_xyz_mesh()
             # Scene.show(cloud, "cloud")
-        
+
         if loader.is_finished():
             print("resetting")
             loader.reset()
@@ -213,13 +213,13 @@ def test_phenorob():
     loader.set_do_augmentation(True)
 
     while True:
-        if(loader.has_data() ): 
+        if(loader.has_data() ):
             # print("has data")
 
             cloud=loader.get_cloud()
 
             Scene.show(cloud, "cloud" )
-        
+
         if loader.is_finished():
             # print("resetting")
             loader.reset()
@@ -231,7 +231,7 @@ def test_cloud_ros():
     loader=DataLoaderCloudRos(config_path)
 
     while loader.is_loader_thread_alive():
-        if(loader.has_data() ): 
+        if(loader.has_data() ):
             cloud=loader.get_cloud()
 
             Scene.show(cloud, "cloud" )
@@ -243,7 +243,7 @@ def test_colmap():
     loader.start()
 
     while True:
-        if(loader.has_data() ): 
+        if(loader.has_data() ):
 
             # print("got frame")
             frame=loader.get_next_frame()
@@ -259,7 +259,7 @@ def test_colmap():
 
             # cloud=frame.depth2world_xyz_mesh()
             # Scene.show(cloud, "cloud")
-        
+
         if loader.is_finished():
             print("resetting")
             loader.reset()
@@ -274,7 +274,7 @@ def test_easypbr():
     loader.start()
 
     while True:
-        if(loader.has_data() ): 
+        if(loader.has_data() ):
 
             # print("got frame")
             frame=loader.get_next_frame()
@@ -290,7 +290,7 @@ def test_easypbr():
 
             # cloud=frame.depth2world_xyz_mesh()
             # Scene.show(cloud, "cloud")
-        
+
         if loader.is_finished():
             print("resetting")
             loader.reset()
@@ -307,7 +307,7 @@ def test_srn():
     i=0
 
     while True:
-        if(loader.finished_reading_scene() ): 
+        if(loader.finished_reading_scene() ):
             frame=loader.get_random_frame()
 
             if i%1==0:
@@ -344,7 +344,7 @@ def test_dtu():
     i=0
 
     while True:
-        if(loader.finished_reading_scene() ): 
+        if(loader.finished_reading_scene() ):
             frame=loader.get_random_frame()
 
             # if i%1==0:
@@ -362,7 +362,7 @@ def test_dtu():
 
             loader.start_reading_next_scene()
             while True:
-                if(loader.finished_reading_scene()): 
+                if(loader.finished_reading_scene()):
                     break
 
             i+=1
@@ -382,7 +382,7 @@ def test_deep_voxels():
     loader.start()
 
     while True:
-        if(loader.has_data() ): 
+        if(loader.has_data() ):
 
             # print("got frame")
             frame=loader.get_next_frame()
@@ -398,7 +398,7 @@ def test_deep_voxels():
 
             # cloud=frame.depth2world_xyz_mesh()
             # Scene.show(cloud, "cloud")
-        
+
         if loader.is_finished():
             print("resetting")
             loader.reset()
@@ -412,7 +412,7 @@ def test_llff():
     loader.start()
 
     while True:
-        if(loader.has_data() ): 
+        if(loader.has_data() ):
 
             # print("got frame")
             frame=loader.get_next_frame()
@@ -436,7 +436,38 @@ def test_llff():
             # frame.add_extra_field("test", 54.0)
             # roundback= frame.get_extra_field_float("test")
             # print("roundback is ", roundback)
-        
+
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
+            print("scene scale is ", Scene.get_scale())
+
+        view.update()
+
+def test_blender_fb():
+    loader=DataLoaderBlenderFB(config_path)
+    loader.set_mode_train()
+    # loader.set_mode_test()
+    loader.start()
+
+    while True:
+        if(loader.has_data() ):
+
+            # print("got frame")
+            frame=loader.get_next_frame()
+            # print("frame width and height is ", frame.width, " ", frame.height)
+
+
+            Gui.show(frame.rgb_32f, "rgb")
+
+
+            frustum_mesh=frame.create_frustum_mesh(0.02)
+            frustum_mesh.m_vis.m_line_width=1
+            Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+
+            # cloud=frame.depth2world_xyz_mesh()
+            # Scene.show(cloud, "cloud")
+
         if loader.is_finished():
             print("resetting")
             loader.reset()
@@ -460,7 +491,5 @@ def test_llff():
 # test_srn()
 # test_dtu()
 # test_deep_voxels()
-test_llff()
-
-
-
+# test_llff()
+test_blender_fb()
