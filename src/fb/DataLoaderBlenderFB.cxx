@@ -176,6 +176,8 @@ void DataLoaderBlenderFB::init_poses(){
 
         tokens=split(line," ");
         int cam_idx=std::stoi(tokens[0]);
+        int width=std::stoi(tokens[1]);
+        int height=std::stoi(tokens[2]);
         VLOG(1) <<"reading params for cam_idx " << cam_idx;
 
         //3 lines for intrinsics
@@ -227,6 +229,8 @@ void DataLoaderBlenderFB::init_poses(){
         // if (!(iss >> a >> b)) { break; } // error
 
         // process pair (a,b)
+
+
 
         //push things
         m_camidx2pose[cam_idx]=pose_affine;
@@ -299,18 +303,19 @@ void DataLoaderBlenderFB::read_data(){
         frame.frame_idx=std::stoi(tokens[1]);
 
         //read rgba and split into rgb and alpha mask
-        cv::Mat rgba_32f = cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
-        VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
+        cv::Mat rgb_32f = cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+        // VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
         if(m_subsample_factor>1){
             cv::Mat resized;
-            cv::resize(rgba_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
-            rgba_32f=resized;
+            cv::resize(rgb_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+            rgb_32f=resized;
         }
-        std::vector<cv::Mat> channels(4);
-        cv::split(rgba_32f, channels);
-        cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
-        channels.pop_back();
-        cv::merge(channels, frame.rgb_32f);
+        frame.rgb_32f= rgb_32f;
+        // std::vector<cv::Mat> channels(4);
+        // cv::split(rgba_32f, channels);
+        // cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+        // channels.pop_back();
+        // cv::merge(channels, frame.rgb_32f);
 
 
         // cv::cvtColor(frame.rgb_8u, frame.gray_8u, CV_BGR2GRAY);
