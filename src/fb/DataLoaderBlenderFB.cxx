@@ -231,6 +231,16 @@ void DataLoaderBlenderFB::init_poses(){
         // process pair (a,b)
 
 
+        //something is weird with the intrinsics, the focal lenght is way too high
+        // K(0,0)=K(0,0)/10;
+        // K(1,1)=K(1,1)/10;
+
+        //maybe the fx and fy are in mm and I ant them in pixels
+        // https://ksimek.github.io/2013/08/13/intrinsic/
+        // K(0,0) = fx*36/width
+        // K(0,0)=K(0,0)/width*36.0;
+        // K(1,1)=K(1,1)/height*36.0;
+
 
         //push things
         m_camidx2pose[cam_idx]=pose_affine;
@@ -294,6 +304,9 @@ void DataLoaderBlenderFB::read_data(){
         Frame frame;
 
         fs::path img_path=m_imgs_paths[i];
+        // if (i!=0){
+            // continue;
+        // }
         VLOG(1) << "reading " << img_path;
 
         //get the idx
@@ -311,6 +324,7 @@ void DataLoaderBlenderFB::read_data(){
             rgb_32f=resized;
         }
         frame.rgb_32f= rgb_32f;
+        frame.rgb_32f.convertTo(frame.rgb_8u, CV_8UC3, 255.0);
         // std::vector<cv::Mat> channels(4);
         // cv::split(rgba_32f, channels);
         // cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
@@ -398,10 +412,21 @@ void DataLoaderBlenderFB::read_data(){
 
 
         //extrinsics
-        Eigen::Affine3f tf_world_cam = m_camidx2pose[frame.frame_idx].cast<float>();
-        tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
-        // tf_cam_world=tf_world_cam.inverse()
-        frame.tf_cam_world=tf_world_cam;
+        Eigen::Affine3f tf_world_cam = m_camidx2pose[frame.frame_idx].inverse().cast<float>();
+        // tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
+        // tf_cam_world=tf_world_cam.inverse();
+        // tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
+        Eigen::Affine3f tf_cam_world = tf_world_cam.inverse();
+        //flip x
+        tf_cam_world.matrix().col(0) = -tf_cam_world.matrix().col(0);
+        // tf_cam_world.matrix().col(1) = -tf_cam_world.matrix().col(1);
+        //flip y
+        tf_cam_world.matrix().col(1) = -tf_cam_world.matrix().col(1);
+        //flip y locally
+        tf_world_cam= tf_cam_world.inverse();
+        tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
+        tf_cam_world = tf_world_cam.inverse();
+        frame.tf_cam_world=tf_cam_world;
 
         //intrinsics got mostly from here https://github.com/bmild/nerf/blob/0247d6e7ede8d918bc1fab2711f845669aee5e03/load_blender.py
         // frame.K.setIdentity();
@@ -412,6 +437,10 @@ void DataLoaderBlenderFB::read_data(){
         // frame.K(1,2) = frame.height/2.0;
         // frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
         frame.K=m_camidx2intrinsics[frame.frame_idx].cast<float>();
+        if(m_subsample_factor>1){
+            frame.K/=m_subsample_factor;
+            frame.K(2,2)=1.0;
+        }
 
         //distorsion
 

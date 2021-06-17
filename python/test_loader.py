@@ -459,19 +459,21 @@ def test_blender_fb():
 
 
             Gui.show(frame.rgb_32f, "rgb")
+            Gui.show(frame.rgb_8u, "rgb8u")
 
 
             frustum_mesh=frame.create_frustum_mesh(0.02)
             frustum_mesh.m_vis.m_line_width=1
+            # frustum_mesh.m_is_dirty=True
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
 
             # cloud=frame.depth2world_xyz_mesh()
             # Scene.show(cloud, "cloud")
 
         if loader.is_finished():
-            print("resetting")
+            # print("resetting")
             loader.reset()
-            print("scene scale is ", Scene.get_scale())
+            # print("scene scale is ", Scene.get_scale())
 
         view.update()
 
