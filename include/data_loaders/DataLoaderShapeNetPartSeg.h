@@ -4,7 +4,7 @@
 
 
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -77,7 +77,7 @@ private:
     bool m_shuffle;
     bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
     std::string m_restrict_to_object;  //makes it load clouds only from a specific object
-    boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
+    boost::filesystem::path m_dataset_path;  //get the path where all the off files are
     // int m_nr_clouds_to_skip;
     // int m_nr_clouds_to_read;
     std::thread m_loader_thread;

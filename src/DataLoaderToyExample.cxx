@@ -16,13 +16,13 @@ using namespace configuru;
 //ros
 #include "data_loaders/utils/RosTools.h"
 
-//my stuff 
+//my stuff
 #include "data_loaders/core/MeshCore.h"
 #include "data_loaders/utils/MiscUtils.h"
 #include "data_loaders/utils/Profiler.h"
 #include "data_loaders/LabelMngr.h"
 
-//json 
+//json
 #include "json11.hpp"
 
 
@@ -75,7 +75,7 @@ void DataLoaderToyExample::start(){
 
 
 void DataLoaderToyExample::init_data_reading(){
-    
+
 
 }
 
@@ -99,14 +99,14 @@ void DataLoaderToyExample::read_data(){
 
             cloud.normalize_size();
             cloud.normalize_position(); //will segfault because V is Nx2
-           
+
 
 
             //some sensible visualization options
             cloud.m_vis.m_show_mesh=false;
             cloud.m_vis.m_show_points=true;
             cloud.m_vis.m_color_type=+MeshColorType::SemanticGT;
-            
+
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
             cloud.m_label_mngr=m_label_mngr->shared_from_this();
 
@@ -135,7 +135,7 @@ MeshCore DataLoaderToyExample::sine_wave_3D(const int nr_points, const int nr_cy
     }
 
     sine.m_vis.m_show_points=true;
-    return sine;    
+    return sine;
 
 }
 
@@ -194,5 +194,3 @@ void DataLoaderToyExample::set_mode_test(){
 }
 void DataLoaderToyExample::set_mode_validation(){
 }
-
-

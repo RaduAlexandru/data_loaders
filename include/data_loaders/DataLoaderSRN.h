@@ -5,7 +5,7 @@
 
 
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -42,7 +42,7 @@ public:
     easy_pbr::Frame get_frame_at_idx( const int idx);
     void start_reading_next_scene(); //switch to another scene from this object and start reading it
     bool finished_reading_scene(); //returns true when we have finished reading everything for that one scene of the corresponding object and we can safely use get_random_frame
-    bool has_data(); //calls internally finished_reading scene. It's mostly a convenience function 
+    bool has_data(); //calls internally finished_reading scene. It's mostly a convenience function
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
     bool is_finished(); //check if we finished reading all the scenes
@@ -63,7 +63,7 @@ private:
     std::unordered_map<std::string, std::string> create_mapping_classnr2classname(); //create the mapping between the weird nr of a class to the actual class name
     Eigen::Affine3f process_extrinsics_line(const std::string line);
     void load_images_in_frame(easy_pbr::Frame& frame);
-    
+
 
     //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
@@ -83,8 +83,8 @@ private:
     bool m_do_overfit; // return all the time just images from the the first scene of that specified object class
     std::string m_object_name;
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
-    boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
-    boost::filesystem::path m_dataset_depth_path;  //get the path where all the off files are 
+    boost::filesystem::path m_dataset_path;  //get the path where all the off files are
+    boost::filesystem::path m_dataset_depth_path;  //get the path where all the off files are
     std::string m_difficulty;
     bool m_load_depth;
     bool m_load_as_shell;

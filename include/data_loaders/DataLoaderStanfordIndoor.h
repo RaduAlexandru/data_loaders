@@ -4,7 +4,7 @@
 #include <unordered_map>
 #include <vector>
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include<Eigen/StdVector>
 
@@ -56,7 +56,7 @@ private:
     void read_data();
     bool should_read_area(const int area_number); //depending on the mode (train or test) and the the m_fold we may need to read or not one of the 6 areas
 
-    //objects 
+    //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
     std::shared_ptr<DataTransformer> m_transformer;
 
@@ -65,8 +65,8 @@ private:
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     std::string m_mode; // train or test or val
     int m_fold; //The dataset is divided in 6 areas, the fold number indicates which area we use for training and which for testing. Explained here http://buildingparser.stanford.edu/dataset.html
-    fs::path m_dataset_path; 
-    fs::path m_sequence; 
+    fs::path m_dataset_path;
+    fs::path m_sequence;
     int m_nr_clouds_to_skip;
     int m_nr_clouds_to_read;
     int m_max_nr_points_per_cloud;
@@ -80,7 +80,7 @@ private:
 
 
     //internal
-    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
+    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it
     std::vector<fs::path> m_room_paths;
     moodycamel::ReaderWriterQueue<MeshCore> m_clouds_buffer;
 

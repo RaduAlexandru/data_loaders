@@ -22,7 +22,7 @@ using namespace configuru;
 namespace fs = boost::filesystem;
 
 
-//my stuff 
+//my stuff
 #include "RandGenerator.h"
 
 using namespace radu::utils;
@@ -58,7 +58,7 @@ DataLoaderStanford3DScene::~DataLoaderStanford3DScene(){
 }
 
 void DataLoaderStanford3DScene::init_params(const std::string config_file){
-  
+
     //read all the parameters
     // Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
     std::string config_file_abs;
@@ -96,7 +96,7 @@ void DataLoaderStanford3DScene::init_data_reading(){
     read_pose_file(m_pose_file_path.string());
 
     std::vector<fs::path> samples_filenames_all;
-    
+
 
     if(!fs::is_directory(m_dataset_path)) {
         LOG(FATAL) << "No directory " << m_dataset_path;
@@ -121,11 +121,11 @@ void DataLoaderStanford3DScene::init_data_reading(){
         std::sort(samples_filenames_all.begin(), samples_filenames_all.end());
     }
 
-  
 
 
 
-    //ADDS THE samples to the member std_vector of paths 
+
+    //ADDS THE samples to the member std_vector of paths
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
     for (size_t i = 0; i <samples_filenames_all.size(); i++) {
         if( (int)i>=m_nr_samples_to_skip && ((int)m_samples_filenames.size()<m_nr_samples_to_read || m_nr_samples_to_read<0 ) ){
@@ -133,7 +133,7 @@ void DataLoaderStanford3DScene::init_data_reading(){
         }
     }
 
-    std::cout << "About to read " << m_samples_filenames.size() << " samples" <<std::endl; 
+    std::cout << "About to read " << m_samples_filenames.size() << " samples" <<std::endl;
 
 
     CHECK(m_samples_filenames.size()>0) <<"We did not find any samples files to read";
@@ -141,7 +141,7 @@ void DataLoaderStanford3DScene::init_data_reading(){
 
     // //read the intrinsics which in this case are the same for both color and depth
     // the values are from here http://qianyi.info/scenedata.html
-    m_K.setIdentity(); 
+    m_K.setIdentity();
     m_K(0,0)=  525.0;
     m_K(1,1)=  525.0;
     m_K(0,2)= 319.5;
@@ -240,8 +240,8 @@ void DataLoaderStanford3DScene::read_sample(Frame& frame_color, Frame& frame_dep
     Eigen::Matrix3d worldGL_world_rot;
     worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
     m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
-    frame_color.tf_cam_world= frame_color.tf_cam_world * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
-    frame_depth.tf_cam_world= frame_depth.tf_cam_world * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
+    frame_color.tf_cam_world= frame_color.tf_cam_world * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam
+    frame_depth.tf_cam_world= frame_depth.tf_cam_world * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam
 
     //assign K matrix
     frame_color.K=m_K.cast<float>()/m_rgb_subsample_factor;
@@ -266,17 +266,17 @@ void DataLoaderStanford3DScene::read_pose_file(std::string pose_file){
 
     // int line_read=0;
     std::string line;
-    Eigen::Affine3d pose; 
+    Eigen::Affine3d pose;
     pose.setIdentity();
     int id1, id2, frame_idx;
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
         iss >> id1 >> id2 >> frame_idx;
-        // VLOG(1) << "pose for frame_idx " << frame_idx; 
+        // VLOG(1) << "pose for frame_idx " << frame_idx;
         //read the poose
         for(int i=0; i<4; i++){
-            std::getline(infile, line);         
-            iss=std::istringstream(line);    
+            std::getline(infile, line);
+            iss=std::istringstream(line);
             iss >>  pose.matrix()(i,0)>> pose.matrix()(i,1)>> pose.matrix()(i,2)>> pose.matrix()(i,3);
         }
 
@@ -286,7 +286,7 @@ void DataLoaderStanford3DScene::read_pose_file(std::string pose_file){
         pose_stanford.pose=pose;
         m_poses_vec.push_back(pose_stanford);
 
-        
+
     }
 
 
@@ -299,7 +299,7 @@ Eigen::Matrix3d DataLoaderStanford3DScene::read_intrinsics_file(std::string intr
     }
     int line_read=0;
     std::string line;
-    Eigen::Matrix3d K; 
+    Eigen::Matrix3d K;
     K.setIdentity();
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
@@ -311,7 +311,7 @@ Eigen::Matrix3d DataLoaderStanford3DScene::read_intrinsics_file(std::string intr
     }
 
     return K;
-} 
+}
 
 
 bool DataLoaderStanford3DScene::has_data(){
@@ -383,5 +383,3 @@ void DataLoaderStanford3DScene::reset(){
 int DataLoaderStanford3DScene::nr_samples(){
     return m_samples_filenames.size();
 }
-
-

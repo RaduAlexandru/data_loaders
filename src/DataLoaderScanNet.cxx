@@ -20,7 +20,7 @@ using namespace configuru;
 //boost
 #include <boost/range/iterator_range.hpp>
 
-//my stuff 
+//my stuff
 #include "data_loaders/DataTransformer.h"
 #include "easy_pbr/Mesh.h"
 #include "Profiler.h"
@@ -127,7 +127,7 @@ void DataLoaderScanNet::init_data_reading(){
     }
 
 
-    //each room is stored in a different file 
+    //each room is stored in a different file
     for(auto& room_dir : boost::make_iterator_range(boost::filesystem::directory_iterator(full_path), {})){
         if(fs::is_directory(room_dir)){
 
@@ -147,7 +147,7 @@ void DataLoaderScanNet::init_data_reading(){
     if(!m_shuffle){ //if we are shuffling, there is no need to sort them
         std::sort(ply_filenames_all.begin(), ply_filenames_all.end());
     }
-  
+
 
 
 
@@ -160,7 +160,7 @@ void DataLoaderScanNet::init_data_reading(){
     }
 
 
-    //ADDS THE clouds to the member std_vector of paths 
+    //ADDS THE clouds to the member std_vector of paths
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
     for (size_t i = 0; i < ply_filenames_all.size(); i++) {
         if( (int)i>=m_nr_clouds_to_skip && ((int)m_ply_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
@@ -168,14 +168,14 @@ void DataLoaderScanNet::init_data_reading(){
         }
     }
 
-    std::cout << "About to read " << m_ply_filenames.size() << " clouds" <<std::endl; 
+    std::cout << "About to read " << m_ply_filenames.size() << " clouds" <<std::endl;
 
 
     CHECK(m_ply_filenames.size()>0) <<"We did not find any ply files to read";
 
 
 
-   
+
 
 }
 
@@ -223,7 +223,7 @@ void DataLoaderScanNet::read_data(){
             }
 
             if(m_mode!="test"){
-                // read labels 
+                // read labels
                 fs::path labels_file=fs::absolute(ply_filename).parent_path()/ (ply_filename.stem().string()+".labels.ply");
                 // VLOG(1)<< "Reading labels from " << labels_file;
                 cloud->L_gt=read_labels(labels_file.string());
@@ -248,8 +248,8 @@ void DataLoaderScanNet::read_data(){
 
 
 
-     
-            
+
+
 
 
 
@@ -261,8 +261,8 @@ void DataLoaderScanNet::read_data(){
             //the scannet dataset is gigantic and sometimes we can't process all points, we establish a maximum amount of points we can process and drop the rest
             int nr_points=cloud->V.rows();
             if (nr_points>m_max_nr_points_per_cloud && m_max_nr_points_per_cloud>0){
-                LOG(WARNING)<< "Overstepping theshold of max nr of points of " << m_max_nr_points_per_cloud << " because we have nr of points " << nr_points << ". Dropping points until we only are left with the maximum we can process." ; 
-                //percentage of points we have to drop 
+                LOG(WARNING)<< "Overstepping theshold of max nr of points of " << m_max_nr_points_per_cloud << " because we have nr of points " << nr_points << ". Dropping points until we only are left with the maximum we can process." ;
+                //percentage of points we have to drop
                 float percentage_to_drop=1.0-(float)m_max_nr_points_per_cloud/(float)nr_points;
                 float prob_of_death=percentage_to_drop;
                 std::vector<bool> is_vertex_to_be_removed(cloud->V.rows(), false);
@@ -307,7 +307,7 @@ void DataLoaderScanNet::read_data(){
 
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
             cloud->m_label_mngr=m_label_mngr->shared_from_this();
-            
+
             cloud->m_disk_path=ply_filename.string();
 
             m_clouds_buffer.enqueue(cloud);;
@@ -332,8 +332,8 @@ Eigen::MatrixXi DataLoaderScanNet::read_labels(const std::string labels_file){
     std::shared_ptr<tinyply::PlyData> labels;
 
     // The header information can be used to programmatically extract properties on elements
-    // known to exist in the header prior to reading the data. For brevity of this sample, properties 
-    // like vertex position are hard-coded: 
+    // known to exist in the header prior to reading the data. For brevity of this sample, properties
+    // like vertex position are hard-coded:
     try { labels = file.request_properties_from_element("vertex", { "label" }, 1); }
     catch (const std::exception & e) { LOG(FATAL) <<  e.what();  }
 
@@ -350,7 +350,7 @@ Eigen::MatrixXi DataLoaderScanNet::read_labels(const std::string labels_file){
         Eigen::Map<RowMatrixXus> mf( (unsigned short*)labels->buffer.get(), labels->count, 1);
         L_gt=mf.cast<int>();
     }else{ LOG(FATAL) <<" labels should be unsigned short. "; }
-   
+
 
     return L_gt;
 
@@ -430,7 +430,7 @@ void DataLoaderScanNet::write_for_evaluating_on_scannet_server( std::shared_ptr<
 
         // for sanity checking, we check that we write only labels between 1 and 39 inclusive
         if (label_uncompacted<1 || label_uncompacted>39){
-            LOG(FATAL) << "Something went wrong, the scannet labels should only be between 1 and 39 inclusive, however we are trying to write " << label_uncompacted << "which was originated by a a compacted label of " << L_compacted(i,0); 
+            LOG(FATAL) << "Something went wrong, the scannet labels should only be between 1 and 39 inclusive, however we are trying to write " << label_uncompacted << "which was originated by a a compacted label of " << L_compacted(i,0);
         }
 
         if(label_uncompacted>m_max_label_written){
@@ -537,5 +537,3 @@ void DataLoaderScanNet::create_transformation_matrices(){
     worldGL_worldROS_rot = Eigen::AngleAxisd(angle*M_PI, Eigen::Vector3d::UnitX());
     m_tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
 }
-
-

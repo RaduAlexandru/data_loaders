@@ -11,7 +11,7 @@
 using namespace configuru;
 
 
-//my stuff 
+//my stuff
 #include "data_loaders/DataTransformer.h"
 #include "easy_pbr/Mesh.h"
 // #include "data_loaders/utils/MiscUtils.h"
@@ -21,7 +21,7 @@ using namespace configuru;
 #include "RandGenerator.h"
 #include "easy_pbr/LabelMngr.h"
 
-//json 
+//json
 #include "json11/json11.hpp"
 
 //boost
@@ -84,7 +84,7 @@ void DataLoaderShapeNetPartSeg::init_params(const std::string config_file){
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
-    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
+    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
 
 
     //data transformer
@@ -105,17 +105,17 @@ void DataLoaderShapeNetPartSeg::start(){
 
 
 void DataLoaderShapeNetPartSeg::init_data_reading(){
-    
+
     if(!fs::is_directory(m_dataset_path)) {
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
-    
+
     //read the mapping between the weird numbers in the files and the class label
     std::unordered_map<std::string, std::string> synsetoffset2category = read_mapping_synsetoffset2category( (m_dataset_path/"synsetoffset2category.txt").string() );
 
     //read the files from the train or test dataset depending on what the mode is
     fs::path file_list_json= m_dataset_path/"train_test_split"/ ("shuffled_"+m_mode+"_file_list.json");
-    if(!fs::is_regular_file(file_list_json) ) { 
+    if(!fs::is_regular_file(file_list_json) ) {
         LOG(FATAL) << "Json file list could not be found in " << file_list_json;
     }
 
@@ -137,7 +137,7 @@ void DataLoaderShapeNetPartSeg::init_data_reading(){
             auto search = synsetoffset2category.find(current_synsetoffset);
             if (search == synsetoffset2category.end()) {
                 LOG(FATAL) << "Could not find in the mapping the synsetoffset of " << current_synsetoffset;
-            } 
+            }
             std::string current_object=synsetoffset2category[current_synsetoffset];
             // std::cout << " current class is " << current_class << std::endl;
             if(current_object!=m_restrict_to_object){
@@ -236,7 +236,7 @@ void DataLoaderShapeNetPartSeg::read_data(){
             cloud->m_vis.m_show_mesh=false;
             cloud->m_vis.m_show_points=true;
             cloud->m_vis.m_color_type=+MeshColorType::SemanticGT;
-            
+
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
             // cloud->m_label_mngr=m_label_mngr->shared_from_this();
             cloud->m_label_mngr=m_label_mngr;
@@ -413,17 +413,17 @@ std::string DataLoaderShapeNetPartSeg::get_object_name(){
 }
 
 void DataLoaderShapeNetPartSeg::set_object_name(const std::string object_name){
-    //kill data loading thread 
+    //kill data loading thread
     m_is_running=false;
     m_loader_thread.join();
 
-    //clear all data 
+    //clear all data
     m_idx_cloud_to_read=0;
     m_nr_resets=0;
     m_pts_filenames.clear();
     m_labels_filenames.clear();
     // m_clouds_buffer.clear();
-    //deque until ihe cloud buffer is empty 
+    //deque until ihe cloud buffer is empty
     bool has_data=true;
     MeshSharedPtr dummy_cloud;
     while(has_data){

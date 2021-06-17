@@ -11,7 +11,7 @@ This contains various data loaders for a series of datasets:
 Example of usage and loading of the data can be found in python/test_loader.py
 Each loader is controlled by a config file which can be found in config/test_loader.cfg
 
-### Build and install: 
+### Build and install:
 To build and install the example, you must have first installed [EasyPBR]. Afterwards the dataloader can be cloned and compiled with
 ```sh
 $ git clone --recursive https://github.com/RaduAlexandru/data_loaders

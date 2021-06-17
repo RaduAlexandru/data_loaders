@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 //c++
 #include <thread>
@@ -14,7 +14,7 @@
 #include <tf2_ros/transform_listener.h>
 
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include<Eigen/StdVector>
 
@@ -75,7 +75,7 @@ private:
     std::string m_cam_info_source;
     // bool m_do_pose;
 
- 
+
 
     std::atomic<bool> m_is_thread_running;
     // std::string m_pose_file;

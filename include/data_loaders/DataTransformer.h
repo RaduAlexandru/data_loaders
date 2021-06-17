@@ -1,4 +1,4 @@
-//eigen 
+//eigen
 #include <Eigen/Core>
 
 #include <memory>
@@ -41,10 +41,10 @@ private:
 
     void init_params(const configuru::Config& config_file);
 
-    //objects 
+    //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
 
-  
+
 
 
     //internal

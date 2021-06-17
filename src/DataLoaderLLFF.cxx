@@ -17,7 +17,7 @@ using namespace configuru;
 #include "cnpy.h"
 
 
-//my stuff 
+//my stuff
 #include "data_loaders/DataTransformer.h"
 #include "easy_pbr/Frame.h"
 #include "Profiler.h"
@@ -29,7 +29,7 @@ using namespace configuru;
 #include "easy_pbr/LabelMngr.h"
 #include "UtilsGL.h"
 
-//json 
+//json
 #include "json11/json11.hpp"
 
 //boost
@@ -80,7 +80,7 @@ void DataLoaderLLFF::init_params(const std::string config_file){
     m_do_overfit=loader_config["do_overfit"];
     m_scene_scale_multiplier= loader_config.get_float_else_nan("scene_scale_multiplier");
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
-    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
+    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
 
 
     //data transformer
@@ -97,7 +97,7 @@ void DataLoaderLLFF::start(){
 
 
 void DataLoaderLLFF::read_data(){
-    
+
     if(!fs::is_directory(m_dataset_path)) {
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
@@ -108,7 +108,7 @@ void DataLoaderLLFF::read_data(){
     //following the convention from https://github.com/googleinterns/IBRNet/blob/master/ibrnet/data_loaders/llff_data_utils.py
     std::string pose_path=(m_dataset_path/"poses_bounds.npy").string();
 
-    //read npz 
+    //read npz
     cnpy::NpyArray arr = cnpy::npy_load( pose_path );
 
     // VLOG(1) << " array size" <<  arr.shape.size(); //returns 2
@@ -164,8 +164,8 @@ void DataLoaderLLFF::read_data(){
 
 
 
-    //try to read the imgs bin 
-    //attempt 2 
+    //try to read the imgs bin
+    //attempt 2
     fs::path pose_file=m_dataset_path/"sparse/0"/"images.bin";
 
     //read the bin file according to this format https://colmap.github.io/format.html#binary-file-format
@@ -238,7 +238,7 @@ void DataLoaderLLFF::read_data(){
         frame.cam_id=camera_id;
         frame.frame_idx=i;
 
-        //depending on the mode we read this image or not 
+        //depending on the mode we read this image or not
         //we use every 8th image because that is what IBRNet uses also since we use a modulo we actually need to do a modulo 9 to get the same results, we tested this using the dataloader llff_test from ibrner
         //so what it does is that the first frames counts as test then the next 8 for training, then one for test, next 8 for training and so on
         if (m_mode=="train" && frame.frame_idx%9==0){
@@ -267,7 +267,7 @@ void DataLoaderLLFF::read_data(){
         frame.width=frame.rgb_32f.cols;
         frame.height=frame.rgb_32f.rows;
 
-        //load gradients 
+        //load gradients
         // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
         // cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
         // cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
@@ -277,7 +277,7 @@ void DataLoaderLLFF::read_data(){
         Eigen::Affine3d tf_cam_world;
         tf_cam_world.linear()=q.toRotationMatrix();
         tf_cam_world.translation()=t;
-        //rotate it a bit 
+        //rotate it a bit
         Eigen::Quaterniond q_rot = Eigen::Quaterniond( Eigen::AngleAxis<double>( -180 * M_PI / 180.0 ,  Eigen::Vector3d::UnitX() ) );
         Eigen::Affine3d rot;
         rot.setIdentity();
@@ -334,7 +334,7 @@ void DataLoaderLLFF::read_data(){
 
 
 
-     //read cameras intrinsics 
+     //read cameras intrinsics
     fs::path cameras_path=m_dataset_path/m_object_name/"sparse/0"/"cameras.bin";
     std::ifstream camera_file(cameras_path.string(), std::ios::binary);
     CHECK(camera_file.is_open()) << "Could not open file " << pose_file;
@@ -351,7 +351,7 @@ void DataLoaderLLFF::read_data(){
       params.resize(6);
       ReadBinaryLittleEndian<double>(&camera_file, &params );
 
-      
+
       for (size_t j = 0; j < params.size(); j++) {
           VLOG(1) << "param " << j << " is " <<params[j];
       }
@@ -376,8 +376,8 @@ void DataLoaderLLFF::read_data(){
           frame.K.setIdentity();
           frame.K(0,0) = fx; //fx
           frame.K(1,1) = fy; //fy
-          frame.K(0,2) = cx; //cx 
-          frame.K(1,2) = cy; //cy 
+          frame.K(0,2) = cx; //cx
+          frame.K(1,2) = cy; //cy
           frame.K = frame.K/m_subsample_factor;
           frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
 
@@ -387,12 +387,12 @@ void DataLoaderLLFF::read_data(){
 
       }
 
- 
+
     }
 
 
 
-   
+
 
     // shuffle the data if neccsary
     if(m_shuffle and m_mode=="train"){
@@ -448,7 +448,7 @@ Frame DataLoaderLLFF::get_closest_frame( const easy_pbr::Frame& frame){
     Frame  frame_closest= m_frames[closest_idx];
 
     return frame_closest;
-    
+
 }
 
 std::vector<easy_pbr::Frame>  DataLoaderLLFF::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx){
@@ -466,7 +466,7 @@ std::vector<easy_pbr::Frame>  DataLoaderLLFF::get_close_frames( const easy_pbr::
 
             //ignore if the current frame we are checking is THIS
             if (discard_same_idx){
-                if( m_frames[j].frame_idx == frame.frame_idx ){ 
+                if( m_frames[j].frame_idx == frame.frame_idx ){
                     continue;
                 }
             }
@@ -499,8 +499,8 @@ std::vector<easy_pbr::Frame>  DataLoaderLLFF::get_close_frames( const easy_pbr::
 
 
     return selected_close_frames;
-   
-    
+
+
 }
 
 
@@ -512,7 +512,7 @@ bool DataLoaderLLFF::is_finished(){
     if(m_idx_img_to_read<m_frames.size()){
         return false; //there is still more files to read
     }
-   
+
 
     return true; //there is nothing more to read and nothing more in the buffer so we are finished
 
@@ -526,7 +526,7 @@ void DataLoaderLLFF::reset(){
     //reshuffle for the next epoch
     if(m_shuffle){
         unsigned seed = m_nr_resets;
-        auto rng_0 = std::default_random_engine(seed); 
+        auto rng_0 = std::default_random_engine(seed);
         std::shuffle(std::begin(m_frames), std::end(m_frames), rng_0);
     }
 
@@ -630,5 +630,3 @@ inline bool DataLoaderLLFF::IsBigEndian() {
   return false;
 #endif
 }
-
-

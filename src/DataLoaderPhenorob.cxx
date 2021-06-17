@@ -20,7 +20,7 @@ using namespace configuru;
 //boost
 #include <boost/range/iterator_range.hpp>
 
-//my stuff 
+//my stuff
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 #include "data_loaders/DataTransformer.h"
@@ -147,7 +147,7 @@ void DataLoaderPhenorob::init_data_reading(){
 
 
 
-    // //ADDS THE clouds to the member std_vector of paths 
+    // //ADDS THE clouds to the member std_vector of paths
     // //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
     // for (size_t i = 0; i < sample_filenames_all.size(); i++) {
     //     if( (int)i>=m_nr_clouds_to_skip && ((int)m_sample_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
@@ -173,7 +173,7 @@ void DataLoaderPhenorob::init_data_reading(){
 
 
 
-    //attempt 2 
+    //attempt 2
 
     //get how many sequnces we have here
     if(!fs::is_directory(m_dataset_path)) {
@@ -187,14 +187,14 @@ void DataLoaderPhenorob::init_data_reading(){
             std::string stem=entry.path().stem().string();
             //enter only the maize or tomato folder depending on which one we selected
             if (  radu::utils::contains( radu::utils::lowercase(stem), m_plant_type ) ){
-                //get the nr of the plant 
+                //get the nr of the plant
                 int plant_nr=std::stoi(stem.substr( stem.length() - 2 ));
                 // VLOG(1) << "plant nr" << plant_nr;
                 //check if we need to skip read this nr of the plant
-                if(plant_nr>m_nr_plants_to_skip &&  ( (int)plant_folders.size()<m_nr_plants_to_read || m_nr_plants_to_read<0) 
-                    && (m_selected_plant_nr==-1 || plant_nr==m_selected_plant_nr) //check if we need to use just one concrete plant nr 
+                if(plant_nr>m_nr_plants_to_skip &&  ( (int)plant_folders.size()<m_nr_plants_to_read || m_nr_plants_to_read<0)
+                    && (m_selected_plant_nr==-1 || plant_nr==m_selected_plant_nr) //check if we need to use just one concrete plant nr
                  ){
-                   
+
                     plant_folders.push_back(entry);
 
 
@@ -212,9 +212,9 @@ void DataLoaderPhenorob::init_data_reading(){
         for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(plant_folders[i]), {})){
             //check if it's a file and contains the word maize or tomato
             if (fs::is_regular_file(entry)){
-                if(day_for_plant>m_nr_days_to_skip &&  ( days_added_for_plant<m_nr_days_to_read || m_nr_days_to_read<0)  
+                if(day_for_plant>m_nr_days_to_skip &&  ( days_added_for_plant<m_nr_days_to_read || m_nr_days_to_read<0)
                     && ( m_selected_day.empty() || radu::utils::contains( entry.path().stem().string(), m_selected_day )  )//if we have a slected day, get only from that one
-                
+
                 ){
                     VLOG(1) << "entry is " << entry;
 
@@ -237,8 +237,8 @@ void DataLoaderPhenorob::init_data_reading(){
 
 
 
- 
-    //ADDS THE clouds to the member std_vector of paths 
+
+    //ADDS THE clouds to the member std_vector of paths
     for (size_t i = 0; i < sample_filenames_all.size(); i++) {
         m_sample_filenames.push_back(sample_filenames_all[i]);
     }
@@ -253,7 +253,7 @@ void DataLoaderPhenorob::init_data_reading(){
 
 
 
-    std::cout << "About to read " << m_sample_filenames.size() << " clouds" <<std::endl; 
+    std::cout << "About to read " << m_sample_filenames.size() << " clouds" <<std::endl;
 
 
     CHECK(m_sample_filenames.size()>0) <<"We did not find any files to read";
@@ -320,7 +320,7 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
 
     //read the text and each line contains xyz,label
     std::ifstream f(sample_filename.string());
-    std::string line;    
+    std::string line;
     while (std::getline(f, line)) {
         // std::cout << line << std::endl;
         std::vector<std::string> tokens=split(line, " ");
@@ -353,7 +353,7 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
     }
 
 
-    //copy into EigenMatrix 
+    //copy into EigenMatrix
     MeshSharedPtr cloud=Mesh::create();
     cloud->V=vec2eigen(points_vec);
     cloud->L_gt=vec2eigen(labels_vec);
@@ -398,7 +398,7 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
         if (m_do_augmentation){
             cloud=m_transformer->transform(cloud);
         }else{
-            //if we are not doing augmentation, we are running the test one but maybe we still want to do the subsampling 
+            //if we are not doing augmentation, we are running the test one but maybe we still want to do the subsampling
             if(m_transformer->m_random_subsample_percentage!=0.0){
                 float prob_of_death=m_transformer->m_random_subsample_percentage;
                 int vertices_marked_for_removal=0;
@@ -465,8 +465,8 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::get_cloud(){
         // VLOG(1) << "m_idx_cloud_to_return " << m_idx_cloud_to_return << " and m clouds vec is " << m_clouds_vec.size();
         std::shared_ptr<Mesh> cloud = std::make_shared<Mesh>( m_clouds_vec[m_idx_cloud_to_return]->clone() ); //we clone it because we don;y want to do data augmentation on the mesh that is on the vector
         m_idx_cloud_to_return++;
-        
-        //this cloud doesnt have applied any data augmentation, except subsampling so we do it here 
+
+        //this cloud doesnt have applied any data augmentation, except subsampling so we do it here
         if (m_do_augmentation){
             float prob_of_death=m_transformer->m_random_subsample_percentage;
             m_transformer->m_random_subsample_percentage=0.0;
@@ -495,7 +495,7 @@ std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorob::get_cloud_with_idx(const int
     MeshSharedPtr cloud=read_sample(sample_filename);
 
     if (m_preload && m_do_augmentation){
-         //this cloud doesnt have applied any data augmentation, except subsampling so we do it here 
+         //this cloud doesnt have applied any data augmentation, except subsampling so we do it here
         float prob_of_death=m_transformer->m_random_subsample_percentage;
         m_transformer->m_random_subsample_percentage=0.0;
         cloud=m_transformer->transform(cloud);

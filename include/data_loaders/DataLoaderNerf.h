@@ -5,7 +5,7 @@
 
 
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -42,7 +42,7 @@ public:
     std::vector<easy_pbr::Frame> get_all_frames();
     easy_pbr::Frame get_frame_at_idx( const int idx);
     easy_pbr::Frame get_closest_frame( const easy_pbr::Frame& frame); //return the one closest frame
-    std::vector<easy_pbr::Frame> get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx ); //return a certain number of frames ordered by proximity, 
+    std::vector<easy_pbr::Frame> get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx ); //return a certain number of frames ordered by proximity,
     // std::vector<float> compute_frame_weights( const easy_pbr::Frame& frame, std::vector<easy_pbr::Frame>& close_frames);
     easy_pbr::Frame get_random_frame();
     bool has_data(); //will reeturn always true because this dataloader preloads all the frames and keeps them in memory all the time. They are not so many
@@ -62,7 +62,7 @@ private:
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
     void init_poses(); //rad the pose json file and fills m_filename2pose
     void read_data(); //a scene (depending on the mode) and all the images contaned in it together with the poses and so on
-    
+
 
     //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
@@ -77,7 +77,7 @@ private:
     bool m_do_overfit; // return all the time just the first image
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     // std::string m_restrict_to_object;  //makes it load clouds only from a specific object
-    boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
+    boost::filesystem::path m_dataset_path;  //get the path where all the off files are
     // std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_img_to_read; //corresponds to the idx of the frame we will return since we have them all in memory

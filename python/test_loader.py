@@ -459,7 +459,7 @@ def test_blender_fb():
 
 
             Gui.show(frame.rgb_32f, "rgb")
-            Gui.show(frame.rgb_8u, "rgb8u")
+            # Gui.show(frame.rgb_8u, "rgb8u")
 
 
             frustum_mesh=frame.create_frustum_mesh(0.05)

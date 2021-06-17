@@ -18,7 +18,7 @@ using namespace configuru;
 #include <image_transport/image_transport.h>
 #include <tf2_eigen/tf2_eigen.h>
 
-//my stuff 
+//my stuff
 
 
 using namespace radu::utils;
@@ -45,7 +45,7 @@ DataLoaderImgRos::~DataLoaderImgRos(){
 }
 
 void DataLoaderImgRos::init_params(const std::string config_file){
- 
+
     //read all the parameters
     std::string config_file_abs;
     if (fs::path(config_file).is_relative()){
@@ -62,12 +62,12 @@ void DataLoaderImgRos::init_params(const std::string config_file){
     m_tf_reference_frame=(std::string)loader_config["tf_reference_frame"];
     m_cam_info_source=(std::string)loader_config["cam_info_source"];
 
-    //create the cams 
+    //create the cams
     m_cams.resize(nr_cams);
     for(int i = 0; i < nr_cams; i++){
         m_cams[i].m_img_topic = (std::string)loader_config["img_topic_"+std::to_string(i)];
         m_cams[i].m_cam_info_topic = (std::string)loader_config["cam_info_topic_"+std::to_string(i)];
-        m_cams[i].m_img_subsample_factor = loader_config["img_subsample_factor_"+std::to_string(i)]; 
+        m_cams[i].m_img_subsample_factor = loader_config["img_subsample_factor_"+std::to_string(i)];
         m_cams[i].m_is_compressed = loader_config["is_compressed_"+std::to_string(i)];
         // m_cams[i].m_intrinsics_string = (std::string)loader_config["intrinsics_"+std::to_string(i)];
         // m_cams[i].m_timestamp_offset = (u_int64_t)loader_config["timestamp_offset_"+std::to_string(i)];
@@ -123,7 +123,7 @@ void DataLoaderImgRos::init_ros(){
 
 void DataLoaderImgRos::callback_cam_info(const sensor_msgs::CameraInfoConstPtr& msg, const int cam_id){
     // VLOG(1) << "callback cma info";
-    m_cams[cam_id].m_cam_info=msg; 
+    m_cams[cam_id].m_cam_info=msg;
 }
 
 void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, const int cam_id) {
@@ -157,14 +157,14 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     }
 
 
-    //get intrinsics 
+    //get intrinsics
     if (m_cam_info_source=="none"){
         frame.K.setZero();
         frame.distort_coeffs.setZero();
     }else if (m_cam_info_source=="topic"){
         //check if we already got a callback from the camera_info topic
         if (!cam.m_cam_info){
-            LOG(WARNING) << "No camera info yet"; 
+            LOG(WARNING) << "No camera info yet";
             return;
         }
         //The K is stored in the K vector
@@ -185,7 +185,7 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     }else if (m_cam_info_source=="topic_with_double_sphere"){
         //check if we already got a callback from the camera_info topic
         if (!cam.m_cam_info){
-            LOG(WARNING) << "No camera info yet"; 
+            LOG(WARNING) << "No camera info yet";
             return;
         }
         //The K is kinda hackly stored inside the D vector of the cam info in this case
@@ -199,12 +199,12 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
             // frame.distort_coeffs[i] = cam.m_cam_info->D[i]/cam.m_img_subsample_factor;
         }
 
-    
+
     }else{
         LOG(FATAL) << "m_cam_info_source is not known";
     }
 
-    //adjust the K matrix to the size of the img 
+    //adjust the K matrix to the size of the img
     frame.K/=cam.m_img_subsample_factor;
     frame.K(2,2)=1.0;
 
@@ -229,22 +229,22 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
 
     }else{
         LOG(FATAL) << "pose_source is not known";
-    } 
+    }
 
     //check that the transform form depth to color coincides with /camera/extrinsics/depth_to_color
     // VLOG(1) << "frame " << img_msg->header.frame_id;
     // geometry_msgs::TransformStamped transform;
     // transform = m_tf_buf->lookupTransform("camera_color_optical_frame", "camera_depth_optical_frame", img_msg->header.stamp); //transform from depth to color
-    // Eigen::Affine3d tf_color_depth = tf2::transformToEigen(transform); 
+    // Eigen::Affine3d tf_color_depth = tf2::transformToEigen(transform);
     // VLOG(1) << "tf_color_depth" << tf_color_depth.translation();
 
 
-    
+
     // std::cout << "K is " << frame.K << std::endl;
 
     // VLOG(1) << " cv img type  " << type2string(cv_img.type());
 
-    //img 
+    //img
     if(cv_img.depth()==CV_8U){
         if(cv_img.channels()==3){
             frame.rgb_8u=cv_img;
@@ -261,7 +261,7 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
 
     frame.width=cv_img.cols;
     frame.height=cv_img.rows;
- 
+
 
     // VLOG(1) << "cv_img has size " <<cv_img.rows << " " << cv_img.cols;
 
@@ -281,7 +281,7 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     // cv::resize(cv_img, cv_img, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor);
     // std::cout << " got an image of size" << cv_img.rows << " " << cv_img.cols << " type is " << type2string(cv_img.type()) << std::endl;
 
-  
+
     // if(cv_img.depth()==CV_16U){
     //     std::cout << "got a thermal image" << std::endl;
     //     //it is most likely a thermal image
@@ -305,29 +305,29 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     //     if(cv_img.channels()==1){
     //         // frame.rgb_8u.convertTo(frame.gray_32f, CV_32FC1, 1.0/255.0);
     //         cv::cvtColor ( cv_img, frame.rgb_8u, CV_BayerBG2RGB );  // only works on 8u and 16u
-    //         cv::cvtColor ( frame.rgb_8u, frame.rgb_8u, CV_BGR2RGB );  
+    //         cv::cvtColor ( frame.rgb_8u, frame.rgb_8u, CV_BGR2RGB );
     //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor); // can only do it here because cv image is a bayered image
     //         frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
     //         // std::cout << "After debayer the type is " << type2string(frame.rgb_32f.type()) << std::endl;
-    //         cv::cvtColor ( frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY );      
+    //         cv::cvtColor ( frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY );
     //         //gradients
     //         cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
     //         cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
     //     }else if(cv_img.channels()==2){
     //         frame.rgb_8u=cv_img;
-    //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor); 
+    //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor);
     //         frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC2, 1.0/255.0);
     //     }else if(cv_img.channels()==3){
     //         frame.rgb_8u=cv_img;
-    //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor); 
+    //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor);
     //         frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
-    //         cv::cvtColor ( frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY );      
+    //         cv::cvtColor ( frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY );
     //         //gradients
     //         cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
     //         cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
     //     }else if(cv_img.channels()==4){
     //         frame.rgb_8u=cv_img;
-    //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor); 
+    //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor);
     //         frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC4, 1.0/255.0);
     //     }else{
     //         LOG(FATAL) << "Not a known number of channels";
@@ -337,12 +337,12 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     //     frame.height=frame.rgb_32f.rows;
     // }else{
     //     LOG(WARNING) << "Unknown image type";
-    // } 
+    // }
 
 
     // Gui::show(frame.rgb_32f, "data_loader_img"); // DO NOT CALL thus
     // m_last_retreived_idx=m_working_idx;
-    
+
     // frame.rgb=cv_img;
 
 
@@ -357,20 +357,20 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
 
 
 
-   
+
     // VLOG(1) << "working_idx is " << m_working_idx << " finsihed is " << m_finished_idx ;
     // VLOG(1) << "m_last_retrieved is " << m_last_retreived_idx ;
 
 
 
-    // cam.m_push_pull_mutex->lock();  
+    // cam.m_push_pull_mutex->lock();
     // bool about_to_overwrite= (cam.m_working_idx==cam.m_last_retrieved_idx);
-    // cam.m_push_pull_mutex->unlock();  
+    // cam.m_push_pull_mutex->unlock();
     // if(about_to_overwrite){
     //     //we are about to overwrite on top of the finished one which might be at the moment used by the gpu
     //     LOG(WARNING) << "About to overwrite, maybe your consumer thread is too slow or maybe this queue in the dataloader is too small. Discarding";
     //     cam.m_is_modified = true;
-    //     return; 
+    //     return;
     // }
     // cam.m_frames_buffer[cam.m_working_idx]=frame;
     // cam.m_finished_idx = cam.m_working_idx;
@@ -379,7 +379,7 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
 
     cam.m_frames_buffer.try_enqueue(frame);
 
-    m_nr_callbacks++; 
+    m_nr_callbacks++;
 
 }
 
@@ -403,13 +403,13 @@ bool DataLoaderImgRos::has_data_for_cam(const int cam_id){
         return false;
     }else{
         return true;
-    } 
+    }
 }
 
 Frame DataLoaderImgRos::get_frame_for_cam(const int cam_id){
     Cam& cam=m_cams[cam_id];
 
-    // std::lock_guard<std::mutex> lock(*cam.m_push_pull_mutex);  
+    // std::lock_guard<std::mutex> lock(*cam.m_push_pull_mutex);
     // cam.m_is_modified=false;
     // cam.m_last_retrieved_idx=cam.m_finished_idx;
     // // VLOG(1) << "RETRIEVING m_last_retrieved is " << m_last_retreived_idx ;
@@ -472,7 +472,7 @@ int DataLoaderImgRos::nr_cams(){
 //        // VLOG(2) << "recorded tmestamp is " << timestamp;
 // //        VLOG(2) << "recorded scan_nr is " << scan_nr;
 //         // Eigen::Affine3d pose_inv=pose.inverse();
-        
+
 //         m_worldROS_baselink_vec.push_back ( std::pair<uint64_t, Eigen::Affine3d>(timestamp,pose) );
 //     }
 
@@ -482,13 +482,13 @@ int DataLoaderImgRos::nr_cams(){
 
 
 //     // auto last_valid=std::unique ( m_worldROS_baselink_vec.begin(), m_worldROS_baselink_vec.end(), [](const std::pair<double,Eigen::Affine3d> & a, const std::pair<double,Eigen::Affine3d> & b ){return a.first == b.first;});
-//     // // m_worldROS_baselink_vec.erase(last_valid, m_worldROS_baselink_vec.end()); 
+//     // // m_worldROS_baselink_vec.erase(last_valid, m_worldROS_baselink_vec.end());
 //     // m_worldROS_baselink_vec.erase(m_worldROS_baselink_vec.begin(),last_valid.base());
 
-//     //remove duplicates but keep the last one 
+//     //remove duplicates but keep the last one
 //     std::vector<std::pair<uint64_t, Eigen::Affine3d>, Eigen::aligned_allocator<std::pair<uint64_t, Eigen::Affine3d>>  >m_worldROS_baselink_vec_no_duplicates;
 //     for(size_t i = 0; i < m_worldROS_baselink_vec.size(); i++){
-//         //if the duplicates vec is empty just insert 
+//         //if the duplicates vec is empty just insert
 //         if(m_worldROS_baselink_vec_no_duplicates.empty()){
 //             m_worldROS_baselink_vec_no_duplicates.push_back(m_worldROS_baselink_vec[i]);
 //         }else{
@@ -505,7 +505,7 @@ int DataLoaderImgRos::nr_cams(){
 //         }
 //     }
 //     m_worldROS_baselink_vec=m_worldROS_baselink_vec_no_duplicates;
-    
+
 
 // }
 
@@ -556,12 +556,12 @@ int DataLoaderImgRos::nr_cams(){
 
 //     VLOG(2) << std::fixed<< "m_min_ts is " << m_spline->m_min_ts;
 //     VLOG(2) << std::fixed<< "new_time is " << new_time_ns << " dt is " << new_time_ns-m_spline->m_min_ts;
-//     VLOG(2) << std::fixed<< "pose is \n" << pose.matrix(); 
-//     VLOG(2) << std::fixed<< "pose_interpolated is \n" << pose_world_baselink_interpolated.matrix(); 
+//     VLOG(2) << std::fixed<< "pose is \n" << pose.matrix();
+//     VLOG(2) << std::fixed<< "pose_interpolated is \n" << pose_world_baselink_interpolated.matrix();
 
-//     //sometimes the rotation gets fucked up and I want to see why 
-//     // Eigen::Vector3d angles_pose = pose.linear().eulerAngles(0, 1, 2); 
-//     // Eigen::Vector3d angles_pose_interpolated = pose_world_baselink_interpolated.linear().eulerAngles(0, 1, 2); 
+//     //sometimes the rotation gets fucked up and I want to see why
+//     // Eigen::Vector3d angles_pose = pose.linear().eulerAngles(0, 1, 2);
+//     // Eigen::Vector3d angles_pose_interpolated = pose_world_baselink_interpolated.linear().eulerAngles(0, 1, 2);
 //     // //check if the difference is big
 //     // Eigen::Vector3d diff=angles_pose-angles_pose_interpolated;
 //     // if( diff.norm() >0.1 ){
@@ -571,7 +571,7 @@ int DataLoaderImgRos::nr_cams(){
 //     Eigen::Affine3d pose_diff= pose* pose_world_baselink_interpolated.inverse();
 //     VLOG(1) << "pose_diff: " <<pose_diff.matrix();
 //     Eigen::Matrix3d rot_diff=pose_diff.linear() - Eigen::Matrix3d::Identity();
-//     // Eigen::Vector3d angles_pose = .eulerAngles(0, 1, 2); 
+//     // Eigen::Vector3d angles_pose = .eulerAngles(0, 1, 2);
 //      if( rot_diff.norm() > 1.0 ){
 //         LOG(FATAL) << "Something went wrong and we are jumping too much in the angles. Diff norm is " << rot_diff.norm();
 //     }

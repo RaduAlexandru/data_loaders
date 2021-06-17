@@ -48,5 +48,3 @@ find_library(EASYPBR_LIBRARY
 
 #needs this definitions because we use it in a header file for a default argument
 add_definitions( -DDEFAULT_CONFIG="${EASYPBR_SRC_PATH}/config/default_params.cfg" )
-
-

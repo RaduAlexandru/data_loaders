@@ -15,7 +15,7 @@ using namespace configuru;
 
 
 
-//my stuff 
+//my stuff
 #include "easy_pbr/Mesh.h"
 // #include "data_loaders/utils/MiscUtils.h"
 #include "RandGenerator.h"
@@ -175,7 +175,7 @@ MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
             hsv.y()= clamp(hsv.y(), 0.0, 1.0);
             hsv.z()= clamp(hsv.z(), 0.0, 1.0);
             Eigen::Vector3d rgb= hsv2rgb(hsv);
-            mesh->C.row(i)=rgb;       
+            mesh->C.row(i)=rgb;
         }
     }
 
@@ -194,4 +194,3 @@ MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
     return mesh;
 
 }
-

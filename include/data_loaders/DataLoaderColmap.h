@@ -5,7 +5,7 @@
 
 
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -41,7 +41,7 @@ public:
     easy_pbr::Frame get_next_frame();
     easy_pbr::Frame get_frame_at_idx( const int idx);
     easy_pbr::Frame get_closest_frame( const easy_pbr::Frame& frame);
-    std::vector<easy_pbr::Frame> get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx ); //return a certain number of frames ordered by proximity, 
+    std::vector<easy_pbr::Frame> get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx ); //return a certain number of frames ordered by proximity,
     easy_pbr::Frame get_random_frame();
     bool has_data(); //will reeturn always true because this dataloader preloads all the frames and keeps them in memory all the time. They are not so many
     void reset(); //starts reading from the beggining
@@ -86,7 +86,7 @@ private:
     bool IsLittleEndian();
     bool IsBigEndian();
 
-        
+
 
     //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
@@ -102,7 +102,7 @@ private:
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     bool m_load_imgs_with_transparency; //loads images with transparency and therefore also loads the frame.mask or without which is faster and only loads the rgb part of the frame
     // std::string m_restrict_to_object;  //makes it load clouds only from a specific object
-    boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
+    boost::filesystem::path m_dataset_path;  //get the path where all the off files are
     // std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_img_to_read; //corresponds to the idx of the frame we will return since we have them all in memory

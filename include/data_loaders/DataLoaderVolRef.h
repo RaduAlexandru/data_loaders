@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include <vector>
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include<Eigen/StdVector>
 
@@ -54,14 +54,14 @@ private:
     void read_data();
     void read_sample(easy_pbr::Frame& frame_color, easy_pbr::Frame& frame_depth, const boost::filesystem::path& sample_filename); //reads one data sample
 
-    //objects 
+    //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
 
     //params
     bool m_autostart;
     bool m_preload;
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
-    fs::path m_dataset_path; 
+    fs::path m_dataset_path;
     bool m_load_rgb_with_valid_depth;
     int m_nr_samples_to_skip;
     int m_nr_samples_to_read;
@@ -77,7 +77,7 @@ private:
 
 
     //internal
-    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
+    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it
     std::vector<fs::path> m_samples_filenames;
     moodycamel::ReaderWriterQueue<easy_pbr::Frame> m_frames_color_buffer;
     moodycamel::ReaderWriterQueue<easy_pbr::Frame> m_frames_depth_buffer;

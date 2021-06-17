@@ -35,7 +35,7 @@ class CMakeBuild(build_ext):
             if cmake_version < '3.1.0':
                 raise RuntimeError("CMake >= 3.1.0 is required on Windows")
 
-        #check if we have all dependencies 
+        #check if we have all dependencies
         # check_file(os.path.join(os.getcwd(), 'deps', 'libigl', 'CMakeLists.txt'))
 
         for ext in self.extensions:
@@ -90,8 +90,8 @@ class CMakeBuild(build_ext):
             print("No catkin")
             subprocess.check_call(['cmake', ext.sourcedir] + cmake_args, cwd=self.build_temp, env=env)
             subprocess.check_call(['cmake', '--build', '.'] + build_args, cwd=self.build_temp)
-        else: 
-            # run catkin build and link to the libraries that were reated in the devel space of the workspace 
+        else:
+            # run catkin build and link to the libraries that were reated in the devel space of the workspace
             print("We have catkin")
             import catkin.workspace
             subprocess.check_call(['catkin', 'build' ,'--this'] + build_args  + cmake_args, cwd=self.build_temp, env=env)
@@ -121,7 +121,7 @@ class CMakeBuild(build_ext):
                     print("cmd", ['ln', '-sf'] + [ os.path.join(catkin_lib_dir,lib) + " " + os.path.join(cur_dir, lib ) ] )
                     subprocess.check_call(['ln', '-sf'] + [ os.path.join(catkin_lib_dir,lib) ] + [ os.path.join(cur_dir, lib ) ] )
 
-       
+
 
 #with open("README.md", "r") as fh:
 long_description = "long_description"
@@ -186,6 +186,3 @@ setup(
     },
     zip_safe=False,
 )
-
-
-

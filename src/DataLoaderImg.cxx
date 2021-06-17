@@ -68,7 +68,7 @@ DataLoaderImg::DataLoaderImg(const std::string config_file):
     if(m_autostart){
         start();
     }
-    
+
 
 
 }
@@ -146,7 +146,7 @@ void DataLoaderImg::start(){
         VLOG(1) <<"starting thread for cam " << i;
         m_loader_threads[i]=std::thread(&DataLoaderImg::read_data_for_cam, this, i);
     }
-    
+
 }
 
 void DataLoaderImg::init_data_reading(){
@@ -223,7 +223,7 @@ void DataLoaderImg::init_data_reading(){
         // std::cout << "stem is " << m_rgb_filenames_per_cam[i][0].stem().string() << '\n';
     }
 
- 
+
 
 }
 
@@ -862,4 +862,3 @@ void DataLoaderImg::republish_last_frame_all_cams(){
         m_get_last_published_frame_for_cam[i]=true;
     }
 }
-

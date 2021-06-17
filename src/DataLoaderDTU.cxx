@@ -16,7 +16,7 @@ using namespace configuru;
 #include <opencv2/core/eigen.hpp>
 
 
-//my stuff 
+//my stuff
 #include "data_loaders/DataTransformer.h"
 #include "easy_pbr/Frame.h"
 #include "Profiler.h"
@@ -28,7 +28,7 @@ using namespace configuru;
 #include "easy_pbr/LabelMngr.h"
 #include "UtilsGL.h"
 
-//json 
+//json
 // #include "json11/json11.hpp"
 
 //boost
@@ -83,7 +83,7 @@ void DataLoaderDTU::init_params(const std::string config_file){
     m_subsample_factor=loader_config["subsample_factor"];
     m_do_overfit=loader_config["do_overfit"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
-    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
+    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
     m_restrict_to_scan_idx= loader_config["restrict_to_scan_idx"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_mode= (std::string)loader_config["mode"];
@@ -94,14 +94,14 @@ void DataLoaderDTU::init_params(const std::string config_file){
 
 void DataLoaderDTU::start(){
     CHECK(m_scene_folders.empty()) << " The loader has already been started before. Make sure that you have m_autostart to false";
-    
+
     init_data_reading();
     read_poses_and_intrinsics();
     start_reading_next_scene();
 }
 
 void DataLoaderDTU::init_data_reading(){
-    
+
     if(!fs::is_directory(m_dataset_path)) {
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
@@ -119,8 +119,8 @@ void DataLoaderDTU::init_data_reading(){
         if(line.empty()){
             continue;
         }
-        std::string scan=trim_copy(line); 
-        //if we want to load only one of the scans except for all of them 
+        std::string scan=trim_copy(line);
+        //if we want to load only one of the scans except for all of them
         //push only one of the scenes
         if(m_restrict_to_scan_idx>=0){
             if(m_restrict_to_scan_idx==nr_scenes_read){
@@ -165,7 +165,7 @@ void DataLoaderDTU::start_reading_next_scene(){
         m_idx_scene_to_read++;
     }
 
-    
+
 
     //start the reading
     if (m_loader_thread.joinable()){
@@ -195,7 +195,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
         paths.push_back(img_path);
     }
 
-    //shuffle the images from this scene 
+    //shuffle the images from this scene
     unsigned seed1 = m_nr_scenes_read_so_far;
     auto rng_1 = std::default_random_engine(seed1);
     if(m_mode=="train"){
@@ -218,7 +218,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             Frame frame;
             frame.frame_idx=img_idx;
 
-            //sets the paths and all the things necessary for the loading of images 
+            //sets the paths and all the things necessary for the loading of images
             frame.rgb_path=img_path.string();
             frame.subsample_factor=m_subsample_factor;
 
@@ -226,7 +226,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             //load the images if necessary or delay it for whne it's needed
             frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
             if (m_load_as_shell){
-                //set the function to load the images whenever it's neede 
+                //set the function to load the images whenever it's neede
                 frame.is_shell=true;
             }else{
                 frame.is_shell=false;
@@ -242,7 +242,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             // //read pose and camera params needs to be read from the camera.npz
             // std::string pose_and_intrinsics_path=(fs::path(scene_path)/"cameras.npz").string();
 
-            // //read npz 
+            // //read npz
             // cnpy::npz_t npz_file = cnpy::npz_load( pose_and_intrinsics_path );
             // cnpy::NpyArray projection_mat_array = npz_file["world_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
             // cnpy::NpyArray scale_array = npz_file["scale_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
@@ -255,14 +255,14 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             // // VLOG(1) << " scale_array shape1 " <<  scale_array.shape[1];
 
             // //get the P matrix which containst both K and the pose
-            // Eigen::Affine3d P; 
+            // Eigen::Affine3d P;
             // double* projection_mat_data = projection_mat_array.data<double>();
             // P.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(projection_mat_data);
             // // VLOG(1) << "P is " << P.matrix();
             // Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
             // // VLOG(1) << P_block;
             // //get scale
-            // Eigen::Affine3d S; 
+            // Eigen::Affine3d S;
             // double* scale_array_data = scale_array.data<double>();
             // S.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(scale_array_data);
             // // VLOG(1) << "S is " << S.matrix();
@@ -299,11 +299,11 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             // // VLOG(1) << "tf_cam_world " << tf_cam_world.matrix();
 
 
-            // //get S 
+            // //get S
             // // Eigen::Matrix3d S_block=
             // Eigen::Vector3d norm_trans=S.translation();
             // // VLOG(1) << "norm trans is " << norm_trans;
-            // Eigen::Vector3d norm_scale; 
+            // Eigen::Vector3d norm_scale;
             // norm_scale << S(0,0), S(1,1), S(2,2);
             // // VLOG(1) << "norm scale " << norm_scale;
             // tf_cam_world.translation()-=norm_trans.cast<float>();
@@ -311,7 +311,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             // // VLOG(1) << "pose after the weird scaling " << tf_cam_world.matrix();
 
 
-            // //transform so the up is in the positive y for a right handed system 
+            // //transform so the up is in the positive y for a right handed system
             // // self._coord_trans_world = torch.tensor(
             //     // [[1, 0, 0, 0], [0, -1, 0, 0], [0, 0, -1, 0], [0, 0, 0, 1]],
             //     // dtype=torch.float32,
@@ -323,7 +323,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
 
 
             // //atteptm2
-            // //rotate 
+            // //rotate
             // Eigen::Quaternionf q = Eigen::Quaternionf( Eigen::AngleAxis<float>( -60 * M_PI / 180.0 ,  Eigen::Vector3f::UnitX() ) );
             // Eigen::Affine3f tf_rot;
             // tf_rot.setIdentity();
@@ -334,15 +334,15 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             // Eigen::Affine3f tf_world_cam=tf_cam_world.inverse();
             // Eigen::DiagonalMatrix<float, 4> diag;
             // diag.diagonal() <<1, -1, 1, 1;
-            // tf_world_cam.matrix()=diag*tf_world_cam.matrix()*diag; 
+            // tf_world_cam.matrix()=diag*tf_world_cam.matrix()*diag;
             // //flip again the x
             // diag.diagonal() <<-1, 1, 1, 1;
-            // tf_world_cam.matrix()=tf_world_cam.matrix()*diag; 
+            // tf_world_cam.matrix()=tf_world_cam.matrix()*diag;
             // //flip locally
             // tf_cam_world=tf_world_cam.inverse();
 
 
- 
+
 
 
             // frame.K=K.cast<float>();
@@ -367,7 +367,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
                 // exit(1);
             // }
 
-            
+
 
 
             // CHECK(arr.shape.size()==2) << "arr should have 2 dimensions and it has " << arr.shape.size();
@@ -382,7 +382,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             // // CHECK(arr_intensity.shape.size()==1) << "arr should have 1 dimensions and it has " << arr.shape.size();
 
 
-            // //copy into EigenMatrix 
+            // //copy into EigenMatrix
             // int nr_points=arr.shape[0];
             // MeshSharedPtr cloud=Mesh::create();
             // cloud->V.resize(nr_points,3);
@@ -409,7 +409,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
 
             //     // VLOG(1) << "xyz is " << x << " " << y << " " << z << " " << label;
             //     // exit(1);
-            
+
             // }
 
 
@@ -422,7 +422,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
 
 
 
-    
+
 
 
             //rescale things if necessary
@@ -435,7 +435,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
 
 
 
-  
+
 
 
 
@@ -450,11 +450,11 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
     }
 
     // VLOG(1) << "loaded a scene with nr of frames " << m_frames_for_scene.size();
-    CHECK(m_frames_for_scene.size()!=0) << "Clouldn't load any images for this scene in path " << scene_path; 
+    CHECK(m_frames_for_scene.size()!=0) << "Clouldn't load any images for this scene in path " << scene_path;
 
     m_nr_scenes_read_so_far++;
 
-    //shuffle the images from this scene 
+    //shuffle the images from this scene
     unsigned seed = m_nr_scenes_read_so_far;
     auto rng_0 = std::default_random_engine(seed);
     std::shuffle(std::begin(m_frames_for_scene), std::end(m_frames_for_scene), rng_0);
@@ -475,7 +475,7 @@ void DataLoaderDTU::load_images_in_frame(easy_pbr::Frame& frame){
         rgb_8u=resized;
     }
     frame.rgb_8u=rgb_8u;
-   
+
     // VLOG(1) << "img type is " << radu::utils::type2string( frame.rgb_8u.type() );
     frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
     frame.width=frame.rgb_32f.cols;
@@ -528,7 +528,7 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
 
 
 
-                //read npz 
+                //read npz
                 cnpy::NpyArray projection_mat_array = npz_file["world_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
                 cnpy::NpyArray scale_array = npz_file["scale_mat_"+std::to_string(img_idx) ]; //one can obtain the keys with https://stackoverflow.com/a/53901903
 
@@ -540,14 +540,14 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 // VLOG(1) << " scale_array shape1 " <<  scale_array.shape[1];
 
                 //get the P matrix which containst both K and the pose
-                Eigen::Affine3d P; 
+                Eigen::Affine3d P;
                 double* projection_mat_data = projection_mat_array.data<double>();
                 P.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(projection_mat_data);
                 // VLOG(1) << "P is " << P.matrix();
                 Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
                 // VLOG(1) << P_block;
                 //get scale
-                Eigen::Affine3d S; 
+                Eigen::Affine3d S;
                 double* scale_array_data = scale_array.data<double>();
                 S.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(scale_array_data);
                 // VLOG(1) << "S is " << S.matrix();
@@ -584,11 +584,11 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 // VLOG(1) << "tf_world_cam " << tf_world_cam.matrix();
 
 
-                //get S 
+                //get S
                 // Eigen::Matrix3d S_block=
                 Eigen::Vector3d norm_trans=S.translation();
                 // VLOG(1) << "norm trans is " << norm_trans;
-                Eigen::Vector3d norm_scale; 
+                Eigen::Vector3d norm_scale;
                 norm_scale << S(0,0), S(1,1), S(2,2);
                 // VLOG(1) << "norm scale " << norm_scale;
                 tf_world_cam.translation()-=norm_trans.cast<float>();
@@ -598,7 +598,7 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
 
 
                 //atteptm2
-                //rotate 
+                //rotate
                 Eigen::Quaternionf q = Eigen::Quaternionf( Eigen::AngleAxis<float>( -60 * M_PI / 180.0 ,  Eigen::Vector3f::UnitX() ) );
                 Eigen::Affine3f tf_rot;
                 tf_rot.setIdentity();
@@ -609,17 +609,17 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 Eigen::Affine3f tf_cam_world=tf_world_cam.inverse();
                 Eigen::DiagonalMatrix<float, 4> diag;
                 diag.diagonal() <<1, -1, 1, 1;
-                tf_cam_world.matrix()=diag*tf_cam_world.matrix()*diag; 
+                tf_cam_world.matrix()=diag*tf_cam_world.matrix()*diag;
                 //flip again the x
                 diag.diagonal() <<-1, 1, 1, 1;
-                tf_cam_world.matrix()=tf_cam_world.matrix()*diag; 
+                tf_cam_world.matrix()=tf_cam_world.matrix()*diag;
                 //flip locally
                 // tf_world_cam=tf_cam_world.inverse();
 
-                //add it to the hashmaps 
+                //add it to the hashmaps
                 m_scene2frame_idx2tf_cam_world[scene_path][img_idx]=tf_cam_world;
                 m_scene2frame_idx2K[scene_path][img_idx]=K.cast<float>();
-           
+
 
             }
         }
@@ -664,7 +664,7 @@ bool DataLoaderDTU::is_finished(){
     if(m_idx_scene_to_read<m_scene_folders.size()){
         return false; //there is still more files to read
     }
-   
+
 
     return true; //there is nothing more to read and nothing more in the buffer so we are finished
 
@@ -678,7 +678,7 @@ void DataLoaderDTU::reset(){
     //reshuffle for the next epoch
     if(m_shuffle){
         unsigned seed = m_nr_resets;
-        auto rng_0 = std::default_random_engine(seed); 
+        auto rng_0 = std::default_random_engine(seed);
         std::shuffle(std::begin(m_scene_folders), std::end(m_scene_folders), rng_0);
     }
 
@@ -708,12 +708,12 @@ std::unordered_map<std::string, std::string> DataLoaderDTU::create_mapping_class
 
     //from https://github.com/NVIDIAGameWorks/kaolin/blob/master/kaolin/datasets/shapenet.py
 
-    std::unordered_map<std::string, std::string> classnr2classname; 
+    std::unordered_map<std::string, std::string> classnr2classname;
 
     classnr2classname["04379243"]="table";
     classnr2classname["03211117"]="monitor";
     classnr2classname["04401088"]="phone";
-   
+
     classnr2classname["04530566"]="watercraft";
     classnr2classname["03001627"]="chair";
     classnr2classname["03636649"]="lamp";
@@ -775,7 +775,7 @@ Eigen::Affine3f DataLoaderDTU::process_extrinsics_line(const std::string line){
 
     // Eigen::Affine3f tf;
 
-    // //from compute_camera_params() in https://github.com/NVIDIAGameWorks/kaolin/blob/a76a004ada95280c6a0a821678cf1b886bcb3625/kaolin/mathutils/geometry/transformations.py 
+    // //from compute_camera_params() in https://github.com/NVIDIAGameWorks/kaolin/blob/a76a004ada95280c6a0a821678cf1b886bcb3625/kaolin/mathutils/geometry/transformations.py
     // float theta = radu::utils::degrees2radians(azimuth);
     // float phi = radu::utils::degrees2radians(elevation);
 
@@ -794,9 +794,9 @@ Eigen::Affine3f DataLoaderDTU::process_extrinsics_line(const std::string line){
 
     // // cam_mat = np.array([axisX, axisY, axisZ])
     // Eigen::Matrix3f R;
-    // R.col(0)=axisX; 
-    // R.col(1)=axisY; 
-    // R.col(2)=-axisZ; 
+    // R.col(0)=axisX;
+    // R.col(1)=axisY;
+    // R.col(2)=-axisZ;
     // // l2 = np.atleast_1d(np.linalg.norm(cam_mat, 2, 1))
     // // l2[l2 == 0] = 1
     // // cam_mat = cam_mat / np.expand_dims(l2, 1)
@@ -822,8 +822,8 @@ Eigen::Affine3f DataLoaderDTU::process_extrinsics_line(const std::string line){
     // // R = aa.toRotationMatrix();  // AxisAngle      to RotationMatrix
     // // tf.linear() = R;
 
-    // Eigen::Affine3f tf_ret=tf.inverse(); 
-    // // Eigen::Affine3f tf_ret=tf; 
+    // Eigen::Affine3f tf_ret=tf.inverse();
+    // // Eigen::Affine3f tf_ret=tf;
 
 
 
@@ -870,9 +870,9 @@ Eigen::Affine3f DataLoaderDTU::process_extrinsics_line(const std::string line){
     float az = std::stof(tokens[0]);
     float el = std::stof(tokens[1]);
     float distance_ratio = std::stof(tokens[3]);
-    // float ox = std::stof(tokens[7]); 
-    // float oy = std::stof(tokens[8]); 
-    // float oz = std::stof(tokens[9]); 
+    // float ox = std::stof(tokens[7]);
+    // float oy = std::stof(tokens[8]);
+    // float oz = std::stof(tokens[9]);
 
     // # Calculate rotation and translation matrices.
     // # Step 1: World coordinate to object coordinate.
@@ -938,4 +938,3 @@ Eigen::Affine3f DataLoaderDTU::process_extrinsics_line(const std::string line){
     return tf_ret;
 
 }
-

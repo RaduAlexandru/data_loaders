@@ -6,7 +6,7 @@
 // #include <sensor_msgs/PointCloud2.h>
 // #include <pcl_ros/point_cloud.h>
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -56,8 +56,8 @@ public:
     void set_segmentation_method(const std::string method);
     void set_preload(const bool val); //if we preload, then we read the meshes only once and store them in memory
 
-    //TODO 
-    
+    //TODO
+
 
 
 private:
@@ -67,14 +67,14 @@ private:
     void read_data();
     std::shared_ptr<easy_pbr::Mesh> read_sample(const fs::path sample_filename); //reads one data sample
 
-    //objects 
+    //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
     std::shared_ptr<DataTransformer> m_transformer;
 
     //params
-    fs::path m_dataset_path; 
+    fs::path m_dataset_path;
     bool m_autostart;
-    //plant 
+    //plant
     std::string m_plant_type; //maize or tomato
     std::string m_segmentation_method; //leaf_collar or leaf_tip (only valid if we are loading maize)
     //which plants to read
@@ -85,7 +85,7 @@ private:
     int m_nr_days_to_skip;
     int m_nr_days_to_read; //how many days to read for the selected plants, set to -1 to read all days
     std::string m_selected_day; //To read one concrete single day, day for eg can be 0325 which is march 25 from which we will read
-    //params for after reading 
+    //params for after reading
     bool m_shuffle_points;
     bool m_normalize;
     bool m_shuffle_days;
@@ -101,13 +101,13 @@ private:
     uint32_t m_idx_cloud_to_read;
     uint32_t m_idx_cloud_to_return;
     int m_nr_resets;
-    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
+    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     int m_nr_sequences;
     std::vector<fs::path> m_sample_filenames;
     moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
     std::vector< std::shared_ptr<easy_pbr::Mesh>  > m_clouds_vec;
-    // std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >m_worldROS_cam_vec; //actually the semantic kitti expressed the clouds in the left camera coordinate so it should be m_worldRos_cam_vec 
+    // std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >m_worldROS_cam_vec; //actually the semantic kitti expressed the clouds in the left camera coordinate so it should be m_worldRos_cam_vec
 
     //label mngr to link to all the meshes that will have a semantic information
     std::shared_ptr<easy_pbr::LabelMngr> m_label_mngr;

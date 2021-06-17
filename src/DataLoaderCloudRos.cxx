@@ -15,7 +15,7 @@ using namespace configuru;
 #include <pcl_ros/transforms.h>
 #include <pcl/PCLPointCloud2.h>
 
-//my stuff 
+//my stuff
 #include "ros_utils.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
@@ -46,7 +46,7 @@ DataLoaderCloudRos::DataLoaderCloudRos(const std::string config_file):
 {
     init_params(config_file);
     if(m_do_pose){
-        read_pose_file(); 
+        read_pose_file();
         // if(m_hacky_fix_for_razlaws_ma_bags){
         //     read_pose_file_vel2lasermap(); //this reads the transform tf_lasermap_vel/ From this we will set the pose.translation to lasermap_vel
         // }
@@ -89,8 +89,8 @@ void DataLoaderCloudRos::init_params(const std::string config_file){
     m_pose_file_format = (std::string)loader_config["pose_file_format"];
     // m_timestamp_multiplier = loader_config["timestamp_multiplier"];
     // m_exact_time = loader_config["exact_time"];
-    m_min_dist_filter = loader_config["min_dist_filter"]; 
-    // m_hacky_fix_for_razlaws_ma_bags = loader_config["hacky_fix_for_razlaws_ma_bags"]; 
+    m_min_dist_filter = loader_config["min_dist_filter"];
+    // m_hacky_fix_for_razlaws_ma_bags = loader_config["hacky_fix_for_razlaws_ma_bags"];
 
 
     //data transformer
@@ -138,7 +138,7 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
     mesh->m_height=cloud->height;
     // VLOG(1) << "width and height is " << mesh->m_width << " " << mesh->m_height;
 
-    //the distance to the sensor is just the norm of every point as the cloud starts in velodyne frame 
+    //the distance to the sensor is just the norm of every point as the cloud starts in velodyne frame
     mesh->D=mesh->V.rowwise().norm();
 
     double timestamp=(double)cloud_msg->header.stamp.toNSec();
@@ -151,13 +151,13 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
                 mesh->V(i,0)=0.0;
                 mesh->V(i,1)=0.0;
                 mesh->V(i,2)=0.0;
-            }    
+            }
         }
     }
 
     //establish a random view_direction
-    // mesh->m_view_direction=m_rand_gen->rand_float(0,2*M_PI); 
-    
+    // mesh->m_view_direction=m_rand_gen->rand_float(0,2*M_PI);
+
 
     // if(m_do_random_gap_removal){
     //     //remove point in the gap around the random direction so that the unwrapping to 2D can be done by the Mesher
@@ -170,7 +170,7 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
     //     tf_alg_vel.matrix().block<3,3>(0,0)=alg_vel_rot;
 
     //     mesh_core.apply_transform(tf_alg_vel); //from velodyne frame to the algorithm frame
-        
+
     //     for (size_t i = 0; i < mesh_core.V.rows(); i++) {
     //         if (!mesh_core.V.row(i).isZero()) {
     //             //calculate an angle to it
@@ -207,8 +207,8 @@ void DataLoaderCloudRos::callback(const sensor_msgs::PointCloud2ConstPtr& cloud_
 
         // if(m_pose_file_format=="david_old"){
             //the old format had the pose file expressed in velodyne frame, the new one is already in baselink
-            // mesh_core.apply_transform(m_tf_baselink_vel); // from velodyne frame to baselink 
-        // } 
+            // mesh_core.apply_transform(m_tf_baselink_vel); // from velodyne frame to baselink
+        // }
         mesh->transform_vertices_cpu(sensor_pose); // from baselonk to worldROS
         mesh->transform_vertices_cpu(m_tf_worldGL_worldROS);
     }else{
@@ -383,7 +383,7 @@ void DataLoaderCloudRos::read_pose_file(){
             pose.setIdentity();
             pose.matrix().block<3,3>(0,0)=quat.toRotationMatrix();
             pose.matrix().block<3,1>(0,3)=position;
-       
+
             m_worldROS_baselink_vec.push_back ( std::pair<double, Eigen::Affine3d>((double)timestamp,pose) );
         }
     }else{

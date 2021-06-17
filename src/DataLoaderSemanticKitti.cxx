@@ -20,7 +20,7 @@ using namespace configuru;
 //boost
 #include <boost/range/iterator_range.hpp>
 
-//my stuff 
+//my stuff
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 #include "data_loaders/DataTransformer.h"
@@ -136,12 +136,12 @@ void DataLoaderSemanticKitti::init_data_reading(){
             std::sort(npz_filenames_all.begin(), npz_filenames_all.end());
         }
 
-  
+
 
 	if(m_do_pose){
 	    //pose file
             std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  > poses;
-            fs::path pose_file = full_path/"poses.txt"; 
+            fs::path pose_file = full_path/"poses.txt";
             poses=read_pose_file( pose_file.string() );
             m_poses_per_sequence[m_sequence.string()] = poses;
 	}
@@ -163,12 +163,12 @@ void DataLoaderSemanticKitti::init_data_reading(){
                 VLOG(1) << "sequence is " << sequence;
 
                 m_nr_sequences++;
-                //read the npz of each sequence 
+                //read the npz of each sequence
                 std::vector<fs::path> npz_filenames_for_sequence;
                 for (fs::directory_iterator itr(full_path); itr!=fs::directory_iterator(); ++itr){
                     //all the files in the folder might include also the pose file so we ignore that one
                     //we also ignore the files that contain intensity, for now we only read the general ones and then afterwards we append _i to the file and read the intensity if neccesarry
-                    if( !(itr->path().stem()=="poses")  && itr->path().stem().string().find("_i")== std::string::npos ){ 
+                    if( !(itr->path().stem()=="poses")  && itr->path().stem().string().find("_i")== std::string::npos ){
                         npz_filenames_for_sequence.push_back(itr->path());
                     }
                 }
@@ -181,7 +181,7 @@ void DataLoaderSemanticKitti::init_data_reading(){
             	if(m_do_pose){
               	    //read poses for this sequence
                     std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  > poses;
-                    fs::path pose_file = full_path/"poses.txt"; 
+                    fs::path pose_file = full_path/"poses.txt";
                     poses=read_pose_file( pose_file.string() );
                     m_poses_per_sequence[sequence] = poses;
                 }
@@ -204,7 +204,7 @@ void DataLoaderSemanticKitti::init_data_reading(){
     }
 
 
-    //ADDS THE clouds to the member std_vector of paths 
+    //ADDS THE clouds to the member std_vector of paths
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
     for (size_t i = 0; i < npz_filenames_all.size(); i++) {
         if( (int)i>=m_nr_clouds_to_skip && ((int)m_npz_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
@@ -212,7 +212,7 @@ void DataLoaderSemanticKitti::init_data_reading(){
         }
     }
 
-    std::cout << "About to read " << m_npz_filenames.size() << " clouds" <<std::endl; 
+    std::cout << "About to read " << m_npz_filenames.size() << " clouds" <<std::endl;
 
 
     CHECK(m_npz_filenames.size()>0) <<"We did not find any npz files to read";
@@ -243,7 +243,7 @@ void DataLoaderSemanticKitti::read_data(){
             }
             // VLOG(1) << "reading " << npz_filename;
 
-            //read npz 
+            //read npz
             cnpy::npz_t npz_file = cnpy::npz_load(npz_filename.string());
             cnpy::NpyArray arr = npz_file["arr_0"]; //one can obtain the keys with https://stackoverflow.com/a/53901903
             CHECK(arr.shape.size()==2) << "arr should have 2 dimensions and it has " << arr.shape.size();
@@ -258,7 +258,7 @@ void DataLoaderSemanticKitti::read_data(){
             // CHECK(arr_intensity.shape.size()==1) << "arr should have 1 dimensions and it has " << arr.shape.size();
 
 
-            //copy into EigenMatrix 
+            //copy into EigenMatrix
             int nr_points=arr.shape[0];
             MeshSharedPtr cloud=Mesh::create();
             cloud->V.resize(nr_points,3);
@@ -285,7 +285,7 @@ void DataLoaderSemanticKitti::read_data(){
 
                 // VLOG(1) << "xyz is " << x << " " << y << " " << z << " " << label;
                 // exit(1);
-            
+
             }
             cloud->D=cloud->V.rowwise().norm();
 
@@ -302,7 +302,7 @@ void DataLoaderSemanticKitti::read_data(){
             //     cloud.remove_marked_vertices(marked_to_be_removed, false);
             // }
 
-            //get pose 
+            //get pose
             int scan_nr=std::stoull( npz_filename.stem().string() ); //scan_nr corresponds to the file name (without the extension of course)
             std::string sequence= npz_filename.parent_path().stem().string();
             // VLOG(1) << "sequence is " << sequence;
@@ -364,7 +364,7 @@ void DataLoaderSemanticKitti::read_data(){
             cloud->m_label_mngr=m_label_mngr->shared_from_this();
 
             cloud->m_disk_path=npz_filename.string();
-            
+
 
             m_clouds_buffer.enqueue(cloud);;
 
@@ -468,15 +468,15 @@ std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  > DataL
     std::string line;
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
-        iss >>  r00>> r01>> r02>> position.x() 
-            >>  r10>> r11>> r12>> position.y() 
-            >>  r20>> r21>> r22>> position.z(); 
-           
+        iss >>  r00>> r01>> r02>> position.x()
+            >>  r10>> r11>> r12>> position.y()
+            >>  r20>> r21>> r22>> position.z();
+
 
         Eigen::Affine3d pose;
         pose.matrix().block<3,3>(0,0) << r00, r01, r02,   r10, r11, r12,   r20, r21, r22;;
         pose.matrix().block<3,1>(0,3)=position;
-      
+
         poses.push_back ( pose );
     }
 
@@ -485,7 +485,7 @@ std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  > DataL
 }
 
 Eigen::Affine3d DataLoaderSemanticKitti::get_pose_for_scan_nr_and_sequence(const int scan_nr, const std::string sequence){
-    CHECK(scan_nr<(int)m_poses_per_sequence[sequence].size()) << "scan_nr out of range. Maximum pose would be for scan_nr " << m_poses_per_sequence[sequence].size() << " and you are trying to index at " <<scan_nr; 
+    CHECK(scan_nr<(int)m_poses_per_sequence[sequence].size()) << "scan_nr out of range. Maximum pose would be for scan_nr " << m_poses_per_sequence[sequence].size() << " and you are trying to index at " <<scan_nr;
 
     return m_poses_per_sequence[sequence][scan_nr];
 }

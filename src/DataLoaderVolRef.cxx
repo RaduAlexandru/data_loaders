@@ -21,7 +21,7 @@ using namespace configuru;
 namespace fs = boost::filesystem;
 
 
-//my stuff 
+//my stuff
 #include "RandGenerator.h"
 #include "string_utils.h"
 
@@ -42,7 +42,7 @@ DataLoaderVolRef::DataLoaderVolRef(const std::string config_file):
     m_depth_subsample_factor(1),
     m_idx_colorframe_to_return(0),
     m_idx_depthframe_to_return(0)
-    
+
 {
 
     init_params(config_file);
@@ -61,7 +61,7 @@ DataLoaderVolRef::~DataLoaderVolRef(){
 }
 
 void DataLoaderVolRef::init_params(const std::string config_file){
-  
+
     //read all the parameters
     // Config cfg = configuru::parse_file(std::string(CMAKE_SOURCE_DIR)+"/config/"+config_file, CFG);
     std::string config_file_abs;
@@ -105,7 +105,7 @@ void DataLoaderVolRef::start(){
 void DataLoaderVolRef::init_data_reading(){
 
     std::vector<fs::path> samples_filenames_all;
-    
+
 
     if(!fs::is_directory(m_dataset_path)) {
         LOG(FATAL) << "No directory " << m_dataset_path;
@@ -117,7 +117,7 @@ void DataLoaderVolRef::init_data_reading(){
         // bool found_png=entry.path().stem().string().find("png")!= std::string::npos;
         // VLOG(1) << "entry is " << entry.path().stem().string() << " has found color " << found_color;
         // VLOG(1) << "entry is " << entry.path().stem().string() << " has found png " << found_png;
-        if( entry.path().stem().string().find("color")!= std::string::npos && entry.path().stem().string().find("frame")!= std::string::npos  ){ 
+        if( entry.path().stem().string().find("color")!= std::string::npos && entry.path().stem().string().find("frame")!= std::string::npos  ){
             samples_filenames_all.push_back(entry);
         }
     }
@@ -126,7 +126,7 @@ void DataLoaderVolRef::init_data_reading(){
 
 
 
-    //ADDS THE samples to the member std_vector of paths 
+    //ADDS THE samples to the member std_vector of paths
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
     for (size_t i = 0; i <samples_filenames_all.size(); i++) {
         if( (int)i>=m_nr_samples_to_skip && ((int)m_samples_filenames.size()<m_nr_samples_to_read || m_nr_samples_to_read<0 ) ){
@@ -163,19 +163,19 @@ void DataLoaderVolRef::init_data_reading(){
         std::sort(samples_filenames_all.begin(), samples_filenames_all.end());
     }
 
-  
 
-    std::cout << "About to read " << m_samples_filenames.size() << " samples" <<std::endl; 
+
+    std::cout << "About to read " << m_samples_filenames.size() << " samples" <<std::endl;
 
 
     CHECK(m_samples_filenames.size()>0) <<"We did not find any samples files to read";
 
 
     //read the intrinsics for color and depth
-    m_K_color.setIdentity(); 
+    m_K_color.setIdentity();
     std::string intrinsics_color=(m_dataset_path/"colorIntrinsics.txt").string();
     m_K_color=read_intrinsics_file(intrinsics_color);
-    m_K_depth.setIdentity(); 
+    m_K_depth.setIdentity();
     std::string intrinsics_depth=(m_dataset_path/"depthIntrinsics.txt").string();
     m_K_depth=read_intrinsics_file(intrinsics_depth);
 
@@ -199,7 +199,7 @@ void DataLoaderVolRef::read_data(){
             // MeshSharedPtr cloud=read_sample(sample_filename);
             // m_clouds_vec.push_back(cloud);
 
-            
+
             //read frame color and frame depth
             Frame frame_color;
             Frame frame_depth;
@@ -255,7 +255,7 @@ void DataLoaderVolRef::read_data(){
 
 void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const boost::filesystem::path& sample_filename){
 
-    //get frame idx 
+    //get frame idx
     std::string sample_filename_basename= sample_filename.stem().string(); //the stem has format frame-00000.color.png  We want just the number
     //remove the frame and color so we are left only with the number
     std::string frame_idx_str=  radu::utils::erase_substrings(sample_filename_basename, {".color", "frame-"});
@@ -296,7 +296,7 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
     // frame_color.tf_cam_world=tf_world_cam.cast<float>();
     // frame_depth.tf_cam_world=tf_world_cam.cast<float>();
 
-    //for some reason the y is flipped so we unflip it 
+    //for some reason the y is flipped so we unflip it
     tf_world_cam.linear().col(1)=-tf_world_cam.linear().col(1);
 
     Eigen::Affine3d m_tf_worldGL_world;
@@ -304,8 +304,8 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
     Eigen::Matrix3d worldGL_world_rot;
     worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
     m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
-    frame_color.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
-    frame_depth.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam 
+    frame_color.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam
+    frame_depth.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam
 
     //assign K matrix
     frame_color.K=m_K_color.cast<float>()/m_rgb_subsample_factor;
@@ -361,11 +361,11 @@ for(int i=0; i<(int)m_samples_filenames.size(); i++){
     Eigen::Matrix3d worldGL_world_rot;
     worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
     m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
-    Eigen::Affine3d other_tf_cam_world= tf_worldros_cam.cast<double>().inverse() * m_tf_worldGL_world.inverse(); //from worldgl to world ros, from world ros to cam 
+    Eigen::Affine3d other_tf_cam_world= tf_worldros_cam.cast<double>().inverse() * m_tf_worldGL_world.inverse(); //from worldgl to world ros, from world ros to cam
 
     double diff_translation= (frame.tf_cam_world.cast<double>().inverse().translation() - other_tf_cam_world.inverse().translation()).norm();
 
-    //diff in angle 
+    //diff in angle
     double diff_angle= 1.0- frame.tf_cam_world.cast<double>().inverse().linear().col(2).dot( other_tf_cam_world.inverse().linear().col(2) );
 
     double score= 0.5*diff_translation + 0.5*diff_angle;
@@ -381,7 +381,7 @@ for(int i=0; i<(int)m_samples_filenames.size(); i++){
         }
 
 
-    
+
     }
 
 
@@ -391,7 +391,7 @@ for(int i=0; i<(int)m_samples_filenames.size(); i++){
     read_sample(frame_color, frame_depth, best_path);
 
     return frame_color;
-    
+
 }
 
 
@@ -413,11 +413,11 @@ Frame DataLoaderVolRef::closest_depth_frame(const Frame& frame){
         Eigen::Matrix3d worldGL_world_rot;
         worldGL_world_rot = Eigen::AngleAxisd(1.0*M_PI, Eigen::Vector3d::UnitX());
         m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
-        Eigen::Affine3d other_tf_cam_world= tf_worldros_cam.cast<double>().inverse() * m_tf_worldGL_world.inverse(); //from worldgl to world ros, from world ros to cam 
+        Eigen::Affine3d other_tf_cam_world= tf_worldros_cam.cast<double>().inverse() * m_tf_worldGL_world.inverse(); //from worldgl to world ros, from world ros to cam
 
         double diff_translation= (frame.tf_cam_world.cast<double>().inverse().translation() - other_tf_cam_world.inverse().translation()).norm();
 
-        //diff in angle 
+        //diff in angle
         double diff_angle= 1.0- frame.tf_cam_world.cast<double>().inverse().linear().col(2).dot( other_tf_cam_world.inverse().linear().col(2) );
 
         double score= 0.5*diff_translation + 0.5*diff_angle;
@@ -433,7 +433,7 @@ Frame DataLoaderVolRef::closest_depth_frame(const Frame& frame){
         }
 
 
-    
+
     }
 
     // VLOG(1) << "Best depth frame has score " << lowest_score;
@@ -443,7 +443,7 @@ Frame DataLoaderVolRef::closest_depth_frame(const Frame& frame){
     read_sample(frame_color, frame_depth, best_path);
 
     return frame_depth;
-    
+
 }
 
 
@@ -464,7 +464,7 @@ Eigen::Affine3d DataLoaderVolRef::read_pose_file(std::string pose_file){
     }
     int line_read=0;
     std::string line;
-    Eigen::Affine3d pose; 
+    Eigen::Affine3d pose;
     pose.setIdentity();
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
@@ -482,7 +482,7 @@ Eigen::Matrix3d DataLoaderVolRef::read_intrinsics_file(std::string intrinsics_fi
     }
     int line_read=0;
     std::string line;
-    Eigen::Matrix3d K; 
+    Eigen::Matrix3d K;
     K.setIdentity();
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
@@ -494,7 +494,7 @@ Eigen::Matrix3d DataLoaderVolRef::read_intrinsics_file(std::string intrinsics_fi
     }
 
     return K;
-} 
+}
 
 
 bool DataLoaderVolRef::has_data(){
@@ -584,7 +584,7 @@ bool DataLoaderVolRef::is_finished(){
 
         //if ANY of the two frame buffers is empty then we say that we finished reading. This is because not always we want to read the depth bffer
         if(m_frames_color_buffer.peek()==nullptr || m_frames_depth_buffer.peek()==nullptr){
-            return true; 
+            return true;
         }
 
         return false; //there is still something in at least one of the buffers

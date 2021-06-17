@@ -13,7 +13,7 @@
 using namespace configuru;
 
 
-//my stuff 
+//my stuff
 #include "data_loaders/DataTransformer.h"
 #include "easy_pbr/Frame.h"
 #include "Profiler.h"
@@ -25,7 +25,7 @@ using namespace configuru;
 #include "easy_pbr/LabelMngr.h"
 #include "UtilsGL.h"
 
-//json 
+//json
 #include "json11/json11.hpp"
 
 //boost
@@ -77,7 +77,7 @@ void DataLoaderColmap::init_params(const std::string config_file){
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_load_imgs_with_transparency=loader_config["load_imgs_with_transparency"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
-    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
+    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
 
 
     //data transformer
@@ -94,18 +94,18 @@ void DataLoaderColmap::start(){
 
 
 // void DataLoaderColmap::init_data_reading(){
-    
+
 //     // if(!fs::is_directory(m_dataset_path)) {
 //     //     LOG(FATAL) << "No directory " << m_dataset_path;
 //     // }
-    
+
 //     // //go to the folder of train val or test depending on the mode in which we are one
 //     // for (fs::directory_iterator itr(m_dataset_path/m_mode); itr!=fs::directory_iterator(); ++itr){
 //     //     fs::path img_path= itr->path();
 //     //     //we disregard the images that contain depth and normals, we load only the rgb
-//     //     if (fs::is_regular_file(img_path) && 
+//     //     if (fs::is_regular_file(img_path) &&
 //     //     img_path.filename().string().find("png") != std::string::npos &&
-//     //     img_path.stem().string().find("depth")== std::string::npos &&  
+//     //     img_path.stem().string().find("depth")== std::string::npos &&
 //     //     img_path.stem().string().find("normal")== std::string::npos   ){
 //     //         m_imgs_paths.push_back(img_path);
 //     //     }
@@ -128,7 +128,7 @@ void DataLoaderColmap::read_data(){
 
     // //get the path to this json file
     // fs::path pose_file_json= m_dataset_path/("transforms_"+m_mode+".json");
-    // if(!fs::is_regular_file(pose_file_json) ) { 
+    // if(!fs::is_regular_file(pose_file_json) ) {
     //     LOG(FATAL) << "Json file for the poses could not be found in " << pose_file_json;
     // }
 
@@ -175,18 +175,18 @@ void DataLoaderColmap::read_data(){
 
 
     //     m_filename2pose[file_name]=tf_cam_world; //we want to store here the transrom from world to cam so the tf_cam_world
-        
-      
+
+
     // }
 
 
-    
 
 
 
 
 
-    //attempt 2 
+
+    //attempt 2
     fs::path pose_file=m_dataset_path/"sparse"/"images.bin";
 
     //read the bin file according to this format https://colmap.github.io/format.html#binary-file-format
@@ -270,7 +270,7 @@ void DataLoaderColmap::read_data(){
       frame.cam_id=camera_id;
       frame.frame_idx=i;
 
-      //depending on the mode we read this image or not 
+      //depending on the mode we read this image or not
       if (m_mode=="train" && frame.frame_idx%3==0){
         continue;
       }
@@ -304,7 +304,7 @@ void DataLoaderColmap::read_data(){
       }
 
 
-      
+
 
 
 
@@ -314,7 +314,7 @@ void DataLoaderColmap::read_data(){
       frame.width=frame.rgb_32f.cols;
       frame.height=frame.rgb_32f.rows;
 
-      //load gradients 
+      //load gradients
       cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
       cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
       cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
@@ -324,7 +324,7 @@ void DataLoaderColmap::read_data(){
       Eigen::Affine3d tf_cam_world;
       tf_cam_world.linear()=q.toRotationMatrix();
       tf_cam_world.translation()=t;
-      //rotate it a bit 
+      //rotate it a bit
       Eigen::Quaterniond q_rot = Eigen::Quaterniond( Eigen::AngleAxis<double>( -90 * M_PI / 180.0 ,  Eigen::Vector3d::UnitX() ) );
       Eigen::Affine3d rot;
       rot.setIdentity();
@@ -358,7 +358,7 @@ void DataLoaderColmap::read_data(){
 
 
 
-    //read cameras intrinsics 
+    //read cameras intrinsics
     fs::path cameras_path=m_dataset_path/"sparse"/"cameras.bin";
     std::ifstream camera_file(cameras_path.string(), std::ios::binary);
     CHECK(camera_file.is_open()) << "Could not open file " << pose_file;
@@ -393,8 +393,8 @@ void DataLoaderColmap::read_data(){
           frame.K.setIdentity();
           frame.K(0,0) = fx; //fx
           frame.K(1,1) = fy; //fy
-          frame.K(0,2) = cx; //cx 
-          frame.K(1,2) = cy; //cy 
+          frame.K(0,2) = cx; //cx
+          frame.K(1,2) = cy; //cy
           frame.K = frame.K/m_subsample_factor;
           frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
 
@@ -404,7 +404,7 @@ void DataLoaderColmap::read_data(){
 
       }
 
- 
+
     }
 
 
@@ -424,7 +424,7 @@ void DataLoaderColmap::read_data(){
 //     //     std::string filename=img_path.stem().string();
 //     //     std::vector<std::string> tokens=radu::utils::split(filename,"_");
 //     //     frame.frame_idx=std::stoi(tokens[1]);
-        
+
 //     //     //read rgba and split into rgb and alpha mask
 //     //     cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
 //     //     if(m_subsample_factor>1){
@@ -453,7 +453,7 @@ void DataLoaderColmap::read_data(){
 //     //     //     // fs::path depth_img_path=
 //     //     //     fs::path depth_img_path=parent/(img_filename+"_depth_0001.png");
 //     //     //     VLOG(1) << "depth img path" << depth_img_path;
-            
+
 //     //     //     cv::Mat depth=cv::imread(depth_img_path.string() , CV_LOAD_IMAGE_ANYDEPTH);
 //     //     //     CHECK(!depth.empty()) << "The depth image is empty at path " << depth_img_path;
 //     //     //     // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
@@ -484,8 +484,8 @@ void DataLoaderColmap::read_data(){
 
 
 
-    
-   
+
+
 // }
 
 
@@ -531,7 +531,7 @@ Frame DataLoaderColmap::get_closest_frame( const easy_pbr::Frame& frame){
     Frame  frame_closest= m_frames[closest_idx];
 
     return frame_closest;
-    
+
 }
 
 std::vector<easy_pbr::Frame>  DataLoaderColmap::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx){
@@ -549,7 +549,7 @@ std::vector<easy_pbr::Frame>  DataLoaderColmap::get_close_frames( const easy_pbr
 
             //ignore if the current frame we are checking is THIS
             if (discard_same_idx){
-                if( m_frames[j].frame_idx == frame.frame_idx ){ 
+                if( m_frames[j].frame_idx == frame.frame_idx ){
                     continue;
                 }
             }
@@ -582,8 +582,8 @@ std::vector<easy_pbr::Frame>  DataLoaderColmap::get_close_frames( const easy_pbr
 
 
     return selected_close_frames;
-   
-    
+
+
 }
 
 
@@ -595,7 +595,7 @@ bool DataLoaderColmap::is_finished(){
     if(m_idx_img_to_read<m_frames.size()){
         return false; //there is still more files to read
     }
-   
+
 
     return true; //there is nothing more to read and nothing more in the buffer so we are finished
 
@@ -609,7 +609,7 @@ void DataLoaderColmap::reset(){
     //reshuffle for the next epoch
     if(m_shuffle){
         unsigned seed = m_nr_resets;
-        auto rng_0 = std::default_random_engine(seed); 
+        auto rng_0 = std::default_random_engine(seed);
         std::shuffle(std::begin(m_frames), std::end(m_frames), rng_0);
     }
 
@@ -713,5 +713,3 @@ inline bool DataLoaderColmap::IsBigEndian() {
   return false;
 #endif
 }
-
-

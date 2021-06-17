@@ -11,7 +11,7 @@
 using namespace configuru;
 
 
-//my stuff 
+//my stuff
 #include "data_loaders/DataTransformer.h"
 #include "easy_pbr/Frame.h"
 #include "Profiler.h"
@@ -23,7 +23,7 @@ using namespace configuru;
 #include "easy_pbr/LabelMngr.h"
 #include "UtilsGL.h"
 
-//json 
+//json
 // #include "json11/json11.hpp"
 
 //boost
@@ -79,7 +79,7 @@ void DataLoaderShapeNetImg::init_params(const std::string config_file){
     m_subsample_factor=loader_config["subsample_factor"];
     m_do_overfit=loader_config["do_overfit"];
     m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
-    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
+    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
     m_dataset_depth_path =(std::string)loader_config["dataset_depth_path"];
     m_difficulty =(std::string)loader_config["difficulty"];
     m_load_depth= loader_config["load_depth"];
@@ -97,11 +97,11 @@ void DataLoaderShapeNetImg::init_params(const std::string config_file){
 
 
 void DataLoaderShapeNetImg::init_data_reading(){
-    
+
     if(!fs::is_directory(m_dataset_path)) {
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
-    
+
     //make the mapping between the weird numbers in the files and the class label
     std::unordered_map<std::string, std::string> classnr2classname = create_mapping_classnr2classname( );
 
@@ -163,7 +163,7 @@ void DataLoaderShapeNetImg::start_reading_next_scene(){
         m_idx_scene_to_read++;
     }
 
-    
+
 
     //start the reading
     if (m_loader_thread.joinable()){
@@ -187,7 +187,7 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
         paths.push_back(img_path);
     }
 
-    //shuffle the images from this scene 
+    //shuffle the images from this scene
     unsigned seed1 = m_nr_scenes_read_so_far;
     auto rng_1 = std::default_random_engine(seed1);
     std::shuffle(std::begin(paths), std::end(paths), rng_1);
@@ -208,7 +208,7 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             Frame frame;
             frame.frame_idx=img_idx;
 
-            //sets the paths and all the things necessary for the loading of images 
+            //sets the paths and all the things necessary for the loading of images
             frame.rgb_path=img_path.string();
             if (m_load_depth){
                 fs::path filename=img_path.stem();
@@ -224,7 +224,7 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             //load the images if necessary or delay it for whne it's needed
             frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
             if (m_load_as_shell){
-                //set the function to load the images whenever it's neede 
+                //set the function to load the images whenever it's neede
                 frame.is_shell=true;
             }else{
                 frame.is_shell=false;
@@ -239,14 +239,14 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
             //read pose and camera params
 
-            //intrisncis are from here 
+            //intrisncis are from here
             // https://github.com/facebookresearch/pytorch3d/blob/778383eef77a23686f3d0e68834b29d6d73f8501/pytorch3d/datasets/r2n2/r2n2.py
             // and from https://github.com/facebookresearch/meshrcnn/blob/master/shapenet/utils/coords.py
             // ther we also have zmin and zmax
             // but it seems that it's not actually  a K matrix but rather a projection matrix as  an opengl projection matrix like in here http://www.songho.ca/opengl/gl_projectionmatrix.html
             // so it projects from camera coordinates to clip coordinates but we want a K matrix that projects to screen coords
             Eigen::Matrix4f P;
-            P << 
+            P <<
             2.1875, 0.0, 0.0, 0.0,
             0.0, 2.1875, 0.0, 0.0,
             0.0, 0.0, -1.002002, -0.2002002,
@@ -262,8 +262,8 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
             // VLOG(1) << "K is " << frame.K;
 
-           
-            //the extrinsics are stored in rendering_metadata.txt, stored as azimuth elevation and distance 
+
+            //the extrinsics are stored in rendering_metadata.txt, stored as azimuth elevation and distance
             //processing of this can be seen here: https://github.com/NVIDIAGameWorks/kaolin/blob/master/kaolin/datasets/shapenet.py
             Eigen::Affine3f tf_cam_world;
             int lines_read=0;
@@ -292,7 +292,7 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             // frame.tf_cam_world=tf.inverse();
 
 
-  
+
 
 
 
@@ -307,11 +307,11 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
     }
 
     // VLOG(1) << "loaded a scene with nr of frames " << m_frames_for_scene.size();
-    CHECK(m_frames_for_scene.size()!=0) << "Clouldn't load any images for this scene in path " << scene_path; 
+    CHECK(m_frames_for_scene.size()!=0) << "Clouldn't load any images for this scene in path " << scene_path;
 
     m_nr_scenes_read_so_far++;
 
-    //shuffle the images from this scene 
+    //shuffle the images from this scene
     unsigned seed = m_nr_scenes_read_so_far;
     auto rng_0 = std::default_random_engine(seed);
     std::shuffle(std::begin(m_frames_for_scene), std::end(m_frames_for_scene), rng_0);
@@ -325,7 +325,7 @@ void DataLoaderShapeNetImg::load_images_in_frame(easy_pbr::Frame& frame){
 
 
     // VLOG(1) << "load image from" << frame.rgb_path ;
-    cv::Mat rgba_8u=cv::imread(frame.rgb_path, cv::IMREAD_UNCHANGED ); //correct 
+    cv::Mat rgba_8u=cv::imread(frame.rgb_path, cv::IMREAD_UNCHANGED ); //correct
     // cv::Mat rgba_8u=cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
     if(frame.subsample_factor>1){
         cv::Mat resized;
@@ -412,7 +412,7 @@ bool DataLoaderShapeNetImg::is_finished(){
     if(m_idx_scene_to_read<m_scene_folders.size()){
         return false; //there is still more files to read
     }
-   
+
 
     return true; //there is nothing more to read and nothing more in the buffer so we are finished
 
@@ -426,7 +426,7 @@ void DataLoaderShapeNetImg::reset(){
     //reshuffle for the next epoch
     if(m_shuffle){
         unsigned seed = m_nr_resets;
-        auto rng_0 = std::default_random_engine(seed); 
+        auto rng_0 = std::default_random_engine(seed);
         std::shuffle(std::begin(m_scene_folders), std::end(m_scene_folders), rng_0);
     }
 
@@ -441,12 +441,12 @@ std::unordered_map<std::string, std::string> DataLoaderShapeNetImg::create_mappi
 
     //from https://github.com/NVIDIAGameWorks/kaolin/blob/master/kaolin/datasets/shapenet.py
 
-    std::unordered_map<std::string, std::string> classnr2classname; 
+    std::unordered_map<std::string, std::string> classnr2classname;
 
     classnr2classname["04379243"]="table";
     classnr2classname["03211117"]="monitor";
     classnr2classname["04401088"]="phone";
-   
+
     classnr2classname["04530566"]="watercraft";
     classnr2classname["03001627"]="chair";
     classnr2classname["03636649"]="lamp";
@@ -508,7 +508,7 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
 
     // Eigen::Affine3f tf;
 
-    // //from compute_camera_params() in https://github.com/NVIDIAGameWorks/kaolin/blob/a76a004ada95280c6a0a821678cf1b886bcb3625/kaolin/mathutils/geometry/transformations.py 
+    // //from compute_camera_params() in https://github.com/NVIDIAGameWorks/kaolin/blob/a76a004ada95280c6a0a821678cf1b886bcb3625/kaolin/mathutils/geometry/transformations.py
     // float theta = radu::utils::degrees2radians(azimuth);
     // float phi = radu::utils::degrees2radians(elevation);
 
@@ -527,9 +527,9 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
 
     // // cam_mat = np.array([axisX, axisY, axisZ])
     // Eigen::Matrix3f R;
-    // R.col(0)=axisX; 
-    // R.col(1)=axisY; 
-    // R.col(2)=-axisZ; 
+    // R.col(0)=axisX;
+    // R.col(1)=axisY;
+    // R.col(2)=-axisZ;
     // // l2 = np.atleast_1d(np.linalg.norm(cam_mat, 2, 1))
     // // l2[l2 == 0] = 1
     // // cam_mat = cam_mat / np.expand_dims(l2, 1)
@@ -555,8 +555,8 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
     // // R = aa.toRotationMatrix();  // AxisAngle      to RotationMatrix
     // // tf.linear() = R;
 
-    // Eigen::Affine3f tf_ret=tf.inverse(); 
-    // // Eigen::Affine3f tf_ret=tf; 
+    // Eigen::Affine3f tf_ret=tf.inverse();
+    // // Eigen::Affine3f tf_ret=tf;
 
 
 
@@ -603,9 +603,9 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
     float az = std::stof(tokens[0]);
     float el = std::stof(tokens[1]);
     float distance_ratio = std::stof(tokens[3]);
-    // float ox = std::stof(tokens[7]); 
-    // float oy = std::stof(tokens[8]); 
-    // float oz = std::stof(tokens[9]); 
+    // float ox = std::stof(tokens[7]);
+    // float oy = std::stof(tokens[8]);
+    // float oz = std::stof(tokens[9]);
 
     // # Calculate rotation and translation matrices.
     // # Step 1: World coordinate to object coordinate.
@@ -671,4 +671,3 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
     return tf_ret;
 
 }
-

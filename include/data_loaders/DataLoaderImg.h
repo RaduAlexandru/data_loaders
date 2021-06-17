@@ -93,7 +93,7 @@ public:
 
 
     //params
- 
+
 
     //transforms
     Eigen::Affine3d m_tf_worldGL_worldROS;
@@ -167,5 +167,3 @@ private:
 
 
 };
-
-

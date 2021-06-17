@@ -19,7 +19,7 @@ using namespace configuru;
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 
-//my stuff 
+//my stuff
 #include "data_loaders/DataTransformer.h"
 #include "data_loaders/core/MeshCore.h"
 #include "data_loaders/LabelMngr.h"
@@ -152,7 +152,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
             if(fs::is_directory(area_path)){
 
                 //AREA
-                
+
                 //get the number of this area (1,2,3,4,5 or 6)
                 int area_number= atoi( &area_path.path().stem().string().back() );
                 VLOG(1) << "area number is " << area_number;
@@ -161,7 +161,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
                     VLOG(1) <<"reading area " << area_number << " when mode is " << m_mode;
                     for(auto& room_path : boost::make_iterator_range(boost::filesystem::directory_iterator(area_path.path() ), {})){
                         if(fs::is_directory(room_path)){
-                            
+
                             //ROOM
                             room_paths_all.push_back(room_path);
 
@@ -171,7 +171,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
 
                 }
 
-    
+
 
 
             }
@@ -190,7 +190,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
             if(fs::is_directory(area_path)){
 
                 //AREA
-                
+
                 //get the number of this area (1,2,3,4,5 or 6)
                 int area_number= atoi( &area_path.path().stem().string().back() );
                 VLOG(1) << "area number is " << area_number;
@@ -199,7 +199,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
                     VLOG(1) <<"reading area " << area_number << " when mode is " << m_mode;
                     for(auto& room_path : boost::make_iterator_range(boost::filesystem::directory_iterator(area_path.path() ), {})){
                         if(fs::is_directory(room_path)){
-                            
+
                             //ROOM
                             room_paths_all.push_back(room_path/"room_binary.bin");
 
@@ -209,7 +209,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
 
                 }
 
-    
+
 
 
             }
@@ -218,7 +218,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
 
     }
 
-    
+
 
 
     //shuffle the filles to be read if necessary
@@ -230,7 +230,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
     }
 
 
-    //ADDS THE clouds to the member std_vector of paths 
+    //ADDS THE clouds to the member std_vector of paths
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
     for (size_t i = 0; i < room_paths_all.size(); i++) {
         if( (int)i>=m_nr_clouds_to_skip && ((int)m_room_paths.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
@@ -238,7 +238,7 @@ void DataLoaderStanfordIndoor::init_data_reading(){
         }
     }
 
-    std::cout << "About to read " << m_room_paths.size() << " clouds" <<std::endl; 
+    std::cout << "About to read " << m_room_paths.size() << " clouds" <<std::endl;
 
 
     CHECK(m_room_paths.size()>0) <<"We did not find any rooms to read";
@@ -340,7 +340,7 @@ void DataLoaderStanfordIndoor::read_data_and_reparse(){
             cloud.L_gt=er::utils::vec2eigen(labels_vec);
             // cloud.D=cloud.V.rowwise().norm();
 
-       
+
             //the rooms are aligned in a weird manner. We rotate them as we see fit
             Eigen::Affine3d tf_worldGL_worldROS;
             tf_worldGL_worldROS.setIdentity();
@@ -382,13 +382,13 @@ void DataLoaderStanfordIndoor::read_data_and_reparse(){
             cloud.m_vis.m_show_mesh=false;
             cloud.m_vis.m_show_points=true;
             cloud.m_vis.m_color_type=+MeshColorType::SemanticGT;
-            
+
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
             cloud.m_label_mngr=m_label_mngr->shared_from_this();
 
             m_clouds_buffer.enqueue(cloud);;
 
-           
+
 
         }
 
@@ -463,8 +463,8 @@ void DataLoaderStanfordIndoor::read_data(){
 
             //the stanford dataset is gigantic and sometimes we can't process all points, we establish a maximum amount of points we can process and drop the rest
             if (nr_points>m_max_nr_points_per_cloud && m_max_nr_points_per_cloud>0){
-                LOG(WARNING)<< "Overstepping theshold of max nr of points of " << m_max_nr_points_per_cloud << " because we have nr of points " << nr_points << ". Dropping points until we only are left with the maximum we can process." ; 
-                //percentage of points we have to drop 
+                LOG(WARNING)<< "Overstepping theshold of max nr of points of " << m_max_nr_points_per_cloud << " because we have nr of points " << nr_points << ". Dropping points until we only are left with the maximum we can process." ;
+                //percentage of points we have to drop
                 float percentage_to_drop=1.0-(float)m_max_nr_points_per_cloud/(float)nr_points;
                 float prob_of_death=percentage_to_drop;
                 std::vector<bool> is_vertex_to_be_removed(cloud.V.rows(), false);
@@ -476,7 +476,7 @@ void DataLoaderStanfordIndoor::read_data(){
                 }
                 cloud.remove_marked_vertices(is_vertex_to_be_removed, false);
             }
-            
+
 
 
             //the rooms are aligned in a weird manner. We rotate them as we see fit
@@ -494,7 +494,7 @@ void DataLoaderStanfordIndoor::read_data(){
             if(m_mode=="train"){
                 cloud=m_transformer->transform(cloud);
             }
-   
+
             if(m_shuffle_points){ //when splattin it is better if adyacent points in 3D space are not adyancet in memory so that we don't end up with conflicts or race conditions
                 // https://stackoverflow.com/a/15866196
                 Eigen::PermutationMatrix<Eigen::Dynamic, Eigen::Dynamic> perm(cloud.V.rows());
@@ -512,13 +512,13 @@ void DataLoaderStanfordIndoor::read_data(){
             cloud.m_vis.m_show_mesh=false;
             cloud.m_vis.m_show_points=true;
             cloud.m_vis.m_color_type=+MeshColorType::SemanticGT;
-            
+
             //set the labelmngr which will be used by the viewer to put correct colors for the semantics
             cloud.m_label_mngr=m_label_mngr->shared_from_this();
 
             m_clouds_buffer.enqueue(cloud);;
 
-           
+
 
         }
 
@@ -581,7 +581,7 @@ void DataLoaderStanfordIndoor::reset(){
     }
 
     //during training we do a mode of train and then a mode of test. After finishing test we call reset on it and if the only purpose was to just repasrse the data in binary then we are actually done
-    if(m_read_original_data_and_reparse && m_mode=="test"){ 
+    if(m_read_original_data_and_reparse && m_mode=="test"){
         LOG(FATAL) << "finished writing everything and reparsing";
     }
 

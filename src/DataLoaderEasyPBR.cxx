@@ -13,7 +13,7 @@
 using namespace configuru;
 
 
-//my stuff 
+//my stuff
 #include "data_loaders/DataTransformer.h"
 #include "easy_pbr/Frame.h"
 #include "Profiler.h"
@@ -25,7 +25,7 @@ using namespace configuru;
 #include "easy_pbr/LabelMngr.h"
 #include "UtilsGL.h"
 
-//json 
+//json
 #include "json11/json11.hpp"
 
 //boost
@@ -43,7 +43,7 @@ struct {
         std::string b_filename=b.stem().string();
         int a_nr=std::stoi(a_filename);
         int b_nr=std::stoi(b_filename);
-        return a_nr < b_nr; 
+        return a_nr < b_nr;
     }
 } FileComparatorFunc;
 
@@ -87,8 +87,8 @@ void DataLoaderEasyPBR::init_params(const std::string config_file){
     m_do_overfit=loader_config["do_overfit"];
     m_mode=(std::string)loader_config["mode"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
-    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are 
-    m_object_name= (std::string)loader_config["object_name"]; 
+    m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
+    m_object_name= (std::string)loader_config["object_name"];
 
     // m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     bool found_scene_multiplier_for_cur_obj=false;
@@ -118,16 +118,16 @@ void DataLoaderEasyPBR::start(){
 
 
 void DataLoaderEasyPBR::init_data_reading(){
-    
+
     if(!fs::is_directory(m_dataset_path)) {
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
-    
+
     //go to the folder of train val or test depending on the mode in which we are one
     for (fs::directory_iterator itr(m_dataset_path/m_object_name/("imgs_"+m_mode) ); itr!=fs::directory_iterator(); ++itr){
         fs::path img_path= itr->path();
         //we disregard the images that contain depth and normals, we load only the rgb
-        if (fs::is_regular_file(img_path) && 
+        if (fs::is_regular_file(img_path) &&
         img_path.filename().string().find("png") != std::string::npos){
             m_imgs_paths.push_back(img_path);
         }
@@ -154,7 +154,7 @@ void DataLoaderEasyPBR::init_poses(){
 
     //get the path to this json file
     fs::path pose_and_intrinsics_path= m_dataset_path/m_object_name/"poses_and_intrinsics.txt";
-    if(!fs::is_regular_file(pose_and_intrinsics_path) ) { 
+    if(!fs::is_regular_file(pose_and_intrinsics_path) ) {
         LOG(FATAL) << "File for the poses could not be found in " << pose_and_intrinsics_path;
     }
 
@@ -167,8 +167,8 @@ void DataLoaderEasyPBR::init_poses(){
     for( std::string line; getline( file, line ); ){
         //skip lines that start with # because that's a comment
         if( (ltrim_copy(line)).at(0)!='#' && !line.empty() ){
-            
-            //get from the line, the 
+
+            //get from the line, the
             std::vector<std::string> tokens=radu::utils::split(line," ");
             std::string filename=tokens[0];
 
@@ -183,14 +183,14 @@ void DataLoaderEasyPBR::init_poses(){
             float qy=std::stof(tokens[5]);
             float qz=std::stof(tokens[6]);
             float qw=std::stof(tokens[7]);
-            //intrinsics 
+            //intrinsics
             float fx=std::stof(tokens[8]);
             float fy=std::stof(tokens[9]);
             float cx=std::stof(tokens[10]);
             float cy=std::stof(tokens[11]);
 
             //Make the matrices
-            Eigen::Matrix3d K; 
+            Eigen::Matrix3d K;
             K.setIdentity();
             Eigen::Affine3d tf_world_cam;
             tf_world_cam.setIdentity();
@@ -206,8 +206,8 @@ void DataLoaderEasyPBR::init_poses(){
             K(1,1)=fy;
             K(0,2)=cx;
             K(1,2)=cy;
-            K(2,2)=1.0; 
-            
+            K(2,2)=1.0;
+
             //push
             // VLOG(1) << "pushing for filename " << filename << " pose " <<tf_world_cam.matrix();
             m_filename2pose[filename]=tf_world_cam;
@@ -234,7 +234,7 @@ void DataLoaderEasyPBR::read_data(){
         //get the idx
         std::string filename=img_path.stem().string();
         frame.frame_idx=std::stoi(filename);
-        
+
         //read rgba and split into rgb and alpha mask
         cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
         cv::Mat rgb_8u;
@@ -266,16 +266,16 @@ void DataLoaderEasyPBR::read_data(){
 
         frame.tf_cam_world=m_filename2pose[key].cast<float>().inverse();
 
-        //flip z axis 
+        //flip z axis
         Eigen::Affine3f tf_world_cam=frame.tf_cam_world.inverse();
         Eigen::Matrix3f cam_axes;
         cam_axes=tf_world_cam.linear();
         cam_axes.col(2)=-cam_axes.col(2);
         tf_world_cam.linear()= cam_axes;
         frame.tf_cam_world=tf_world_cam.inverse();
-        
 
-        //intrinsics 
+
+        //intrinsics
         frame.K=m_filename2intrinsics[key].cast<float>();
         if(m_subsample_factor>1){
             frame.K/=m_subsample_factor;
@@ -297,8 +297,8 @@ void DataLoaderEasyPBR::read_data(){
 
 
     }
-    
-   
+
+
 }
 
 
@@ -347,7 +347,7 @@ Frame DataLoaderEasyPBR::get_closest_frame( const easy_pbr::Frame& frame){
     Frame  frame_closest= m_frames[closest_idx];
 
     return frame_closest;
-    
+
 }
 
 
@@ -366,7 +366,7 @@ std::vector<easy_pbr::Frame>  DataLoaderEasyPBR::get_close_frames( const easy_pb
 
             //ignore if the current frame we are checking is THIS
             if (discard_same_idx){
-                if( m_frames[j].frame_idx == frame.frame_idx ){ 
+                if( m_frames[j].frame_idx == frame.frame_idx ){
                     continue;
                 }
             }
@@ -399,18 +399,18 @@ std::vector<easy_pbr::Frame>  DataLoaderEasyPBR::get_close_frames( const easy_pb
 
 
     return selected_close_frames;
-   
-    
+
+
 }
 
-// //compute weights 
+// //compute weights
 // std::vector<float> DataLoaderEasyPBR::compute_frame_weights( const easy_pbr::Frame& frame, std::vector<easy_pbr::Frame>& close_frames){
 //     // https://people.cs.clemson.edu/~dhouse/courses/404/notes/barycentric.pdf
 //     // https://stackoverflow.com/questions/2924795/fastest-way-to-compute-point-to-triangle-distance-in-3d
 //     // https://math.stackexchange.com/questions/544946/determine-if-projection-of-3d-point-onto-plane-is-within-a-triangle
 
-//     //to compute the weights we use barycentric coordinates. 
-//     //this has several steps, first project the current frame into the triangle defiend by the close_frames. 
+//     //to compute the weights we use barycentric coordinates.
+//     //this has several steps, first project the current frame into the triangle defiend by the close_frames.
 //     //compute barycentric coords
 //     //if the barycentric coords are not within [0,1], clamp them
 
@@ -455,7 +455,7 @@ bool DataLoaderEasyPBR::is_finished(){
     if(m_idx_img_to_read<m_frames.size()){
         return false; //there is still more files to read
     }
-   
+
 
     return true; //there is nothing more to read and nothing more in the buffer so we are finished
 
@@ -469,7 +469,7 @@ void DataLoaderEasyPBR::reset(){
     //reshuffle for the next epoch
     if(m_shuffle && m_mode=="train"){
         unsigned seed = m_nr_resets;
-        auto rng_0 = std::default_random_engine(seed); 
+        auto rng_0 = std::default_random_engine(seed);
         std::shuffle(std::begin(m_frames), std::end(m_frames), rng_0);
     }
 
@@ -493,4 +493,3 @@ void DataLoaderEasyPBR::set_mode_test(){
 void DataLoaderEasyPBR::set_mode_validation(){
     m_mode="val";
 }
-

@@ -13,7 +13,7 @@
 #include <configuru.hpp>
 using namespace configuru;
 
-//my stuff 
+//my stuff
 #include "data_loaders/core/MeshCore.h"
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
@@ -55,7 +55,7 @@ void DataLoaderModelNet40::init_params(const std::string config_file){
     m_mode=(std::string)loader_config["mode"];
     m_normalize=loader_config["normalize"];
 
-    //get the path where all the off files are 
+    //get the path where all the off files are
     fs::path dataset_path = (std::string)loader_config["dataset_path"];
     // fs::path sequence = (std::string)loader_config["sequence"];
     fs::path full_path= dataset_path;
@@ -80,7 +80,7 @@ void DataLoaderModelNet40::init_params(const std::string config_file){
         m_off_filenames.push_back(off_filenames_all[i]);
         // }
     }
-    std::cout << "About to read " << m_off_filenames.size() << " clouds" <<std::endl; 
+    std::cout << "About to read " << m_off_filenames.size() << " clouds" <<std::endl;
 
 
     //label file and colormap
@@ -124,7 +124,7 @@ void DataLoaderModelNet40::read_data(){
             //some sensible visualization options
             cloud.m_vis.m_show_mesh=true;
             cloud.m_vis.m_show_points=true;
-            
+
 
             m_clouds_buffer.enqueue(cloud);;
 

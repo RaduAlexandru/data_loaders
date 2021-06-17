@@ -2,7 +2,7 @@
 #include <unordered_map>
 #include <vector>
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -58,7 +58,7 @@ private:
     // std::unordered_map<std::string, bool>  read_data_split(const std::string data_split_file);
     void create_transformation_matrices();
 
-    //objects 
+    //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
     std::shared_ptr<DataTransformer> m_transformer;
 
@@ -66,7 +66,7 @@ private:
     bool m_autostart;
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     std::string m_mode; // train or test or val
-    fs::path m_dataset_path; 
+    fs::path m_dataset_path;
     int m_nr_clouds_to_skip;
     int m_nr_clouds_to_read;
     int m_max_nr_points_per_cloud;
@@ -82,13 +82,13 @@ private:
 
 
     //internal
-    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
+    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it
     std::vector<fs::path> m_ply_filenames;
-    std::unordered_map<std::string, bool> m_files_train; 
-    std::unordered_map<std::string, bool> m_files_test; 
-    std::unordered_map<std::string, bool> m_files_validation; 
+    std::unordered_map<std::string, bool> m_files_train;
+    std::unordered_map<std::string, bool> m_files_test;
+    std::unordered_map<std::string, bool> m_files_validation;
     moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
-    // std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >m_worldROS_cam_vec; //actually the semantic kitti expressed the clouds in the left camera coordinate so it should be m_worldRos_cam_vec 
+    // std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >m_worldROS_cam_vec; //actually the semantic kitti expressed the clouds in the left camera coordinate so it should be m_worldRos_cam_vec
     Eigen::Affine3d m_tf_worldGL_worldROS;
 
     //label mngr to link to all the meshes that will have a semantic information

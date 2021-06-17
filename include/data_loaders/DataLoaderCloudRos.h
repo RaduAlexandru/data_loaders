@@ -1,4 +1,4 @@
-#pragma once 
+#pragma once
 
 //c++
 #include <thread>
@@ -11,7 +11,7 @@
 #include <sensor_msgs/PointCloud2.h>
 #include <pcl_ros/point_cloud.h>
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include<Eigen/StdVector>
 
@@ -51,7 +51,7 @@ private:
     void create_transformation_matrices();
     void apply_transform(Eigen::MatrixXd& V, const Eigen::Affine3d& trans);
 
-    //objects 
+    //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
     std::shared_ptr<DataTransformer> m_transformer;
 
@@ -70,7 +70,7 @@ private:
 
     //internal
     std::atomic<bool> m_is_thread_running;
-    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it 
+    bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it
     std::vector<   std::shared_ptr<easy_pbr::Mesh>  , Eigen::aligned_allocator< std::shared_ptr<easy_pbr::Mesh> >> m_clouds_buffer; //need to use a buffer of meshes because the Loader needs to keep in memory both the calculated Cloud and the one its currently working on
     int m_finished_cloud_idx; //idx pointing to the most recent finished mesh
     int m_working_cloud_idx; //idx poiting to the mesh we are currently working on

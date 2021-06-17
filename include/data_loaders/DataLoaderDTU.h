@@ -5,7 +5,7 @@
 
 
 
-//eigen 
+//eigen
 #include <Eigen/Core>
 #include <Eigen/Geometry>
 #include <Eigen/StdVector>
@@ -43,7 +43,7 @@ public:
     easy_pbr::Frame get_closest_frame( const easy_pbr::Frame& frame);
     void start_reading_next_scene(); //switch to another scene from this object and start reading it
     bool finished_reading_scene(); //returns true when we have finished reading everything for that one scene of the corresponding object and we can safely use get_random_frame
-    bool has_data(); //calls internally finished_reading scene. It's mostly a convenience function 
+    bool has_data(); //calls internally finished_reading scene. It's mostly a convenience function
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of images for the object that we selected
     int nr_scenes(); //returns the number of scenes that we have for this mode
@@ -66,7 +66,7 @@ private:
     Eigen::Affine3f process_extrinsics_line(const std::string line);
     void load_images_in_frame(easy_pbr::Frame& frame);
     void read_poses_and_intrinsics();
-    
+
 
     //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
@@ -83,7 +83,7 @@ private:
     bool m_do_overfit; // return all the time just images from the the first scene of that specified object class
     int m_restrict_to_scan_idx; //restrict to only one of the scans
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
-    boost::filesystem::path m_dataset_path;  //get the path where all the off files are 
+    boost::filesystem::path m_dataset_path;  //get the path where all the off files are
     bool m_load_as_shell;
     std::thread m_loader_thread;
     int m_nr_resets;
