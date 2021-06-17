@@ -462,7 +462,7 @@ def test_blender_fb():
             Gui.show(frame.rgb_8u, "rgb8u")
 
 
-            frustum_mesh=frame.create_frustum_mesh(0.02)
+            frustum_mesh=frame.create_frustum_mesh(0.05)
             frustum_mesh.m_vis.m_line_width=1
             # frustum_mesh.m_is_dirty=True
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )

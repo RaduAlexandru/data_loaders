@@ -86,6 +86,7 @@ void DataLoaderBlenderFB::init_params(const std::string config_file){
 
     m_autostart=loader_config["autostart"];
     m_subsample_factor=loader_config["subsample_factor"];
+    m_exposure_change = loader_config["exposure_change"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
@@ -323,13 +324,18 @@ void DataLoaderBlenderFB::read_data(){
             cv::resize(rgb_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
             rgb_32f=resized;
         }
+        rgb_32f=rgb_32f*m_exposure_change;
         frame.rgb_32f= rgb_32f;
-        frame.rgb_32f.convertTo(frame.rgb_8u, CV_8UC3, 255.0);
+        // frame.rgb_32f.convertTo(frame.rgb_8u, CV_8UC3, 255.0);
         // std::vector<cv::Mat> channels(4);
         // cv::split(rgba_32f, channels);
         // cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
         // channels.pop_back();
         // cv::merge(channels, frame.rgb_32f);
+
+        double min, max;
+        cv::minMaxLoc(frame.rgb_32f, &min, &max);
+        // VLOG(1) << "min max is " << min << " " << max;
 
 
         // cv::cvtColor(frame.rgb_8u, frame.gray_8u, CV_BGR2GRAY);
