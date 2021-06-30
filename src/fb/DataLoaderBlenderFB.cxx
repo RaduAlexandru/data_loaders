@@ -123,7 +123,8 @@ void DataLoaderBlenderFB::init_data_reading(){
         //we load only exr files because this is what we by default render from blender
         if (fs::is_regular_file(img_path) &&
             (img_path.filename().string().find("exr") != std::string::npos ||
-            img_path.filename().string().find("jpeg") != std::string::npos
+            img_path.filename().string().find("jpeg") != std::string::npos ||
+            img_path.filename().string().find("png") != std::string::npos
             ) ){
             nr_files_iterated++;
 
