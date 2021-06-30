@@ -87,6 +87,7 @@ void DataLoaderBlenderFB::init_params(const std::string config_file){
     m_autostart=loader_config["autostart"];
     m_subsample_factor=loader_config["subsample_factor"];
     m_exposure_change = loader_config["exposure_change"];
+    m_load_as_float =  loader_config["load_as_float"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
@@ -121,7 +122,9 @@ void DataLoaderBlenderFB::init_data_reading(){
         fs::path img_path= itr->path();
         //we load only exr files because this is what we by default render from blender
         if (fs::is_regular_file(img_path) &&
-        img_path.filename().string().find("exr") != std::string::npos  ){
+            (img_path.filename().string().find("exr") != std::string::npos ||
+            img_path.filename().string().find("jpeg") != std::string::npos
+            ) ){
             nr_files_iterated++;
 
             //depending on the mode, we read the file or not, if the mode is "all" we just read everythig
@@ -308,6 +311,9 @@ void DataLoaderBlenderFB::read_data(){
         // if (i!=0){
             // continue;
         // }
+        if (i!=0 and m_do_overfit){ //if we are overfitting, we jsut read one image
+            continue;
+        }
         VLOG(1) << "reading " << img_path;
 
         //get the idx
@@ -317,15 +323,31 @@ void DataLoaderBlenderFB::read_data(){
         frame.frame_idx=std::stoi(tokens[1]);
 
         //read rgba and split into rgb and alpha mask
-        cv::Mat rgb_32f = cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
-        // VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
-        if(m_subsample_factor>1){
-            cv::Mat resized;
-            cv::resize(rgb_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
-            rgb_32f=resized;
+        cv::Mat rgb_32f;
+        if (m_load_as_float){
+            rgb_32f = cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+            ///resize the float mat
+            if(m_subsample_factor>1){
+                cv::Mat resized;
+                cv::resize(rgb_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+                rgb_32f=resized;
+            }
+        }else{
+            cv::Mat rgb_8u = cv::imread(img_path.string() );
+            //resize the rgb8u mat and then convert to float because its faster
+            if(m_subsample_factor>1){
+                cv::Mat resized;
+                cv::resize(rgb_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+                rgb_8u=resized;
+            }
+            frame.rgb_8u=rgb_8u;
+            rgb_8u.convertTo(rgb_32f, CV_32FC3, 1.0/255.0);
         }
+        // VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
+
         rgb_32f=rgb_32f*m_exposure_change;
         frame.rgb_32f= rgb_32f;
+        cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
         // frame.rgb_32f.convertTo(frame.rgb_8u, CV_8UC3, 255.0);
         // std::vector<cv::Mat> channels(4);
         // cv::split(rgba_32f, channels);
@@ -333,8 +355,8 @@ void DataLoaderBlenderFB::read_data(){
         // channels.pop_back();
         // cv::merge(channels, frame.rgb_32f);
 
-        double min, max;
-        cv::minMaxLoc(frame.rgb_32f, &min, &max);
+        // double min, max;
+        // cv::minMaxLoc(frame.rgb_32f, &min, &max);
         // VLOG(1) << "min max is " << min << " " << max;
 
 

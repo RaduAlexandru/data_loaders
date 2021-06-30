@@ -73,6 +73,7 @@ private:
     // std::atomic<bool> m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     int m_subsample_factor;
     float m_exposure_change;
+    bool m_load_as_float;
     std::string m_mode; // train or test or val
     bool m_shuffle;
     bool m_do_overfit; // return all the time just the first image

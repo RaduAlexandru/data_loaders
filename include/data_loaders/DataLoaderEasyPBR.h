@@ -52,6 +52,7 @@ public:
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
+    void set_shuffle(bool val);
 
 
 

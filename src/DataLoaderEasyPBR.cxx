@@ -493,3 +493,7 @@ void DataLoaderEasyPBR::set_mode_test(){
 void DataLoaderEasyPBR::set_mode_validation(){
     m_mode="val";
 }
+
+void DataLoaderEasyPBR::set_shuffle(bool val){
+    m_shuffle=val;
+}

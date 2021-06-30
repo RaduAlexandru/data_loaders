@@ -10,6 +10,8 @@ except ImportError:
 from easypbr  import *
 from dataloaders import *
 # np.set_printoptions(threshold=sys.maxsize)
+np.random.seed(0)
+
 
 config_file="test_loader.cfg"
 
@@ -280,13 +282,28 @@ def test_easypbr():
             frame=loader.get_next_frame()
             # print("frame width and height is ", frame.width, " ", frame.height)
 
-
+            # if frame.frame_idx==20:
             Gui.show(frame.rgb_32f, "rgb")
 
 
-            frustum_mesh=frame.create_frustum_mesh(0.02)
+            # frustum_mesh=frame.create_frustum_mesh(0.02)
+            frustum_mesh=frame.create_frustum_mesh(0.2)
             frustum_mesh.m_vis.m_line_width=1
+            if frame.frame_idx==20:
+                frustum_mesh.m_vis.m_line_color=[0.0, 1.0, 0.0]
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+            # mesh=Scene.get_mesh_with_name("frustum_"+str(frame.frame_idx))
+            # frustum_mesh.m_vis.m_line_width=1
+            # frustum_mesh.m_vis.m_line_color=[0.0, 1.0, 0.0]
+
+            # #make all frustums red except the current one
+            # for i in range(200):
+            #     if i==frame.frame_idx:
+            #         continue
+            #     if Scene.does_mesh_with_name_exist("frustum_"+str(i)):
+            #         mesh=Scene.get_mesh_with_name("frustum_"+str(i))
+            #         frustum_mesh.m_vis.m_line_width=1
+            #         frustum_mesh.m_vis.m_line_color=[1.0, 0.0, 0.0]
 
             # cloud=frame.depth2world_xyz_mesh()
             # Scene.show(cloud, "cloud")
@@ -476,6 +493,56 @@ def test_blender_fb():
             # print("scene scale is ", Scene.get_scale())
 
         view.update()
+
+
+
+# def map_range( input_val, input_start, input_end,  output_start,  output_end):
+#     # input_clamped=torch.clamp(input_val, input_start, input_end)
+#     input_clamped=max(input_start, min(input_end, input_val))
+#     # input_clamped=torch.clamp(input_val, input_start, input_end)
+#     return output_start + ((output_end - output_start) / (input_end - input_start)) * (input_clamped - input_start)
+
+# def make_box(color_axis=0, color=np.array([1,0.5,0.5]), x_scale=1.0, y_scale=1.0, z_scale=1.0 ):
+#     mesh=Mesh()
+#     mesh.create_box(1,1,1)
+#     # scalp.C=np.random.rand(scalp.V.shape[0],3)
+#     x=mesh.V[:,color_axis:color_axis+1]+0.5
+#     C=np.repeat(x, 3, axis=1)
+#     if color_axis==2:
+#         C=1.0-C
+#     C=C* color #multiply by some color
+#     mesh.C= C#color based on the x direction
+#     mesh.m_vis.set_color_pervertcolor()
+#     #squish the cube
+#     V=mesh.V.copy()
+#     V[:,0]= V[:,0]*x_scale
+#     V[:,1]= V[:,1]*y_scale
+#     V[:,2]= V[:,2]*z_scale
+#     mesh.V=V
+#     return mesh
+#     # Scene.show(scalp, name)
+
+
+# scalp=make_box(color_axis=0, color=np.array([1,0.5,0.5]), x_scale=10, y_scale=1, z_scale=1)
+# scalp.model_matrix.translate([0.0, 0.0, 0.5])
+# hair_list=[]
+# nr_hairs=5
+# for i in range(nr_hairs):
+#     hair=make_box( color_axis=2, color=np.random.rand(1,3) , x_scale=0.1, y_scale=1.0, z_scale=10)
+#     x_movement=map_range(i,0,nr_hairs-1,-3,3)
+#     hair.model_matrix.translate([x_movement ,0,-5.0])
+#     #skew them
+#     hair.apply_model_matrix_to_cpu(True)
+#     V=hair.V.copy()
+#     skew=0.2
+#     V[:,0]=V[:,0]+V[:,2]*skew #the points with zero z dont get scaled and the more z they have the more they get scaled
+#     hair.V=V
+#     hair_list.append(hair)
+# Scene.show(scalp, "scalp")
+# for i in range(nr_hairs):
+#     hair=hair_list[i]
+#     Scene.show(hair, "hair_"+str(i))
+
 
 
 # test_volref()

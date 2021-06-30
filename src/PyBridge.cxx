@@ -241,6 +241,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderEasyPBR::set_mode_train )
     .def("set_mode_test", &DataLoaderEasyPBR::set_mode_test )
     .def("set_mode_validation", &DataLoaderEasyPBR::set_mode_validation )
+    .def("set_shuffle", &DataLoaderEasyPBR::set_shuffle )
     ;
 
 
