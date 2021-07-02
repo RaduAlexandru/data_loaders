@@ -50,6 +50,7 @@ public:
     bool is_finished(); //check if we finished reading all the scenes
     std::string get_object_name();
     void set_object_name(const std::string object_name);
+    void set_restrict_to_scan_idx(const int scan_idx);
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();

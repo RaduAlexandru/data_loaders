@@ -114,16 +114,18 @@ void DataLoaderDTU::init_data_reading(){
     if(!scene_file.is_open()){
         LOG(FATAL) << "Could not open labels file " << scene_file_path;
     }
-    int nr_scenes_read=0;
+    // int nr_scenes_read=0;
     for( std::string line; getline( scene_file, line ); ){
         if(line.empty()){
             continue;
         }
-        std::string scan=trim_copy(line);
+        std::string scan=trim_copy(line); //this scan is a string with format "scanNUMBER". We want just the number
+        int scan_idx=std::stoi(radu::utils::erase_substring(scan, "scan"));
+        VLOG(1) << "from scan line " << scan << "scan idx is " << scan_idx;
         //if we want to load only one of the scans except for all of them
         //push only one of the scenes
         if(m_restrict_to_scan_idx>=0){
-            if(m_restrict_to_scan_idx==nr_scenes_read){
+            if(m_restrict_to_scan_idx==scan_idx){
                 m_scene_folders.push_back(m_dataset_path/scan);;
             }
         }else{
@@ -131,7 +133,7 @@ void DataLoaderDTU::init_data_reading(){
             m_scene_folders.push_back(m_dataset_path/scan);
         }
 
-        nr_scenes_read++;
+        // nr_scenes_read++;
     }
 
 
@@ -692,6 +694,10 @@ int DataLoaderDTU::nr_scenes(){
     return m_scene_folders.size();
 }
 
+
+void DataLoaderDTU::set_restrict_to_scan_idx(const int scan_idx){
+    m_restrict_to_scan_idx=scan_idx;
+}
 
 void DataLoaderDTU::set_mode_train(){
     m_mode="train";

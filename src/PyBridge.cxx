@@ -294,6 +294,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("reset", &DataLoaderDTU::reset )
     .def("nr_samples", &DataLoaderDTU::nr_samples )
     .def("nr_scenes", &DataLoaderDTU::nr_scenes )
+    .def("set_restrict_to_scan_idx", &DataLoaderDTU::set_restrict_to_scan_idx )
     .def("set_mode_train", &DataLoaderDTU::set_mode_train )
     .def("set_mode_test", &DataLoaderDTU::set_mode_test )
     .def("set_mode_validation", &DataLoaderDTU::set_mode_validation )
