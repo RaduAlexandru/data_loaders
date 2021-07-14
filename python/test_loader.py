@@ -506,7 +506,7 @@ def test_usc_hair():
 
     while True:
         if(loader.has_data()):
-            print("HAS DATA--------")
+            # print("HAS DATA--------")
             # pass
             cloud=loader.get_cloud()
             cloud.m_is_dirty=True

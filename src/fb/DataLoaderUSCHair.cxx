@@ -139,7 +139,8 @@ void DataLoaderUSCHair::init_data_reading(){
 
     //ADDS THE clouds to the member std_vector of paths
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
-    for (size_t i = 0; i < data_filenames_all.size(); i++) {
+    int nr_filenames_to_check= m_do_overfit? 1 : data_filenames_all.size(); //if we do overfit we only add one cloud
+    for (size_t i = 0; i < nr_filenames_to_check; i++) {
         if( (int)i>=m_nr_clouds_to_skip && ((int)m_data_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
             m_data_filenames.push_back(data_filenames_all[i]);
         }
@@ -197,10 +198,10 @@ void DataLoaderUSCHair::read_data(){
 
 
         //load into vec directly
-        int filenames_to_read= m_do_overfit? 1: m_data_filenames.size();
-        VLOG(1) << "filenames_to_read" << filenames_to_read;
+        // int filenames_to_read= m_do_overfit? 1: m_data_filenames.size();
+        // VLOG(1) << "filenames_to_read" << filenames_to_read;
 
-        for(int i=0; i< filenames_to_read; i++){
+        for(int i=0; i< m_data_filenames.size(); i++){
             std::string data_filepath=m_data_filenames[ i ].string();
 
             VLOG(1) << "data_filepath " << data_filepath;
