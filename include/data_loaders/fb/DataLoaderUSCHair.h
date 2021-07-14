@@ -65,12 +65,15 @@ private:
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     std::string m_mode; // train or test or val
     fs::path m_dataset_path;
+    int m_nr_clouds_to_skip;
+    int m_nr_clouds_to_read;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
     // bool m_do_adaptive_subsampling; //randomly drops points from the cloud, dropping with more probability the ones that are closes and with less the ones further
     std::thread m_loader_thread;
     uint32_t m_idx_cloud_to_read;
     int m_nr_resets;
+    bool m_load_buffered; //if true, we start another thread an load clouds in a rinbuffer. If false, we just load everything in memory
 
 
     //internal

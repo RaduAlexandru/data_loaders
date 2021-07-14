@@ -82,6 +82,8 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
 
     m_autostart=loader_config["autostart"];
     m_mode=(std::string)loader_config["mode"];
+    m_nr_clouds_to_skip=loader_config["nr_clouds_to_skip"];
+    m_nr_clouds_to_read=loader_config["nr_clouds_to_read"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     // m_do_adaptive_subsampling=loader_config["do_adaptive_subsampling"];
@@ -126,9 +128,9 @@ void DataLoaderUSCHair::init_data_reading(){
     //ADDS THE clouds to the member std_vector of paths
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
     for (size_t i = 0; i < data_filenames_all.size(); i++) {
-        // if( (int)i>=m_nr_clouds_to_skip && ((int)m_npz_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
+        if( (int)i>=m_nr_clouds_to_skip && ((int)m_data_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
             m_data_filenames.push_back(data_filenames_all[i]);
-        // }
+        }
     }
 
     std::cout << "About to read " << m_data_filenames.size() << " clouds" <<std::endl;
@@ -167,6 +169,9 @@ void DataLoaderUSCHair::read_data(){
 
             std::FILE *f = std::fopen(data_filepath.c_str(), "rb");
             CHECK(f) << "Couldn't open" << data_filepath;
+
+
+            TIME_START("load");
 
 
             std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
@@ -230,7 +235,7 @@ void DataLoaderUSCHair::read_data(){
             VLOG(1) << "finished adding";
 
 
-
+            TIME_END("load");
 
             m_clouds_buffer.enqueue(full_hair);;
 
