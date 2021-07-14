@@ -12,6 +12,36 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
 
+
+
+
+
+# libigl
+# libigl options: choose between header only and compiled static library
+# Header-only is preferred for small projects. For larger projects the static build
+# considerably reduces the compilation times
+option(LIBIGL_USE_STATIC_LIBRARY "Use libigl as static library" OFF)
+option(LIBIGL_WITH_ANTTWEAKBAR       "Use AntTweakBar"    OFF)
+option(LIBIGL_WITH_CGAL              "Use CGAL"           OFF)
+option(LIBIGL_WITH_COMISO            "Use CoMiso"         OFF)
+option(LIBIGL_WITH_CORK              "Use Cork"           OFF)
+option(LIBIGL_WITH_EMBREE            "Use Embree"         OFF)
+option(LIBIGL_WITH_LIM               "Use LIM"            OFF)
+option(LIBIGL_WITH_MATLAB            "Use Matlab"         OFF)
+option(LIBIGL_WITH_MOSEK             "Use MOSEK"          OFF)
+option(LIBIGL_WITH_OPENGL            "Use OpenGL"         OFF)
+option(LIBIGL_WITH_OPENGL_GLFW       "Use GLFW"           OFF)
+option(LIBIGL_WITH_OPENGL_GLFW_IMGUI "Use ImGui"          OFF)
+option(LIBIGL_WITH_PNG               "Use PNG"            OFF)
+option(LIBIGL_WITH_PYTHON            "Use Python"         OFF)
+option(LIBIGL_WITH_TETGEN            "Use Tetgen"         OFF)
+option(LIBIGL_WITH_TRIANGLE          "Use Triangle"       OFF)
+option(LIBIGL_WITH_VIEWER            "Use OpenGL viewer"  OFF)
+option(LIBIGL_WITH_XML               "Use XML"            OFF)
+
+
+
+
 # set(PYTHON_VERSION 3.6 CACHE STRING "" FORCE)
 
 
@@ -43,6 +73,7 @@ find_package(catkin)
 message("catkin found is ",  ${catkin_FOUND} )
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenCV REQUIRED)
+find_package(LIBIGL REQUIRED)
 find_package(EasyPBR REQUIRED)
 # add_subdirectory(${PROJECT_SOURCE_DIR}/deps/pybind11)
 if(${catkin_FOUND})
@@ -59,6 +90,7 @@ include_directories(${catkin_INCLUDE_DIRS})
 include_directories(${CMAKE_SOURCE_DIR}/include)
 include_directories(${CMAKE_SOURCE_DIR}/deps)
 include_directories(${CMAKE_SOURCE_DIR}/deps/cnpy)
+include_directories(${CMAKE_SOURCE_DIR}/deps/libigl/include)
 include_directories(${CMAKE_SOURCE_DIR}/extern)
 # include_directories(${CMAKE_SOURCE_DIR}/deps/pybind11/include)
 include_directories(${EIGEN3_INCLUDE_DIR})
@@ -134,7 +166,7 @@ add_library( dataloaders_cpp SHARED ${MY_SRC}  ${DEPS_SRC}  )
 
 ###   LIBS   ###############################################
 message("easypbr lib is ", ${EASYPBR_LIBRARY})
-set(LIBS ${LIBS} ${catkin_LIBRARIES} ${EASYPBR_LIBRARY} ${OpenCV_LIBS})
+set(LIBS ${LIBS} igl::core  ${catkin_LIBRARIES} ${EASYPBR_LIBRARY} ${OpenCV_LIBS})
 
 ###   TINY PROCESS LIBRARY   #########################################
 set (TINY_PROCESS_LIB_SOURCES   ${CMAKE_SOURCE_DIR}/deps/tiny-process-library/process.cpp ${CMAKE_SOURCE_DIR}/deps/tiny-process-library/process_unix.cpp )

@@ -10,3 +10,6 @@
 [submodule "deps/tiny-process-library"]
 	path = deps/tiny-process-library
 	url = https://github.com/RaduAlexandru/tiny-process-library
+[submodule "deps/libigl"]
+	path = deps/libigl
+	url = https://github.com/libigl/libigl
