@@ -50,7 +50,11 @@ DataLoaderUSCHair::DataLoaderUSCHair(const std::string config_file):
     // std::cout << " creating thread" << "\n";
     if(m_autostart){
         m_is_running=true;
-        m_loader_thread=std::thread(&DataLoaderUSCHair::read_data, this);  //starts the spin in another thread
+        if(m_load_buffered){
+            m_loader_thread=std::thread(&DataLoaderUSCHair::read_data, this);  //starts the spin in another thread
+        }else{
+            read_data(); //starts reading but on the main thread
+        }
     }
     // std::cout << " finidhed creating thread" << "\n";
 
@@ -86,6 +90,7 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
     m_nr_clouds_to_read=loader_config["nr_clouds_to_read"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
+    m_load_buffered=loader_config["load_buffered"];
     // m_do_adaptive_subsampling=loader_config["do_adaptive_subsampling"];
     m_dataset_path=(std::string)loader_config["dataset_path"];
 
@@ -164,78 +169,87 @@ void DataLoaderUSCHair::read_data(){
                 m_idx_cloud_to_read++;
             }
 
-            //read data. most of the code is from http://www-scf.usc.edu/~liwenhu/SHM/Hair.cc
-            VLOG(1) << "reading from " <<  data_filepath;
-
-            std::FILE *f = std::fopen(data_filepath.c_str(), "rb");
-            CHECK(f) << "Couldn't open" << data_filepath;
-
-
-            TIME_START("load");
-
 
             std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
-            std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
-            std::vector<Eigen::Vector3d> full_hair_points_vec;
+            std::shared_ptr<easy_pbr::Mesh> full_hair;
+            auto ret=read_hair_sample(data_filepath);
+            strands= std::get<0>(ret);
+            full_hair= std::get<1>(ret);
 
-            int nstrands = 0;
-            fread(&nstrands, 4, 1, f);
-            VLOG(1) << "nr strands" << nstrands;
-            // if (!fread(&nstrands, 4, 1, f)) {
-            //     fprintf(stderr, "Couldn't read number of strands\n");
-            //     fclose(f);
-            //     return false;
-            // }
-            strands.resize(nstrands);
 
-            for (int i = 0; i < nstrands; i++) {
-                // VLOG(1) << "strand " <<i;
-                int nverts = 0;
-                std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
-                fread(&nverts, 4, 1, f);
-                // if (!fread(&nverts, 4, 1, f)) {
-                //     fprintf(stderr, "Couldn't read number of vertices\n");
-                //     fclose(f);
-                //     return false;
-                // }
-                // strands[i].resize(nverts);
-                strand->V.resize(nverts,3);
-                // Eigen::VectorXf strand_points_float;
-                // strand_points_float.resize(nverts,3);
 
-                for (int j = 0; j < nverts; j++) {
-                    // VLOG(1) << "vert " <<j;
-                    // fread(&strand_points_float(i,0), 12, 1, f);
-                    float x,y,z;
-                    fread(&x, 4, 1, f);
-                    fread(&y, 4, 1, f);
-                    fread(&z, 4, 1, f);
-                    strand->V.row(j) << x,y,z;
+            // //read data. most of the code is from http://www-scf.usc.edu/~liwenhu/SHM/Hair.cc
+            // VLOG(1) << "reading from " <<  data_filepath;
 
-                    Eigen::Vector3d point;
-                    point << x,y,z;
-                    full_hair_points_vec.push_back(point);
+            // std::FILE *f = std::fopen(data_filepath.c_str(), "rb");
+            // CHECK(f) << "Couldn't open" << data_filepath;
 
-                }
 
-                //finished reading this strand
-                strands.push_back(strand);
-            }
+            // TIME_START("load");
 
-            VLOG(1) << "finished reading everything";
 
-            fclose(f);
-            // return true;
-
-            //get the full cloud into one
+            // std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
             // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
-            full_hair->V=vec2eigen(full_hair_points_vec);
-            full_hair->m_vis.m_show_points=true;
-            VLOG(1) << "adding";
-            VLOG(1) << "finished adding";
+            // std::vector<Eigen::Vector3d> full_hair_points_vec;
+
+            // int nstrands = 0;
+            // fread(&nstrands, 4, 1, f);
+            // VLOG(1) << "nr strands" << nstrands;
+            // // if (!fread(&nstrands, 4, 1, f)) {
+            // //     fprintf(stderr, "Couldn't read number of strands\n");
+            // //     fclose(f);
+            // //     return false;
+            // // }
+            // strands.resize(nstrands);
+
+            // for (int i = 0; i < nstrands; i++) {
+            //     // VLOG(1) << "strand " <<i;
+            //     int nverts = 0;
+            //     std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
+            //     fread(&nverts, 4, 1, f);
+            //     // if (!fread(&nverts, 4, 1, f)) {
+            //     //     fprintf(stderr, "Couldn't read number of vertices\n");
+            //     //     fclose(f);
+            //     //     return false;
+            //     // }
+            //     // strands[i].resize(nverts);
+            //     strand->V.resize(nverts,3);
+            //     // Eigen::VectorXf strand_points_float;
+            //     // strand_points_float.resize(nverts,3);
+
+            //     for (int j = 0; j < nverts; j++) {
+            //         // VLOG(1) << "vert " <<j;
+            //         // fread(&strand_points_float(i,0), 12, 1, f);
+            //         float x,y,z;
+            //         fread(&x, 4, 1, f);
+            //         fread(&y, 4, 1, f);
+            //         fread(&z, 4, 1, f);
+            //         strand->V.row(j) << x,y,z;
+
+            //         Eigen::Vector3d point;
+            //         point << x,y,z;
+            //         full_hair_points_vec.push_back(point);
+
+            //     }
+
+            //     //finished reading this strand
+            //     strands.push_back(strand);
+            // }
+
+            // VLOG(1) << "finished reading everything";
+
+            // fclose(f);
+            // // return true;
+
+            // //get the full cloud into one
+            // // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+            // full_hair->V=vec2eigen(full_hair_points_vec);
+            // full_hair->m_vis.m_show_points=true;
+            // VLOG(1) << "adding";
+            // VLOG(1) << "finished adding";
 
 
-            TIME_END("load");
+            // TIME_END("load");
 
             m_clouds_buffer.enqueue(full_hair);;
 
@@ -244,6 +258,95 @@ void DataLoaderUSCHair::read_data(){
     }
 
 }
+
+
+std::tuple<
+        std::vector< std::shared_ptr<easy_pbr::Mesh> >,
+        std::shared_ptr<easy_pbr::Mesh>
+    >
+DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
+
+
+    //read data. most of the code is from http://www-scf.usc.edu/~liwenhu/SHM/Hair.cc
+    VLOG(1) << "reading from " <<  data_filepath;
+
+    std::FILE *f = std::fopen(data_filepath.c_str(), "rb");
+    CHECK(f) << "Couldn't open" << data_filepath;
+
+
+    TIME_START("load");
+
+
+    std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
+    std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+    std::vector<Eigen::Vector3d> full_hair_points_vec;
+
+    int nstrands = 0;
+    fread(&nstrands, 4, 1, f);
+    VLOG(1) << "nr strands" << nstrands;
+    // if (!fread(&nstrands, 4, 1, f)) {
+    //     fprintf(stderr, "Couldn't read number of strands\n");
+    //     fclose(f);
+    //     return false;
+    // }
+    strands.resize(nstrands);
+
+    for (int i = 0; i < nstrands; i++) {
+        // VLOG(1) << "strand " <<i;
+        int nverts = 0;
+        std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
+        fread(&nverts, 4, 1, f);
+        // if (!fread(&nverts, 4, 1, f)) {
+        //     fprintf(stderr, "Couldn't read number of vertices\n");
+        //     fclose(f);
+        //     return false;
+        // }
+        // strands[i].resize(nverts);
+        strand->V.resize(nverts,3);
+        // Eigen::VectorXf strand_points_float;
+        // strand_points_float.resize(nverts,3);
+
+        for (int j = 0; j < nverts; j++) {
+            // VLOG(1) << "vert " <<j;
+            // fread(&strand_points_float(i,0), 12, 1, f);
+            float x,y,z;
+            fread(&x, 4, 1, f);
+            fread(&y, 4, 1, f);
+            fread(&z, 4, 1, f);
+            strand->V.row(j) << x,y,z;
+
+            Eigen::Vector3d point;
+            point << x,y,z;
+            full_hair_points_vec.push_back(point);
+
+        }
+
+        //finished reading this strand
+        strands.push_back(strand);
+    }
+
+    VLOG(1) << "finished reading everything";
+
+    fclose(f);
+    // return true;
+
+    //get the full cloud into one
+    // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+    full_hair->V=vec2eigen(full_hair_points_vec);
+    full_hair->m_vis.m_show_points=true;
+    VLOG(1) << "adding";
+    VLOG(1) << "finished adding";
+
+
+    TIME_END("load");
+
+    auto ret= std::make_tuple(strands, full_hair);
+
+    return ret;
+
+}
+
+
 
 bool DataLoaderUSCHair::has_data(){
     if(m_clouds_buffer.peek()==nullptr){

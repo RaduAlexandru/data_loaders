@@ -56,6 +56,11 @@ private:
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
     std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >read_pose_file(std::string m_pose_file);
     void read_data();
+    std::tuple<
+        std::vector< std::shared_ptr<easy_pbr::Mesh> >,
+        std::shared_ptr<easy_pbr::Mesh>
+    > read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
+
 
     //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
