@@ -487,6 +487,12 @@ def test_blender_fb():
             # cloud=frame.depth2world_xyz_mesh()
             # Scene.show(cloud, "cloud")
 
+            if frame.has_extra_field("orientation_mat"):
+                orientation_mat = frame.get_extra_field_mat("orientation_mat")
+                variance_mat = frame.get_extra_field_mat("variance_mat")
+                Gui.show(orientation_mat,"orientation_mat")
+                Gui.show(variance_mat,"variance_mat")
+
         if loader.is_finished():
             # print("resetting")
             loader.reset()

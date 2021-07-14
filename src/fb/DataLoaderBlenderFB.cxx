@@ -89,12 +89,14 @@ void DataLoaderBlenderFB::init_params(const std::string config_file){
     m_exposure_change = loader_config["exposure_change"];
     m_load_as_float =  loader_config["load_as_float"];
     m_shuffle=loader_config["shuffle"];
+    m_load_as_shell= loader_config["load_as_shell"];
     m_do_overfit=loader_config["do_overfit"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
     m_pose_file_path = (std::string)loader_config["pose_file_path"];    //get the path where all the off files are
+    m_orientation_and_variance_path = (std::string)loader_config["orientation_and_variance_path"];
 
 
     //data transformer
@@ -309,6 +311,12 @@ void DataLoaderBlenderFB::read_data(){
         Frame frame;
 
         fs::path img_path=m_imgs_paths[i];
+        frame.rgb_path=img_path.string();
+        //get the idx
+        ///The files have a format of frame.cam_idx.light_id so we want to get the cam_idx
+        std::string filename=img_path.stem().string();
+        std::vector<std::string> tokens=radu::utils::split(filename,".");
+        frame.frame_idx=std::stoi(tokens[1]);
         // if (i!=0){
             // continue;
         // }
@@ -317,55 +325,48 @@ void DataLoaderBlenderFB::read_data(){
         }
         VLOG(1) << "reading " << img_path;
 
-        //get the idx
-        ///The files have a format of frame.cam_idx.light_id so we want to get the cam_idx
-        std::string filename=img_path.stem().string();
-        std::vector<std::string> tokens=radu::utils::split(filename,".");
-        frame.frame_idx=std::stoi(tokens[1]);
 
-        //read rgba and split into rgb and alpha mask
-        cv::Mat rgb_32f;
-        if (m_load_as_float){
-            rgb_32f = cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
-            ///resize the float mat
-            if(m_subsample_factor>1){
-                cv::Mat resized;
-                cv::resize(rgb_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
-                rgb_32f=resized;
-            }
+
+        //load the images if necessary or delay it for whne it's needed
+        frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
+        if (m_load_as_shell){
+            //set the function to load the images whenever it's neede
+            frame.is_shell=true;
         }else{
-            cv::Mat rgb_8u = cv::imread(img_path.string() );
-            //resize the rgb8u mat and then convert to float because its faster
-            if(m_subsample_factor>1){
-                cv::Mat resized;
-                cv::resize(rgb_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
-                rgb_8u=resized;
-            }
-            frame.rgb_8u=rgb_8u;
-            rgb_8u.convertTo(rgb_32f, CV_32FC3, 1.0/255.0);
+            frame.is_shell=false;
+            frame.load_images(frame);
         }
-        // VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
-
-        rgb_32f=rgb_32f*m_exposure_change;
-        frame.rgb_32f= rgb_32f;
-        cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
-        // frame.rgb_32f.convertTo(frame.rgb_8u, CV_8UC3, 255.0);
-        // std::vector<cv::Mat> channels(4);
-        // cv::split(rgba_32f, channels);
-        // cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
-        // channels.pop_back();
-        // cv::merge(channels, frame.rgb_32f);
-
-        // double min, max;
-        // cv::minMaxLoc(frame.rgb_32f, &min, &max);
-        // VLOG(1) << "min max is " << min << " " << max;
 
 
-        // cv::cvtColor(frame.rgb_8u, frame.gray_8u, CV_BGR2GRAY);
-        // rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
+        // //read rgba and split into rgb and alpha mask
+        // cv::Mat rgb_32f;
+        // if (m_load_as_float){
+        //     rgb_32f = cv::imread(img_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+        //     ///resize the float mat
+        //     if(m_subsample_factor>1){
+        //         cv::Mat resized;
+        //         cv::resize(rgb_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+        //         rgb_32f=resized;
+        //     }
+        // }else{
+        //     cv::Mat rgb_8u = cv::imread(img_path.string() );
+        //     //resize the rgb8u mat and then convert to float because its faster
+        //     if(m_subsample_factor>1){
+        //         cv::Mat resized;
+        //         cv::resize(rgb_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+        //         rgb_8u=resized;
+        //     }
+        //     frame.rgb_8u=rgb_8u;
+        //     rgb_8u.convertTo(rgb_32f, CV_32FC3, 1.0/255.0);
+        // }
+        // // VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
+
+        // rgb_32f=rgb_32f*m_exposure_change;
+        // frame.rgb_32f= rgb_32f;
         // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
-        frame.width=frame.rgb_32f.cols;
-        frame.height=frame.rgb_32f.rows;
+
+        // frame.width=frame.rgb_32f.cols;
+        // frame.height=frame.rgb_32f.rows;
 
         //if we are loading the test, get also the normals
         // BUG WE CANNOT LOAD THE NORMAL BECAUSE THEY ARE STORED AS PNG AND THEREFORE FROM THE range of [-1,1], only the [0,1] is stored...
@@ -492,6 +493,78 @@ void DataLoaderBlenderFB::read_data(){
 
 }
 
+
+void DataLoaderBlenderFB::load_images_in_frame(easy_pbr::Frame& frame){
+
+    frame.is_shell=false;
+
+
+
+    //read rgba and split into rgb and alpha mask
+    cv::Mat rgb_32f;
+    if (m_load_as_float){
+        rgb_32f = cv::imread( frame.rgb_path, cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+        ///resize the float mat
+        if(m_subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(rgb_32f, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+            rgb_32f=resized;
+        }
+    }else{
+        cv::Mat rgb_8u = cv::imread( frame.rgb_path );
+        //resize the rgb8u mat and then convert to float because its faster
+        if(m_subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(rgb_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+            rgb_8u=resized;
+        }
+        // frame.rgb_8u=rgb_8u;
+        rgb_8u.convertTo(rgb_32f, CV_32FC3, 1.0/255.0);
+    }
+    // VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
+
+    rgb_32f=rgb_32f*m_exposure_change;
+    frame.rgb_32f= rgb_32f;
+    cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+
+    frame.width=frame.rgb_32f.cols;
+    frame.height=frame.rgb_32f.rows;
+
+
+    //maybe load also orientation map
+    if (!m_orientation_and_variance_path.empty()){
+        std::string filename= fs::path(frame.rgb_path).stem().string();
+        // VLOG(1) << "filename" << filename;
+        fs::path orientation_path =  m_orientation_and_variance_path/(filename+"_orientation.png");
+        fs::path variance_path =  m_orientation_and_variance_path/(filename+"_variance.png");
+        // VLOG(1) << "orientation " << orientation_path;
+        cv::Mat orientation_8u = cv::imread(orientation_path.string(), cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH  );
+        cv::Mat variance_8u = cv::imread(variance_path.string() , cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
+        CHECK(!orientation_8u.empty()) << "orientation_8u is empty with path " <<orientation_path;
+        CHECK(!variance_8u.empty()) << "variance_8u is empty with path " <<orientation_path;
+        // VLOG(1) << "type is " << type2string(orientation_8u.type());
+        if(m_subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(orientation_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+            orientation_8u=resized;
+        }
+        if(m_subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(variance_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+            variance_8u=resized;
+        }
+        //to float
+        cv::Mat orientation_32f;
+        cv::Mat variance_32f;
+        orientation_8u.convertTo(orientation_32f, CV_32FC1, 1.0/255.0);
+        variance_8u.convertTo(variance_32f, CV_32FC1, 1.0/255.0);
+        frame.add_extra_field("orientation_mat", orientation_32f);
+        frame.add_extra_field("variance_mat", variance_32f);
+    }
+
+
+
+}
 
 
 Frame DataLoaderBlenderFB::get_next_frame(){

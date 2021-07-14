@@ -62,6 +62,7 @@ private:
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
     void init_poses(); //rad the pose json file and fills m_filename2pose
     void read_data(); //a scene (depending on the mode) and all the images contaned in it together with the poses and so on
+    void load_images_in_frame(easy_pbr::Frame& frame);
 
 
     //objects
@@ -76,11 +77,13 @@ private:
     bool m_load_as_float;
     std::string m_mode; // train or test or val
     bool m_shuffle;
+    bool m_load_as_shell;
     bool m_do_overfit; // return all the time just the first image
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     // std::string m_restrict_to_object;  //makes it load clouds only from a specific object
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are
     boost::filesystem::path m_pose_file_path;
+    boost::filesystem::path m_orientation_and_variance_path;
     // std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_img_to_read; //corresponds to the idx of the frame we will return since we have them all in memory
