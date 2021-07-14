@@ -369,7 +369,8 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
 
     //compute the uv for the first points on the strand
-    Eigen::MatrixXd uv = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
+    Eigen::MatrixXd uv_roots = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
+    full_hair->add_extra_field("uv_roots", uv_roots);
 
 
 

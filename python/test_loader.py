@@ -519,6 +519,14 @@ def test_usc_hair():
             scalp=loader.get_mesh_scalp()
             Scene.show(scalp, "scalp")
 
+            if cloud.has_extra_field("strand_idx"):
+                strand_idx=cloud.get_extra_field_matrixXi("strand_idx")
+                print("strand idx", strand_idx)
+
+            if cloud.has_extra_field("uv_roots"):
+                uv_roots=cloud.get_extra_field_matrixXd("uv_roots")
+                print("uv_roots", uv_roots)
+
 
             # if cloud.V.size(0)==125620:
                 # print("found")
