@@ -259,7 +259,7 @@ Eigen::MatrixXd DataLoaderShapeNetPartSeg::read_pts(const std::string file_path)
         LOG(FATAL) << "Could not open pts file " << file_path;
     }
 
-    std::vector<Eigen::Vector3d,  Eigen::aligned_allocator<Eigen::Vector3d>  > points_vec;
+    std::vector<Eigen::Vector3d > points_vec;
     std::string line;
     while (std::getline(infile, line)) {
         std::istringstream iss(line);
