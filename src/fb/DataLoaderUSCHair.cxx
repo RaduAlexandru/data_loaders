@@ -49,12 +49,15 @@ DataLoaderUSCHair::DataLoaderUSCHair(const std::string config_file):
     // create_transformation_matrices();
     // std::cout << " creating thread" << "\n";
     if(m_autostart){
-        m_is_running=true;
-        if(m_load_buffered){
-            m_loader_thread=std::thread(&DataLoaderUSCHair::read_data, this);  //starts the spin in another thread
-        }else{
-            read_data(); //starts reading but on the main thread
-        }
+        // m_is_running=true;
+        start();
+
+        // if(m_load_buffered){
+            // m_loader_thread=std::thread(&DataLoaderUSCHair::start, this);  //starts the spin in another thread
+        // }else{
+            // init_data_reading();
+            // read_data(); //starts reading but on the main thread
+        // }
     }
     // std::cout << " finidhed creating thread" << "\n";
 
@@ -102,7 +105,11 @@ void DataLoaderUSCHair::start(){
     init_data_reading();
 
     m_is_running=true;
-    m_loader_thread=std::thread(&DataLoaderUSCHair::read_data, this);  //starts the spin in another thread
+    if(m_load_buffered){
+        m_loader_thread=std::thread(&DataLoaderUSCHair::read_data, this);  //starts the spin in another thread
+    }else{
+        read_data();
+    }
 }
 
 void DataLoaderUSCHair::init_data_reading(){
@@ -148,27 +155,55 @@ void DataLoaderUSCHair::init_data_reading(){
 
 void DataLoaderUSCHair::read_data(){
 
-    loguru::set_thread_name("loader_thread_kitti");
+    VLOG(1) << "read data";
+
+    if(m_load_buffered){
+
+        loguru::set_thread_name("loader_thread_kitti");
 
 
-    while (m_is_running ) {
+        while (m_is_running ) {
 
-        //we finished reading so we wait here for a reset
-        if(m_idx_cloud_to_read>=m_data_filenames.size()){
-            std::this_thread::sleep_for(std::chrono::milliseconds(300));
-            continue;
-        }
-
-        // std::cout << "size approx is " << m_queue.size_approx() << '\n';
-        // std::cout << "m_idx_img_to_read is " << m_idx_img_to_read << '\n';
-        if(m_clouds_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
-            //read the frame and everything else and push it to the queue
-
-            std::string data_filepath=m_data_filenames[ m_idx_cloud_to_read ].string();
-            if(!m_do_overfit){
-                m_idx_cloud_to_read++;
+            //we finished reading so we wait here for a reset
+            if(m_idx_cloud_to_read>=m_data_filenames.size()){
+                std::this_thread::sleep_for(std::chrono::milliseconds(300));
+                continue;
             }
 
+            // std::cout << "size approx is " << m_queue.size_approx() << '\n';
+            // std::cout << "m_idx_img_to_read is " << m_idx_img_to_read << '\n';
+            if(m_clouds_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
+                //read the frame and everything else and push it to the queue
+
+                std::string data_filepath=m_data_filenames[ m_idx_cloud_to_read ].string();
+                if(!m_do_overfit){
+                    m_idx_cloud_to_read++;
+                }
+
+
+                std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
+                std::shared_ptr<easy_pbr::Mesh> full_hair;
+                auto ret=read_hair_sample(data_filepath);
+                strands= std::get<0>(ret);
+                full_hair= std::get<1>(ret);
+
+                m_clouds_buffer.enqueue(full_hair);
+
+            }
+
+        }
+
+    } else{
+
+
+        //load into vec directly
+        int filenames_to_read= m_do_overfit? 1: m_data_filenames.size();
+        VLOG(1) << "filenames_to_read" << filenames_to_read;
+
+        for(int i=0; i< filenames_to_read; i++){
+            std::string data_filepath=m_data_filenames[ i ].string();
+
+            VLOG(1) << "data_filepath " << data_filepath;
 
             std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
             std::shared_ptr<easy_pbr::Mesh> full_hair;
@@ -176,82 +211,9 @@ void DataLoaderUSCHair::read_data(){
             strands= std::get<0>(ret);
             full_hair= std::get<1>(ret);
 
+            VLOG(1) << "push";
 
-
-            // //read data. most of the code is from http://www-scf.usc.edu/~liwenhu/SHM/Hair.cc
-            // VLOG(1) << "reading from " <<  data_filepath;
-
-            // std::FILE *f = std::fopen(data_filepath.c_str(), "rb");
-            // CHECK(f) << "Couldn't open" << data_filepath;
-
-
-            // TIME_START("load");
-
-
-            // std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
-            // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
-            // std::vector<Eigen::Vector3d> full_hair_points_vec;
-
-            // int nstrands = 0;
-            // fread(&nstrands, 4, 1, f);
-            // VLOG(1) << "nr strands" << nstrands;
-            // // if (!fread(&nstrands, 4, 1, f)) {
-            // //     fprintf(stderr, "Couldn't read number of strands\n");
-            // //     fclose(f);
-            // //     return false;
-            // // }
-            // strands.resize(nstrands);
-
-            // for (int i = 0; i < nstrands; i++) {
-            //     // VLOG(1) << "strand " <<i;
-            //     int nverts = 0;
-            //     std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
-            //     fread(&nverts, 4, 1, f);
-            //     // if (!fread(&nverts, 4, 1, f)) {
-            //     //     fprintf(stderr, "Couldn't read number of vertices\n");
-            //     //     fclose(f);
-            //     //     return false;
-            //     // }
-            //     // strands[i].resize(nverts);
-            //     strand->V.resize(nverts,3);
-            //     // Eigen::VectorXf strand_points_float;
-            //     // strand_points_float.resize(nverts,3);
-
-            //     for (int j = 0; j < nverts; j++) {
-            //         // VLOG(1) << "vert " <<j;
-            //         // fread(&strand_points_float(i,0), 12, 1, f);
-            //         float x,y,z;
-            //         fread(&x, 4, 1, f);
-            //         fread(&y, 4, 1, f);
-            //         fread(&z, 4, 1, f);
-            //         strand->V.row(j) << x,y,z;
-
-            //         Eigen::Vector3d point;
-            //         point << x,y,z;
-            //         full_hair_points_vec.push_back(point);
-
-            //     }
-
-            //     //finished reading this strand
-            //     strands.push_back(strand);
-            // }
-
-            // VLOG(1) << "finished reading everything";
-
-            // fclose(f);
-            // // return true;
-
-            // //get the full cloud into one
-            // // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
-            // full_hair->V=vec2eigen(full_hair_points_vec);
-            // full_hair->m_vis.m_show_points=true;
-            // VLOG(1) << "adding";
-            // VLOG(1) << "finished adding";
-
-
-            // TIME_END("load");
-
-            m_clouds_buffer.enqueue(full_hair);;
+            m_clouds_vec.push_back(full_hair);
 
         }
 
@@ -349,9 +311,18 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
 
 bool DataLoaderUSCHair::has_data(){
-    if(m_clouds_buffer.peek()==nullptr){
-        return false;
+
+    if(m_load_buffered){
+
+
+        if(m_clouds_buffer.peek()==nullptr){
+            return false;
+        }else{
+            return true;
+        }
+
     }else{
+        //if we dont laod buffered we always have some data because we store it persitently in the loader
         return true;
     }
 }
@@ -360,7 +331,20 @@ bool DataLoaderUSCHair::has_data(){
 std::shared_ptr<Mesh> DataLoaderUSCHair::get_cloud(){
 
     std::shared_ptr<Mesh> cloud;
-    m_clouds_buffer.try_dequeue(cloud);
+
+    if(m_load_buffered){
+        m_clouds_buffer.try_dequeue(cloud);
+    }else{
+        // VLOG(1) << "returning" << m_idx_cloud_to_read;
+        cloud=m_clouds_vec[m_idx_cloud_to_read];
+        cloud->m_is_dirty=true; //if we visualized this mesh before and we want to update it, we need to set the is_dirty
+        cloud->m_is_shadowmap_dirty=true;
+        m_idx_cloud_to_read++;
+        // m_idx_cloud_to_return++;
+        // if (m_idx_cloud_to_return>=m_clouds_vec.size()){
+            // m_idx_cloud_to_return=0;
+        // }
+    }
 
     return cloud;
 }

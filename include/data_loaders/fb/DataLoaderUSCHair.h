@@ -86,5 +86,6 @@ private:
     int m_nr_sequences;
     std::vector<fs::path> m_data_filenames;
     moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
+    std::vector<std::shared_ptr<easy_pbr::Mesh> > m_clouds_vec;
 
 };

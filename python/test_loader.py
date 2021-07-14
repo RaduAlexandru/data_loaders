@@ -506,7 +506,10 @@ def test_usc_hair():
 
     while True:
         if(loader.has_data()):
+            print("HAS DATA--------")
+            # pass
             cloud=loader.get_cloud()
+            cloud.m_is_dirty=True
             Scene.show(cloud, "cloud")
 
             # if cloud.V.size(0)==125620:
