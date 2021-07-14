@@ -3,6 +3,7 @@
 //c++
 #include <algorithm>
 #include <random>
+#include <cstdio>
 
 //loguru
 #define LOGURU_REPLACE_GLOG 1
@@ -77,7 +78,7 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
         config_file_abs=config_file;
     }
     Config cfg = configuru::parse_file(config_file_abs, CFG);
-    Config loader_config=cfg["loader_semantic_kitti"];
+    Config loader_config=cfg["loader_usc_hair"];
 
     m_autostart=loader_config["autostart"];
     m_mode=(std::string)loader_config["mode"];
@@ -100,106 +101,41 @@ void DataLoaderUSCHair::start(){
 void DataLoaderUSCHair::init_data_reading(){
 
     std::vector<fs::path> data_filenames_all;
-    // if(m_sequence!="all"){
-    //     m_nr_sequences=1; //we usually get only one sequence, unless m_sequence is set to "all"
-    //     fs::path full_path= m_dataset_path/m_mode/m_sequence;
 
-    //     if(!fs::is_directory(full_path)) {
-    //         LOG(FATAL) << "No directory " << full_path;
-    //     }
+    for (fs::directory_iterator itr(m_dataset_path); itr!=fs::directory_iterator(); ++itr){
 
-    //     //see how many images we have and read the files paths into a vector
-    //     for (fs::directory_iterator itr(full_path); itr!=fs::directory_iterator(); ++itr){
-    //         //all the files in the folder might include also the pose file so we ignore that one
-    //         //we also ignore the files that contain intensity, for now we only read the general ones and then afterwards we append _i to the file and read the intensity if neccesarry
-    //         if( !(itr->path().stem()=="poses")  &&  itr->path().stem().string().find("_i")== std::string::npos ){
-    //             npz_filenames_all.push_back(itr->path());
-    //         }
-    //     }
-    //     if(!m_shuffle){ //if we are shuffling, there is no need to sort them
-    //         std::sort(npz_filenames_all.begin(), npz_filenames_all.end());
-    //     }
+        // VLOG(1) << "checing" << itr->path();
+        // VLOG(1) << "filename " <<itr->path().filename().string();
+        std::string filename_with_ext=itr->path().filename().string();
+        if(   radu::utils::contains(filename_with_ext, "data") ){
+            // VLOG(1) << "itr->path() " << itr->path();
+            data_filenames_all.push_back(itr->path());
+        }
+    }
 
 
-
-	// if(m_do_pose){
-	//     //pose file
-    //         std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  > poses;
-    //         fs::path pose_file = full_path/"poses.txt";
-    //         poses=read_pose_file( pose_file.string() );
-    //         m_poses_per_sequence[m_sequence.string()] = poses;
-	// }
-
-    // }else if(m_sequence=="all"){
-    //     //iterate thrugh all the sequences and load all of them
-
-    //     //get how many sequnces we have here
-    //     fs::path dataset_path_with_mode= m_dataset_path/m_mode;
-    //     if(!fs::is_directory(dataset_path_with_mode)) {
-    //         LOG(FATAL) << "No directory " << dataset_path_with_mode;
-    //     }
-    //     m_nr_sequences=0;
-    //     for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(dataset_path_with_mode), {})){
-    //         if(fs::is_directory(entry)){
-    //             fs::path full_path= entry;
-    //             std::string sequence= full_path.stem().string();
-    //             VLOG(1) << "full path is " << full_path;
-    //             VLOG(1) << "sequence is " << sequence;
-
-    //             m_nr_sequences++;
-    //             //read the npz of each sequence
-    //             std::vector<fs::path> npz_filenames_for_sequence;
-    //             for (fs::directory_iterator itr(full_path); itr!=fs::directory_iterator(); ++itr){
-    //                 //all the files in the folder might include also the pose file so we ignore that one
-    //                 //we also ignore the files that contain intensity, for now we only read the general ones and then afterwards we append _i to the file and read the intensity if neccesarry
-    //                 if( !(itr->path().stem()=="poses")  && itr->path().stem().string().find("_i")== std::string::npos ){
-    //                     npz_filenames_for_sequence.push_back(itr->path());
-    //                 }
-    //             }
-    //             if(!m_shuffle){ //if we are shuffling, there is no need to sort them
-    //                 std::sort(npz_filenames_for_sequence.begin(), npz_filenames_for_sequence.end());
-    //             }
-
-    //             npz_filenames_all.insert(npz_filenames_all.end(), npz_filenames_for_sequence.begin(), npz_filenames_for_sequence.end());
-
-    //         	if(m_do_pose){
-    //           	    //read poses for this sequence
-    //                 std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  > poses;
-    //                 fs::path pose_file = full_path/"poses.txt";
-    //                 poses=read_pose_file( pose_file.string() );
-    //                 m_poses_per_sequence[sequence] = poses;
-    //             }
-    //         }
-    //     }
-    //     VLOG(1) << "m_nr_sequences is " << m_nr_sequences;
+    //shuffle the filles to be read if necessary
+    if(m_shuffle){
+        // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
+        unsigned seed = m_nr_resets;
+        auto rng = std::default_random_engine(seed);
+        std::shuffle(std::begin(data_filenames_all), std::end(data_filenames_all), rng);
+    }
 
 
-    // }else{
-    //     LOG(FATAL) << "Sequence is not known" << m_sequence;
-    // }
+    //ADDS THE clouds to the member std_vector of paths
+    //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
+    for (size_t i = 0; i < data_filenames_all.size(); i++) {
+        // if( (int)i>=m_nr_clouds_to_skip && ((int)m_npz_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
+            m_data_filenames.push_back(data_filenames_all[i]);
+        // }
+    }
+
+    std::cout << "About to read " << m_data_filenames.size() << " clouds" <<std::endl;
 
 
-    // //shuffle the filles to be read if necessary
-    // if(m_shuffle){
-    //     // unsigned seed = std::chrono::system_clock::now().time_since_epoch().count();
-    //     unsigned seed = m_nr_resets;
-    //     auto rng = std::default_random_engine(seed);
-    //     std::shuffle(std::begin(npz_filenames_all), std::end(npz_filenames_all), rng);
-    // }
+    CHECK(m_data_filenames.size()>0) <<"We did not find any npz files to read";
 
-
-    // //ADDS THE clouds to the member std_vector of paths
-    // //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
-    // for (size_t i = 0; i < npz_filenames_all.size(); i++) {
-    //     if( (int)i>=m_nr_clouds_to_skip && ((int)m_npz_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
-    //         m_npz_filenames.push_back(npz_filenames_all[i]);
-    //     }
-    // }
-
-    // std::cout << "About to read " << m_npz_filenames.size() << " clouds" <<std::endl;
-
-
-    // CHECK(m_npz_filenames.size()>0) <<"We did not find any npz files to read";
 
 }
 
@@ -221,14 +157,82 @@ void DataLoaderUSCHair::read_data(){
         if(m_clouds_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
             //read the frame and everything else and push it to the queue
 
-            fs::path data_filename=m_data_filenames[ m_idx_cloud_to_read ];
+            std::string data_filepath=m_data_filenames[ m_idx_cloud_to_read ].string();
             if(!m_do_overfit){
                 m_idx_cloud_to_read++;
             }
 
+            //read data. most of the code is from http://www-scf.usc.edu/~liwenhu/SHM/Hair.cc
+            VLOG(1) << "reading from " <<  data_filepath;
+
+            std::FILE *f = std::fopen(data_filepath.c_str(), "rb");
+            CHECK(f) << "Couldn't open" << data_filepath;
 
 
-            // m_clouds_buffer.enqueue(cloud);;
+            std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
+            std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+            std::vector<Eigen::Vector3d> full_hair_points_vec;
+
+            int nstrands = 0;
+            fread(&nstrands, 4, 1, f);
+            VLOG(1) << "nr strands" << nstrands;
+            // if (!fread(&nstrands, 4, 1, f)) {
+            //     fprintf(stderr, "Couldn't read number of strands\n");
+            //     fclose(f);
+            //     return false;
+            // }
+            strands.resize(nstrands);
+
+            for (int i = 0; i < nstrands; i++) {
+                // VLOG(1) << "strand " <<i;
+                int nverts = 0;
+                std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
+                fread(&nverts, 4, 1, f);
+                // if (!fread(&nverts, 4, 1, f)) {
+                //     fprintf(stderr, "Couldn't read number of vertices\n");
+                //     fclose(f);
+                //     return false;
+                // }
+                // strands[i].resize(nverts);
+                strand->V.resize(nverts,3);
+                // Eigen::VectorXf strand_points_float;
+                // strand_points_float.resize(nverts,3);
+
+                for (int j = 0; j < nverts; j++) {
+                    // VLOG(1) << "vert " <<j;
+                    // fread(&strand_points_float(i,0), 12, 1, f);
+                    float x,y,z;
+                    fread(&x, 4, 1, f);
+                    fread(&y, 4, 1, f);
+                    fread(&z, 4, 1, f);
+                    strand->V.row(j) << x,y,z;
+
+                    Eigen::Vector3d point;
+                    point << x,y,z;
+                    full_hair_points_vec.push_back(point);
+
+                }
+
+                //finished reading this strand
+                strands.push_back(strand);
+            }
+
+            VLOG(1) << "finished reading everything";
+
+            fclose(f);
+            // return true;
+
+            //get the full cloud into one
+            // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+            full_hair->V=vec2eigen(full_hair_points_vec);
+            full_hair->m_vis.m_show_points=true;
+            VLOG(1) << "adding";
+            VLOG(1) << "finished adding";
+
+
+
+
+            m_clouds_buffer.enqueue(full_hair);;
 
         }
 

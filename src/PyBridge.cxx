@@ -25,6 +25,7 @@
 #include "data_loaders/DataLoaderLLFF.h"
 //fb
 #include "data_loaders/fb/DataLoaderBlenderFB.h"
+#include "data_loaders/fb/DataLoaderUSCHair.h"
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -360,6 +361,22 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderBlenderFB::set_mode_train )
     .def("set_mode_test", &DataLoaderBlenderFB::set_mode_test )
     .def("set_mode_validation", &DataLoaderBlenderFB::set_mode_validation )
+    ;
+
+
+    //DataLoaderUSCHair
+    py::class_<DataLoaderUSCHair> (m, "DataLoaderUSCHair")
+    .def(py::init<const std::string>())
+    .def("start", &DataLoaderUSCHair::start )
+    .def("get_cloud", &DataLoaderUSCHair::get_cloud, R"EOS( get_cloud. )EOS" )
+    .def("has_data", &DataLoaderUSCHair::has_data )
+    .def("is_finished", &DataLoaderUSCHair::is_finished )
+    .def("is_finished_reading", &DataLoaderUSCHair::is_finished_reading )
+    .def("reset", &DataLoaderUSCHair::reset )
+    .def("nr_samples", &DataLoaderUSCHair::nr_samples )
+    .def("set_mode_train", &DataLoaderUSCHair::set_mode_train )
+    .def("set_mode_test", &DataLoaderUSCHair::set_mode_test )
+    .def("set_mode_validation", &DataLoaderUSCHair::set_mode_validation )
     ;
 
 

@@ -500,54 +500,22 @@ def test_blender_fb():
 
         view.update()
 
+def test_usc_hair():
+    loader=DataLoaderUSCHair(config_path)
+    loader.start()
 
+    while True:
+        if(loader.has_data()):
+            cloud=loader.get_cloud()
+            Scene.show(cloud, "cloud")
 
-# def map_range( input_val, input_start, input_end,  output_start,  output_end):
-#     # input_clamped=torch.clamp(input_val, input_start, input_end)
-#     input_clamped=max(input_start, min(input_end, input_val))
-#     # input_clamped=torch.clamp(input_val, input_start, input_end)
-#     return output_start + ((output_end - output_start) / (input_end - input_start)) * (input_clamped - input_start)
+            # if cloud.V.size(0)==125620:
+                # print("found")
+        if loader.is_finished():
+            loader.reset()
 
-# def make_box(color_axis=0, color=np.array([1,0.5,0.5]), x_scale=1.0, y_scale=1.0, z_scale=1.0 ):
-#     mesh=Mesh()
-#     mesh.create_box(1,1,1)
-#     # scalp.C=np.random.rand(scalp.V.shape[0],3)
-#     x=mesh.V[:,color_axis:color_axis+1]+0.5
-#     C=np.repeat(x, 3, axis=1)
-#     if color_axis==2:
-#         C=1.0-C
-#     C=C* color #multiply by some color
-#     mesh.C= C#color based on the x direction
-#     mesh.m_vis.set_color_pervertcolor()
-#     #squish the cube
-#     V=mesh.V.copy()
-#     V[:,0]= V[:,0]*x_scale
-#     V[:,1]= V[:,1]*y_scale
-#     V[:,2]= V[:,2]*z_scale
-#     mesh.V=V
-#     return mesh
-#     # Scene.show(scalp, name)
+        view.update()
 
-
-# scalp=make_box(color_axis=0, color=np.array([1,0.5,0.5]), x_scale=10, y_scale=1, z_scale=1)
-# scalp.model_matrix.translate([0.0, 0.0, 0.5])
-# hair_list=[]
-# nr_hairs=5
-# for i in range(nr_hairs):
-#     hair=make_box( color_axis=2, color=np.random.rand(1,3) , x_scale=0.1, y_scale=1.0, z_scale=10)
-#     x_movement=map_range(i,0,nr_hairs-1,-3,3)
-#     hair.model_matrix.translate([x_movement ,0,-5.0])
-#     #skew them
-#     hair.apply_model_matrix_to_cpu(True)
-#     V=hair.V.copy()
-#     skew=0.2
-#     V[:,0]=V[:,0]+V[:,2]*skew #the points with zero z dont get scaled and the more z they have the more they get scaled
-#     hair.V=V
-#     hair_list.append(hair)
-# Scene.show(scalp, "scalp")
-# for i in range(nr_hairs):
-#     hair=hair_list[i]
-#     Scene.show(hair, "hair_"+str(i))
 
 
 
@@ -567,4 +535,5 @@ def test_blender_fb():
 # test_dtu()
 # test_deep_voxels()
 # test_llff()
-test_blender_fb()
+# test_blender_fb()
+test_usc_hair()
