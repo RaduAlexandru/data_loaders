@@ -509,8 +509,16 @@ def test_usc_hair():
             # print("HAS DATA--------")
             # pass
             cloud=loader.get_cloud()
-            cloud.m_is_dirty=True
             Scene.show(cloud, "cloud")
+
+            #show also the head
+            # head=loader.get_mesh_head()
+            # Scene.show(head, "head")
+
+            #show also the scalp
+            scalp=loader.get_mesh_scalp()
+            Scene.show(scalp, "scalp")
+
 
             # if cloud.V.size(0)==125620:
                 # print("found")

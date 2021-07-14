@@ -40,6 +40,8 @@ public:
     ~DataLoaderUSCHair();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
     std::shared_ptr<easy_pbr::Mesh> get_cloud();
+    std::shared_ptr<easy_pbr::Mesh> get_mesh_head();
+    std::shared_ptr<easy_pbr::Mesh> get_mesh_scalp();
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
@@ -70,8 +72,10 @@ private:
     bool m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     std::string m_mode; // train or test or val
     fs::path m_dataset_path;
+    fs::path m_scalp_mesh_path;
     int m_nr_clouds_to_skip;
     int m_nr_clouds_to_read;
+    float m_percentage_strand_drop;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
     // bool m_do_adaptive_subsampling; //randomly drops points from the cloud, dropping with more probability the ones that are closes and with less the ones further
@@ -87,5 +91,8 @@ private:
     std::vector<fs::path> m_data_filenames;
     moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
     std::vector<std::shared_ptr<easy_pbr::Mesh> > m_clouds_vec;
+    std::shared_ptr<easy_pbr::Mesh>  m_mesh_head;
+    std::shared_ptr<easy_pbr::Mesh>  m_mesh_scalp;
+
 
 };

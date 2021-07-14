@@ -91,11 +91,13 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
     m_mode=(std::string)loader_config["mode"];
     m_nr_clouds_to_skip=loader_config["nr_clouds_to_skip"];
     m_nr_clouds_to_read=loader_config["nr_clouds_to_read"];
+    m_percentage_strand_drop=loader_config["percentage_strand_drop"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_load_buffered=loader_config["load_buffered"];
     // m_do_adaptive_subsampling=loader_config["do_adaptive_subsampling"];
     m_dataset_path=(std::string)loader_config["dataset_path"];
+    m_scalp_mesh_path = (std::string)loader_config["scalp_mesh_path"];
 
 }
 
@@ -157,6 +159,13 @@ void DataLoaderUSCHair::init_data_reading(){
 void DataLoaderUSCHair::read_data(){
 
     VLOG(1) << "read data";
+
+    //read head mesh
+    m_mesh_head=Mesh::create( (m_dataset_path/"head_model.obj").string()  );
+    m_mesh_scalp=Mesh::create(m_scalp_mesh_path.string());
+
+
+
 
     if(m_load_buffered){
 
@@ -231,7 +240,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
 
     //read data. most of the code is from http://www-scf.usc.edu/~liwenhu/SHM/Hair.cc
-    VLOG(1) << "reading from " <<  data_filepath;
+    // VLOG(1) << "reading from " <<  data_filepath;
 
     std::FILE *f = std::fopen(data_filepath.c_str(), "rb");
     CHECK(f) << "Couldn't open" << data_filepath;
@@ -243,10 +252,11 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
     std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
     std::vector<Eigen::Vector3d> full_hair_points_vec;
+    std::vector<int> full_hair_strand_idx_vec;
 
     int nstrands = 0;
     fread(&nstrands, 4, 1, f);
-    VLOG(1) << "nr strands" << nstrands;
+    // VLOG(1) << "nr strands" << nstrands;
     // if (!fread(&nstrands, 4, 1, f)) {
     //     fprintf(stderr, "Couldn't read number of strands\n");
     //     fclose(f);
@@ -259,6 +269,12 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
         int nverts = 0;
         std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
         fread(&nverts, 4, 1, f);
+
+        // if (nverts==1){
+            // continue; //if the nr verts is 1 it means that there is no actual strand
+        // }
+
+        // VLOG(1) << "nrverts is " << nverts;
         // if (!fread(&nverts, 4, 1, f)) {
         //     fprintf(stderr, "Couldn't read number of vertices\n");
         //     fclose(f);
@@ -268,6 +284,17 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
         strand->V.resize(nverts,3);
         // Eigen::VectorXf strand_points_float;
         // strand_points_float.resize(nverts,3);
+
+
+        bool is_strand_valid=true;
+        if (nverts==1){ //if the nr of vertices per strand is 1 it means that this is no actual strand, it's jsut the root node
+            is_strand_valid=false;
+        }
+        //randomly drop some strands
+        if (m_rand_gen->rand_bool(m_percentage_strand_drop)){
+            is_strand_valid=false;
+        }
+
 
         for (int j = 0; j < nverts; j++) {
             // VLOG(1) << "vert " <<j;
@@ -280,25 +307,39 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
             Eigen::Vector3d point;
             point << x,y,z;
-            full_hair_points_vec.push_back(point);
+
+            // VLOG(1) << "awdawd nrverts is " << nverts;
+            if (is_strand_valid){
+                // VLOG(1) << "adding";
+                full_hair_points_vec.push_back(point);
+                full_hair_strand_idx_vec.push_back(i);
+            }
 
         }
 
+
         //finished reading this strand
-        strands.push_back(strand);
+        if (is_strand_valid){
+            strands.push_back(strand);
+        }
     }
 
-    VLOG(1) << "finished reading everything";
+    // VLOG(1) << "finished reading everything";
 
     fclose(f);
     // return true;
 
     //get the full cloud into one
     // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+
+    // VLOG(1) << " full_hair_points_vec" << full_hair_points_vec.size();
     full_hair->V=vec2eigen(full_hair_points_vec);
+    Eigen::MatrixXi strand_idx=vec2eigen(full_hair_strand_idx_vec);
+    // VLOG(1) << "strand_idx" << strand_idx.rows() << " " <<strand_idx.cols();
+    full_hair->add_extra_field("strand_idx", strand_idx);
     full_hair->m_vis.m_show_points=true;
-    VLOG(1) << "adding";
-    VLOG(1) << "finished adding";
+    // VLOG(1) << "adding";
+    // VLOG(1) << "finished adding";
 
 
     TIME_END("load");
@@ -348,6 +389,14 @@ std::shared_ptr<Mesh> DataLoaderUSCHair::get_cloud(){
     }
 
     return cloud;
+}
+
+std::shared_ptr<Mesh> DataLoaderUSCHair::get_mesh_head(){
+    return m_mesh_head;
+}
+
+std::shared_ptr<Mesh> DataLoaderUSCHair::get_mesh_scalp(){
+    return m_mesh_scalp;
 }
 
 bool DataLoaderUSCHair::is_finished(){
