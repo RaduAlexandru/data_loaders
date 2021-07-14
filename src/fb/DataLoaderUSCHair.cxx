@@ -19,6 +19,7 @@ using namespace configuru;
 // #include "cnpy.h"
 
 #include <igl/point_mesh_squared_distance.h>
+#include <igl/barycentric_coordinates.h>
 
 
 //boost
@@ -26,6 +27,7 @@ using namespace configuru;
 
 //my stuff
 #include "easy_pbr/Mesh.h"
+#include "easy_pbr/Scene.h"
 // #include "easy_pbr/LabelMngr.h"
 // #include "data_loaders/DataTransformer.h"
 #include "Profiler.h"
@@ -257,6 +259,8 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     std::vector<Eigen::Vector3d> full_hair_points_vec;
     std::vector<int> full_hair_strand_idx_vec;
     std::vector<Eigen::Vector3d> first_strand_points_vec;
+    //debug
+    // std::vector<Eigen::Vector3d> first_strand_hair_points_vec;
 
     int nstrands = 0;
     fread(&nstrands, 4, 1, f);
@@ -324,6 +328,12 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
                     // Eigen::Vector2d = compute_closest_point_uv(m_mesh_scalp, point);
                     first_strand_points_vec.push_back(point);
                 }
+
+                //debug
+                // if (i==0){
+                    // first_strand_hair_points_vec.push_back(point);
+                // }
+
             }
 
 
@@ -348,6 +358,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
     // VLOG(1) << " full_hair_points_vec" << full_hair_points_vec.size();
     full_hair->V=vec2eigen(full_hair_points_vec);
+    // full_hair->V=vec2eigen(first_strand_hair_points_vec);
     Eigen::MatrixXi strand_idx=vec2eigen(full_hair_strand_idx_vec);
     // VLOG(1) << "strand_idx" << strand_idx.rows() << " " <<strand_idx.cols();
     full_hair->add_extra_field("strand_idx", strand_idx);
@@ -358,7 +369,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
 
     //compute the uv for the first points on the strand
-    // Eigen::MatrixXd uv = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
+    Eigen::MatrixXd uv = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
 
 
 
@@ -374,6 +385,64 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 Eigen::MatrixXd DataLoaderUSCHair::compute_closest_point_uv(std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec){
 
     Eigen::MatrixXd points=vec2eigen(points_vec);
+
+    Eigen::VectorXd distances;
+    Eigen::MatrixXd closest_points;
+    Eigen::VectorXi closest_face_indices;
+    igl::point_mesh_squared_distance(points, mesh->V, mesh->F, distances, closest_face_indices, closest_points );
+
+    // VLOG(1) << "points" << points.rows() << "x " << points.cols();
+    // VLOG(1) << "distances" << distances.rows() << "x " << distances.cols();
+    // VLOG(1) << "closest_points" << closest_points.rows() << "x " << closest_points.cols();
+    // VLOG(1) << "closest_face_indices" << closest_face_indices.rows() << "x " << closest_face_indices.cols();
+
+    //get the uv
+    Eigen::MatrixXd UV;
+    UV.resize(points.rows(), 2);
+    for(int i=0; i<points.rows(); i++){
+        Eigen::MatrixXd closest_point = closest_points.row(i);
+        int face_idx=closest_face_indices(i);
+        Eigen::Vector3i face=mesh->F.row(face_idx);
+        int idx_p0 = face.x();
+        int idx_p1 = face.y();
+        int idx_p2 = face.z();
+        Eigen::Vector3d p0 = mesh->V.row(idx_p0);
+        Eigen::Vector3d p1 = mesh->V.row(idx_p1);
+        Eigen::Vector3d p2 = mesh->V.row(idx_p2);
+
+        Eigen::MatrixXd barycentric;
+        igl::barycentric_coordinates(closest_point, p0.transpose(), p1.transpose(), p2.transpose(), barycentric);
+
+        float b0=barycentric(0,0);
+        float b1=barycentric(0,1);
+        float b2=barycentric(0,2);
+
+        // if (i==0){
+        //     VLOG(1) << " baryc is " << b0 << " " << b1 << " " << b2;
+        //     VLOG(1) << " idx_p0 is " << idx_p0 << " " << idx_p1 << " " << idx_p2;
+        //     VLOG(1) << "idx0 uv " << mesh->UV.row(idx_p0);
+        // }
+
+        Eigen::Vector2d uv_for_point = mesh->UV.row(idx_p0)*b0 + mesh->UV.row(idx_p1)*b1 + mesh->UV.row(idx_p2)*b2;
+
+        // if(i==0){
+            // VLOG(1) << "uv interpolated is " << uv_for_point;
+        // }
+
+        UV.row(i) = uv_for_point;
+
+    }
+
+
+    // //show the mesh
+    // std::shared_ptr<easy_pbr::Mesh> closest_mesh= easy_pbr::Mesh::create();
+    // // closest_mesh->V= closest_points;
+    // closest_mesh->V= mesh->V;
+    // closest_mesh->F.resize(1,3);
+    // closest_mesh->F.row(0) =  mesh->F.row(closest_face_indices(0));
+    // easy_pbr::Scene::show(closest_mesh,"closest_mesh");
+
+    return UV;
 
 
 }
