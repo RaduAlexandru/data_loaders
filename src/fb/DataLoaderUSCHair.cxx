@@ -18,6 +18,9 @@ using namespace configuru;
 //cnpy
 // #include "cnpy.h"
 
+// #include <igl/point_mesh_squared_distance.h>
+
+
 //boost
 #include <boost/range/iterator_range.hpp>
 
@@ -253,6 +256,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
     std::vector<Eigen::Vector3d> full_hair_points_vec;
     std::vector<int> full_hair_strand_idx_vec;
+    std::vector<Eigen::Vector3d> first_strand_points_vec;
 
     int nstrands = 0;
     fread(&nstrands, 4, 1, f);
@@ -311,9 +315,19 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
             // VLOG(1) << "awdawd nrverts is " << nverts;
             if (is_strand_valid){
                 // VLOG(1) << "adding";
+                // if (j==0)
                 full_hair_points_vec.push_back(point);
                 full_hair_strand_idx_vec.push_back(i);
+
+                //if its the frist point, compute the uv coordinate of this first point by splatting it onto the scalp mesh
+                if(j==0){
+                    // Eigen::Vector2d = compute_closest_point_uv(m_mesh_scalp, point);
+                    first_strand_points_vec.push_back(point);
+                }
             }
+
+
+
 
         }
 
@@ -342,11 +356,25 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     // VLOG(1) << "finished adding";
 
 
+
+    //compute the uv for the first points on the strand
+    // Eigen::MatrixXd uv = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
+
+
+
     TIME_END("load");
 
     auto ret= std::make_tuple(strands, full_hair);
 
     return ret;
+
+}
+
+
+Eigen::MatrixXd DataLoaderUSCHair::compute_closest_point_uv(std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec){
+
+    Eigen::MatrixXd points=vec2eigen(points_vec);
+
 
 }
 
