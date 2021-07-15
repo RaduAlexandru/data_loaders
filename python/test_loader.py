@@ -527,9 +527,6 @@ def test_usc_hair():
                 uv_roots=cloud.get_extra_field_matrixXd("uv_roots")
                 print("uv_roots", uv_roots)
 
-
-            # if cloud.V.size(0)==125620:
-                # print("found")
         if loader.is_finished():
             loader.reset()
 

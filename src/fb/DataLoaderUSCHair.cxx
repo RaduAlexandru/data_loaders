@@ -259,6 +259,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     std::vector<Eigen::Vector3d> full_hair_points_vec;
     std::vector<int> full_hair_strand_idx_vec;
     std::vector<Eigen::Vector3d> first_strand_points_vec;
+    int nr_strands_added=0;
     //debug
     // std::vector<Eigen::Vector3d> first_strand_hair_points_vec;
 
@@ -321,7 +322,8 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
                 // VLOG(1) << "adding";
                 // if (j==0)
                 full_hair_points_vec.push_back(point);
-                full_hair_strand_idx_vec.push_back(i);
+                // full_hair_strand_idx_vec.push_back(i);
+                full_hair_strand_idx_vec.push_back(nr_strands_added);
 
                 //if its the frist point, compute the uv coordinate of this first point by splatting it onto the scalp mesh
                 if(j==0){
@@ -345,6 +347,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
         //finished reading this strand
         if (is_strand_valid){
             strands.push_back(strand);
+            nr_strands_added++;
         }
     }
 
