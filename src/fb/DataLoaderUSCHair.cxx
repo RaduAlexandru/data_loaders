@@ -261,6 +261,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     std::vector<Eigen::Vector3d> full_hair_points_vec;
     std::vector<int> full_hair_strand_idx_vec;
     std::vector<Eigen::Vector3d> first_strand_points_vec;
+    std::vector<double> strand_lengths_vec;
     int nr_strands_added=0;
     //debug
     // std::vector<Eigen::Vector3d> first_strand_hair_points_vec;
@@ -297,6 +298,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
         // strand_points_float.resize(nverts,3);
 
 
+
         bool is_strand_valid=true;
         if (nverts==1){ //if the nr of vertices per strand is 1 it means that this is no actual strand, it's jsut the root node
             is_strand_valid=false;
@@ -306,6 +308,9 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
             is_strand_valid=false;
         }
 
+        //store also the previous point on the strand so we can compute length
+        double strand_length=0;
+        Eigen::Vector3d prev_point;
 
         for (int j = 0; j < nverts; j++) {
             // VLOG(1) << "vert " <<j;
@@ -340,6 +345,13 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
             }
 
+            //compute also the lenght of the strand
+            if(j==1){ //if we are the first vertex, there is no previous
+                float cur_segment_length= (point-prev_point).norm();
+                strand_length+=cur_segment_length;
+            }
+            prev_point=point;
+
 
 
 
@@ -349,6 +361,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
         //finished reading this strand
         if (is_strand_valid){
             strands.push_back(strand);
+            strand_lengths_vec.push_back(strand_length);
             nr_strands_added++;
         }
     }
@@ -380,6 +393,10 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     //get also the roots positions for each strand
     Eigen::MatrixXd position_roots=vec2eigen(first_strand_points_vec);
     full_hair->add_extra_field("position_roots", position_roots);
+
+    //add also the strand length
+    Eigen::MatrixXd strand_lengths=vec2eigen(strand_lengths_vec);
+    full_hair->add_extra_field("strand_lengths", strand_lengths);
 
 
 
