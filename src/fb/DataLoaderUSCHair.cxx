@@ -73,7 +73,9 @@ DataLoaderUSCHair::~DataLoaderUSCHair(){
     // std::cout << "finishing" << std::endl;
     m_is_running=false;
 
-    m_loader_thread.join();
+    if(m_load_buffered){
+        m_loader_thread.join();
+    }
 }
 
 void DataLoaderUSCHair::init_params(const std::string config_file){
@@ -374,6 +376,10 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     //compute the uv for the first points on the strand
     Eigen::MatrixXd uv_roots = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
     full_hair->add_extra_field("uv_roots", uv_roots);
+
+    //get also the roots positions for each strand
+    Eigen::MatrixXd position_roots=vec2eigen(first_strand_points_vec);
+    full_hair->add_extra_field("position_roots", position_roots);
 
 
 
