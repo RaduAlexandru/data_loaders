@@ -259,6 +259,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
     std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
     std::vector<Eigen::Vector3d> full_hair_points_vec;
+    std::vector<double> full_hair_cumulative_strand_length_vec; //stores for each point on the hair, the cumulative strand legnth up until that point
     std::vector<int> full_hair_strand_idx_vec;
     std::vector<Eigen::Vector3d> first_strand_points_vec;
     std::vector<double> strand_lengths_vec;
@@ -329,6 +330,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
                 // VLOG(1) << "adding";
                 // if (j==0)
                 full_hair_points_vec.push_back(point);
+                full_hair_cumulative_strand_length_vec.push_back(strand_length);
                 // full_hair_strand_idx_vec.push_back(i);
                 full_hair_strand_idx_vec.push_back(nr_strands_added);
 
@@ -398,6 +400,10 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     //add also the strand length
     Eigen::MatrixXd strand_lengths=vec2eigen(strand_lengths_vec);
     full_hair->add_extra_field("strand_lengths", strand_lengths);
+
+    //add cumulative strand length
+    Eigen::MatrixXd full_hair_cumulative_strand_length=vec2eigen(full_hair_cumulative_strand_length_vec);
+    full_hair->add_extra_field("full_hair_cumulative_strand_length", full_hair_cumulative_strand_length);
 
 
 
