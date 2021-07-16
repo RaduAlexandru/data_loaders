@@ -346,9 +346,10 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
             }
 
             //compute also the lenght of the strand
-            if(j==1){ //if we are the first vertex, there is no previous
+            if(j>=1){ //if we are the first vertex, there is no previous
                 float cur_segment_length= (point-prev_point).norm();
                 strand_length+=cur_segment_length;
+                // VLOG(1) << cur_segment_length << " full " <<  strand_length;
             }
             prev_point=point;
 
