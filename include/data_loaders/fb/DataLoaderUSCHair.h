@@ -62,7 +62,7 @@ private:
         std::vector< std::shared_ptr<easy_pbr::Mesh> >,
         std::shared_ptr<easy_pbr::Mesh>
     > read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
-    Eigen::MatrixXd compute_closest_point_uv(std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec); //project the points onto the closest point on the mesh and get the uv from there
+    void compute_root_points_atributes(Eigen::MatrixXd& uv, std::vector<Eigen::Matrix3d>& tbn_per_point, std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec); //project the points onto the closest point on the mesh and get the uv from there
 
 
     //objects

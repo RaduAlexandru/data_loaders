@@ -170,6 +170,8 @@ void DataLoaderUSCHair::read_data(){
     //read head mesh
     m_mesh_head=Mesh::create( (m_dataset_path/"head_model.obj").string()  );
     m_mesh_scalp=Mesh::create(m_scalp_mesh_path.string());
+    //we also create a tangent-bitangent and normal for the scalp that would serve as a basis frame for he the hair
+    m_mesh_scalp->compute_tangents();
 
 
 
@@ -390,8 +392,30 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
 
     //compute the uv for the first points on the strand
-    Eigen::MatrixXd uv_roots = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
+    // Eigen::MatrixXd uv_roots = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
+    Eigen::MatrixXd uv_roots;
+    std::vector<Eigen::Matrix3d> tbn_roots;
+    compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, first_strand_points_vec);
     full_hair->add_extra_field("uv_roots", uv_roots);
+    full_hair->add_extra_field("tbn_roots", tbn_roots);
+
+    //compute also the direciton in 3 matrices for easier processing
+    Eigen::MatrixXd t_roots;
+    Eigen::MatrixXd b_roots;
+    Eigen::MatrixXd n_roots;
+    t_roots.resize(first_strand_points_vec.size(),3);
+    b_roots.resize(first_strand_points_vec.size(),3);
+    n_roots.resize(first_strand_points_vec.size(),3);
+    for(int i=0; i<first_strand_points_vec.size(); i++){
+        t_roots.row(i) = tbn_roots[i].col(0).transpose();
+        b_roots.row(i) = tbn_roots[i].col(1).transpose();
+        n_roots.row(i) = tbn_roots[i].col(2).transpose();
+    }
+    full_hair->add_extra_field("t_roots", t_roots);
+    full_hair->add_extra_field("b_roots", b_roots);
+    full_hair->add_extra_field("n_roots", n_roots);
+
+
 
     //get also the roots positions for each strand
     Eigen::MatrixXd position_roots=vec2eigen(first_strand_points_vec);
@@ -416,7 +440,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 }
 
 
-Eigen::MatrixXd DataLoaderUSCHair::compute_closest_point_uv(std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec){
+void DataLoaderUSCHair::compute_root_points_atributes(Eigen::MatrixXd& uv, std::vector<Eigen::Matrix3d>& tbn_per_point, std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec){
 
     Eigen::MatrixXd points=vec2eigen(points_vec);
 
@@ -431,8 +455,11 @@ Eigen::MatrixXd DataLoaderUSCHair::compute_closest_point_uv(std::shared_ptr<easy
     // VLOG(1) << "closest_face_indices" << closest_face_indices.rows() << "x " << closest_face_indices.cols();
 
     //get the uv
-    Eigen::MatrixXd UV;
-    UV.resize(points.rows(), 2);
+    // Eigen::MatrixXd UV;
+    uv.resize(points.rows(), 2);
+    //get also the TBN in world coords
+    tbn_per_point.resize( points.rows() );
+
     for(int i=0; i<points.rows(); i++){
         Eigen::MatrixXd closest_point = closest_points.row(i);
         int face_idx=closest_face_indices(i);
@@ -459,11 +486,22 @@ Eigen::MatrixXd DataLoaderUSCHair::compute_closest_point_uv(std::shared_ptr<easy
 
         Eigen::Vector2d uv_for_point = mesh->UV.row(idx_p0)*b0 + mesh->UV.row(idx_p1)*b1 + mesh->UV.row(idx_p2)*b2;
 
-        // if(i==0){
-            // VLOG(1) << "uv interpolated is " << uv_for_point;
-        // }
+        uv.row(i) = uv_for_point;
 
-        UV.row(i) = uv_for_point;
+        //get also the TBN per point
+        Eigen::Vector3d T,B,N;
+        N= mesh->NV.row(idx_p0)*b0 + mesh->NV.row(idx_p1)*b1 + mesh->NV.row(idx_p2)*b2;
+        T= mesh->V_tangent_u.row(idx_p0)*b0 + mesh->V_tangent_u.row(idx_p1)*b1 + mesh->V_tangent_u.row(idx_p2)*b2;
+        N=N.normalized();
+        T=T.normalized();
+        B=N.cross(T);
+        Eigen::Matrix3d TBN;
+        TBN.col(0)=T;
+        TBN.col(1)=B;
+        TBN.col(2)=N;
+        tbn_per_point[i] = TBN;
+
+
 
     }
 
@@ -476,7 +514,9 @@ Eigen::MatrixXd DataLoaderUSCHair::compute_closest_point_uv(std::shared_ptr<easy
     // closest_mesh->F.row(0) =  mesh->F.row(closest_face_indices(0));
     // easy_pbr::Scene::show(closest_mesh,"closest_mesh");
 
-    return UV;
+    // return UV;
+
+    // uv=UV;
 
 
 }
