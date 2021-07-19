@@ -99,6 +99,7 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
     m_nr_clouds_to_skip=loader_config["nr_clouds_to_skip"];
     m_nr_clouds_to_read=loader_config["nr_clouds_to_read"];
     m_percentage_strand_drop=loader_config["percentage_strand_drop"];
+    m_load_only_strand_with_idx=loader_config["load_only_strand_with_idx"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_load_buffered=loader_config["load_buffered"];
@@ -280,6 +281,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     strands.resize(nstrands);
 
     for (int i = 0; i < nstrands; i++) {
+    // for (int i = 0; i < 1; i++) {
         // VLOG(1) << "strand " <<i;
         int nverts = 0;
         std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
@@ -308,6 +310,9 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
         }
         //randomly drop some strands
         if (m_rand_gen->rand_bool(m_percentage_strand_drop)){
+            is_strand_valid=false;
+        }
+        if(m_load_only_strand_with_idx>=0 && nr_strands_added!=m_load_only_strand_with_idx){ //loads only one strand with a certain index
             is_strand_valid=false;
         }
 
@@ -361,6 +366,9 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
 
         }
+
+        // VLOG(1) << "strand_length " <<strand_length;
+        // VLOG(1) << "Given this, the segment length should be " << strand_length/100;
 
 
         //finished reading this strand

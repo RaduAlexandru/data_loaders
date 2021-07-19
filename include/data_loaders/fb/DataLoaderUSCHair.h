@@ -77,6 +77,7 @@ private:
     int m_nr_clouds_to_skip;
     int m_nr_clouds_to_read;
     float m_percentage_strand_drop;
+    int m_load_only_strand_with_idx;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
     // bool m_do_adaptive_subsampling; //randomly drops points from the cloud, dropping with more probability the ones that are closes and with less the ones further
