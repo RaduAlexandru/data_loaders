@@ -495,6 +495,10 @@ void DataLoaderUSCHair::compute_root_points_atributes(Eigen::MatrixXd& uv, std::
         N=N.normalized();
         T=T.normalized();
         B=N.cross(T);
+        //rotate from model coordinates to world
+        T=mesh->model_matrix().linear()*T;
+        B=mesh->model_matrix().linear()*B;
+        N=mesh->model_matrix().linear()*N;
         Eigen::Matrix3d TBN;
         TBN.col(0)=T;
         TBN.col(1)=B;
