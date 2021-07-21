@@ -521,11 +521,11 @@ def test_usc_hair():
 
             if cloud.has_extra_field("strand_idx"):
                 strand_idx=cloud.get_extra_field_matrixXi("strand_idx")
-                print("strand idx", strand_idx)
+                # print("strand idx", strand_idx)
 
             if cloud.has_extra_field("uv_roots"):
                 uv_roots=cloud.get_extra_field_matrixXd("uv_roots")
-                print("uv_roots", uv_roots)
+                # print("uv_roots", uv_roots)
 
         if loader.is_finished():
             loader.reset()

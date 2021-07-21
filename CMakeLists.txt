@@ -79,6 +79,13 @@ find_package(EasyPBR REQUIRED)
 if(${catkin_FOUND})
 	find_package(catkin REQUIRED COMPONENTS roscpp std_msgs cv_bridge pcl_ros image_transport tf2_ros tf2_eigen)
 endif()
+#try to compile with pytorch if you can
+set(PYTORCH_PATH "/opt/pytorch")
+set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ";${PYTORCH_PATH};")
+find_package(Torch)
+
+
+
 
 message("--------------------------------------EASYPBR_SRC_PATH is ", ${EASYPBR_SRC_PATH})
 add_subdirectory( ${EASYPBR_SRC_PATH}/deps/pybind11 ./../../build/pybind11 EXCLUDE_FROM_ALL)
@@ -95,6 +102,7 @@ include_directories(${CMAKE_SOURCE_DIR}/extern)
 # include_directories(${CMAKE_SOURCE_DIR}/deps/pybind11/include)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${EASYPBR_INCLUDE_DIR})
+include_directories(${TORCH_INCLUDE_DIRS})
 if(${catkin_FOUND})
     catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport tf2_ros tf2_eigen )
 endif()
@@ -142,6 +150,16 @@ if (${catkin_FOUND} )
         ${PROJECT_SOURCE_DIR}/src/RosBagPlayer.cxx
     )
 endif()
+#loaders that require torch
+if(${TORCH_FOUND})
+    message("USING TORCH")
+    # target_compile_definitions(easypbr_cpp PUBLIC EASYPBR_WITH_TORCH)
+    set(MY_SRC ${MY_SRC}
+        ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderUSCHair.cxx
+    )
+else()
+    message("NOT USING TORCH")
+endif()
 
 
 ###   SET ALL THE GLOBAL OPTIONS #########################################
@@ -167,6 +185,18 @@ add_library( dataloaders_cpp SHARED ${MY_SRC}  ${DEPS_SRC}  )
 ###   LIBS   ###############################################
 message("easypbr lib is ", ${EASYPBR_LIBRARY})
 set(LIBS ${LIBS} igl::core  ${catkin_LIBRARIES} ${EASYPBR_LIBRARY} ${OpenCV_LIBS})
+if(${TORCH_FOUND})
+    set(LIBS ${LIBS} ${TORCH_LIBRARIES} )
+    #torch 1.5.0 and above mess with pybind and we therefore need to link against libtorch_python.so also
+    find_library(TORCH_PYTHON_LIBRARY torch_python PATHS "${TORCH_INSTALL_PREFIX}/lib")
+    message(STATUS "TORCH_PYTHON_LIBRARY: ${TORCH_PYTHON_LIBRARY}")
+    if(TORCH_PYTHON_LIBRARY)
+        message(STATUS "Linking to torch_python_library")
+        set(LIBS ${LIBS} ${TORCH_PYTHON_LIBRARY} )
+    endif()
+endif()
+
+
 
 ###   TINY PROCESS LIBRARY   #########################################
 set (TINY_PROCESS_LIB_SOURCES   ${CMAKE_SOURCE_DIR}/deps/tiny-process-library/process.cpp ${CMAKE_SOURCE_DIR}/deps/tiny-process-library/process_unix.cpp )
