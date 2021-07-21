@@ -1,8 +1,11 @@
 #include "data_loaders/PyBridge.h"
 
-// #include <torch/extension.h>
-// #include "torch/torch.h"
-// #include "torch/csrc/utils/pybind.h"
+
+#ifdef WITH_TORCH
+    #include <torch/extension.h>
+    #include "torch/torch.h"
+    #include "torch/csrc/utils/pybind.h"
+#endif
 
 // #include "pybind_casters/pybind11_opencv.hpp"
 // #include "pybind_casters/ndarray_converter.h"
@@ -399,7 +402,7 @@ PYBIND11_MODULE(dataloaders, m) {
         .def_readwrite("full_hair_cumulative_strand_length", &USCHair::full_hair_cumulative_strand_length)
         .def_readwrite("per_point_rotation_next_cur_tensor", &USCHair::per_point_rotation_next_cur_tensor)
         .def_readwrite("per_point_delta_dist_tensor", &USCHair::per_point_delta_dist_tensor)
-        .def_readwrite("per_point_direction_to_next", &USCHair::per_point_direction_to_next)
+        .def_readwrite("per_point_direction_to_next_tensor", &USCHair::per_point_direction_to_next_tensor)
         ;
     #endif
 

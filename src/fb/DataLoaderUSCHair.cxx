@@ -406,23 +406,40 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     usc_hair->uv_roots=uv_roots;
     //put into tensors
     int nr_points=usc_hair->full_hair_cloud->V.rows();
-    torch::Tensor points_tensor=eigen2tensor(usc_hair->full_hair_cloud->V.cast<float>()).view({nr_strands_added, 100, 3 });
-    torch::Tensor tbn_roots_tensor = torch::empty({ nr_points,3,3 }, torch::dtype(torch::kFloat32) );
-    auto tbn_roots_tensor_accesor = tbn_roots_tensor.accessor<float,3>();
+    usc_hair->points_tensor=eigen2tensor(usc_hair->full_hair_cloud->V.cast<float>()).view({nr_strands_added, 100, 3 });
+    usc_hair->tbn_roots_tensor = torch::empty({ nr_strands_added,3,3 }, torch::dtype(torch::kFloat32) );
+    auto tbn_roots_tensor_accesor = usc_hair->tbn_roots_tensor.accessor<float,3>();
     for(int i=0; i<tbn_roots.size(); i++){
-        //row 0
-        tbn_roots[i](0,0)=tbn_roots_tensor_accesor[i][0][0];
-        tbn_roots[i](0,1)=tbn_roots_tensor_accesor[i][0][1];
-        tbn_roots[i](0,2)=tbn_roots_tensor_accesor[i][0][2];
+        // //row 0
+        // tbn_roots[i](0,0)=tbn_roots_tensor_accesor[i][0][0];
+        // tbn_roots[i](0,1)=tbn_roots_tensor_accesor[i][0][1];
+        // tbn_roots[i](0,2)=tbn_roots_tensor_accesor[i][0][2];
+        // //row 1
+        // tbn_roots[i](1,0)=tbn_roots_tensor_accesor[i][1][0];
+        // tbn_roots[i](1,1)=tbn_roots_tensor_accesor[i][1][1];
+        // tbn_roots[i](1,2)=tbn_roots_tensor_accesor[i][1][2];
+        // //row 2
+        // tbn_roots[i](2,0)=tbn_roots_tensor_accesor[i][2][0];
+        // tbn_roots[i](2,1)=tbn_roots_tensor_accesor[i][2][1];
+        // tbn_roots[i](2,2)=tbn_roots_tensor_accesor[i][2][2];
+
+
+        // //row 0
+        tbn_roots_tensor_accesor[i][0][0]=tbn_roots[i](0,0);
+        tbn_roots_tensor_accesor[i][0][1]=tbn_roots[i](0,1);
+        tbn_roots_tensor_accesor[i][0][2]=tbn_roots[i](0,2);
         //row 1
-        tbn_roots[i](1,0)=tbn_roots_tensor_accesor[i][1][0];
-        tbn_roots[i](1,1)=tbn_roots_tensor_accesor[i][1][1];
-        tbn_roots[i](1,2)=tbn_roots_tensor_accesor[i][1][2];
+        tbn_roots_tensor_accesor[i][1][0]=tbn_roots[i](1,0);
+        tbn_roots_tensor_accesor[i][1][1]=tbn_roots[i](1,1);
+        tbn_roots_tensor_accesor[i][1][2]=tbn_roots[i](1,2);
         //row 2
-        tbn_roots[i](2,0)=tbn_roots_tensor_accesor[i][2][0];
-        tbn_roots[i](2,1)=tbn_roots_tensor_accesor[i][2][1];
-        tbn_roots[i](2,2)=tbn_roots_tensor_accesor[i][2][2];
+        tbn_roots_tensor_accesor[i][2][0]=tbn_roots[i](2,0);
+        tbn_roots_tensor_accesor[i][2][1]=tbn_roots[i](2,1);
+        tbn_roots_tensor_accesor[i][2][2]=tbn_roots[i](2,2);
     }
+    //compute local hair representation
+    xyz2local(nr_strands_added, 100, usc_hair->full_hair_cloud->V, usc_hair->strand_lengths, tbn_roots,
+            usc_hair->per_point_rotation_next_cur_tensor, usc_hair->per_point_delta_dist_tensor, usc_hair->per_point_direction_to_next_tensor);
 
     return usc_hair;
 
@@ -604,100 +621,200 @@ void DataLoaderUSCHair::compute_root_points_atributes(Eigen::MatrixXd& uv, std::
 
 }
 
-void DataLoaderUSCHair::xyz2local(){
-    // int nr_points=m
-    TIME_SCOPE("xyz2local_cpu");
-    int nr_strands=895;
-    int nr_verts_per_strand=100;
+// void DataLoaderUSCHair::xyz2local(){
+//     // int nr_points=m
+//     TIME_SCOPE("xyz2local_cpu");
+//     int nr_strands=895;
+//     int nr_verts_per_strand=100;
 
-    std::vector<  Eigen::AngleAxisd > rodrigues_vec;
+//     std::vector<  Eigen::AngleAxisd > rodrigues_vec;
+
+//     for(int s=0; s<nr_strands; s++){
+//         for(int p=0; p<nr_verts_per_strand; p++){
+
+//             Eigen::Vector3d p0;
+//             Eigen::Vector3d p1;
+//             p0 << 0,0,0;
+//             p1 << 1,1,0;
+
+//             Eigen::Affine3d tf_world_cur; //model matrix
+//             tf_world_cur.setIdentity();
+
+//             Eigen::Affine3d tf_cur_world;
+//             tf_cur_world=tf_world_cur.inverse();
+
+
+//             //calculate new base
+//             Eigen::Vector3d new_N= (p1-p0).normalized();
+//             Eigen::Vector3d temp_T= tf_world_cur.linear().col(2);
+//             Eigen::Vector3d new_B= (new_N.cross(temp_T)).normalized();
+//             Eigen::Vector3d new_T= (new_B.cross(new_N)).normalized();
+//             // new_TBN = torch.cat( [new_T.view(-1,3,1), new_B.view(-1,3,1), new_N.view(-1,3,1)], 2  )
+//             Eigen::Matrix3d new_TBN;
+//             new_TBN.col(0) = new_T;
+//             new_TBN.col(1) = new_B;
+//             new_TBN.col(2) = new_N;
+
+//             Eigen::Matrix3d R_cur_next= tf_cur_world.linear()*new_TBN;
+//             Eigen::AngleAxisd rodrigues=Eigen::AngleAxisd(R_cur_next);
+
+//             rodrigues_vec.push_back(rodrigues);
+
+
+
+//             // //get the first and second point just as a dummy
+//             // cur_points_world= strands_xyz[:, i, :] # nr_strands x 3
+//             // next_points_world= strands_xyz[:, i+1, :] # nr_strands x 3
+//             // #get the current frame of the points
+//             // if i==0:
+//             //     R_world_cur=tbn_roots  #nr_strands  3x3  #rotation cur_frame to the world_frame
+//             // T_world_cur=cur_points_world # translation nr_strands x 3
+//             // #compose a full transform tf_world_cur ( transform from cur_points to world)
+//             // # print("R_world_cur", R_world_cur)
+//             // # print("T_world_cur", T_world_cur)
+//             // # print("T_world_cur.shape", T_world_cur.shape)
+//             // # tf_world_cur=torch.zeros((nr_strands, 4, 4 ) ).to("cuda")
+//             // # tf_world_cur[:,0:3, 0:3] = R_world_cur
+//             // # tf_world_cur[:,0:3, 3] = T_world_cur
+//             // # tf_world_cur[:, 3,3]=1.0
+//             // #get the transform from world to the cur_points
+//             // # tf_cur_world=torch.linalg.inv(tf_world_cur)
+//             // # print("tf_cur_world", tf_cur_world)
+//             // #get the transform from world to the cur_points but in a faster way because the inv is kinda slow
+//             // tf_cur_world=torch.zeros((nr_strands, 4, 4 ) ).to("cuda")
+//             // R_cur_world=R_world_cur.transpose(1,2) #inverse oif the rotation is just the tranpose because orthogonal matrices
+//             // T_cur_world= - torch.matmul(R_cur_world, T_world_cur.view(-1,3,1)).view(-1,3) # inverse of the translation block is -Rt*t, (https://math.stackexchange.com/a/1315407)
+//             // # tf_cur_world[:,0:3, 0:3] = R_cur_world
+//             // # tf_cur_world[:,0:3, 3] = T_cur_world
+//             // # tf_cur_world[:, 3,3]=1.0
+//             // # print("tf_cur_world faster ", tf_cur_world)
+//             // #transform from the world coords to the cur_frame
+//             // # next_points_cur_frame=  torch.matmul(R_cur_world, next_points_world.view(-1,3,1)).view(-1,3) + T_cur_world
+//             // # print("next_points_cur_frame", next_points_cur_frame)
+//             // #get the frame at the new point, the z axis corresponds with the direction from cur_to_next
+//             // new_N= F.normalize((next_points_world-cur_points_world),dim=1)
+//             // # print("new_N", new_N.max())
+//             // # print("n is" , new_N.shape)
+//             // temp_T= R_world_cur[:,:,0]
+//             // new_B= F.normalize(  torch.cross(new_N, temp_T, dim=1), dim=1)
+//             // new_T= F.normalize( torch.cross(new_B, new_N, dim=1), dim=1)
+//             // new_TBN = torch.cat( [new_T.view(-1,3,1), new_B.view(-1,3,1), new_N.view(-1,3,1)], 2  )
+//             // # print("new_TBN", new_TBN.max())
+//             // R_world_next = new_TBN
+//             // per_point_direction_to_next_list.append(new_N.view(nr_strands,1,3))
+//             // # get the rotation from cur_to_next
+//             // R_cur_next= torch.matmul(R_cur_world, R_world_next)
+//             // # print("R_cur_next",R_cur_next.max())
+//             // R_next_cur= R_cur_next.transpose(1,2)
+//             // # if i==0:
+//             //     # print("R_next_cur", R_next_cur)
+//             // #get this rotation to the rodrigues
+//             // # Rodrigues_cur_next=R_to_rvec(R_cur_next)
+//             // # print("R_next_cur", R_next_cur)
+//             // Rodrigues_next_cur=R_to_rvec(R_next_cur)
+//         }
+//     }
+
+
+
+// }
+
+
+void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const Eigen::MatrixXd& points, const Eigen::MatrixXd& strand_lengths, std::vector<Eigen::Matrix3d>& tbn_roots, torch::Tensor& per_point_rotation_next_cur_tensor, torch::Tensor& per_point_delta_dist_tensor, torch::Tensor& per_point_direction_to_next_tensor){
+
+    TIME_SCOPE("xyz2local_cpu");
+
+    int nr_segments_per_strand=nr_verts_per_strand-1;
+
+    Eigen::VectorXd per_strand_segment_length= strand_lengths/nr_segments_per_strand;
+
+
+    std::vector<  Eigen::Vector3f > rodrigues_vec;
+
+    //make the tensors
+    per_point_rotation_next_cur_tensor = torch::empty({  nr_strands,nr_verts_per_strand,3   }, torch::dtype(torch::kFloat32) );
+    per_point_delta_dist_tensor = torch::empty({  nr_strands,nr_verts_per_strand,1     }, torch::dtype(torch::kFloat32) );
+    per_point_direction_to_next_tensor =  torch::empty({  nr_strands,nr_verts_per_strand-1, 3     }, torch::dtype(torch::kFloat32) );
+    auto per_point_rotation_next_cur_tensor_accessor = per_point_rotation_next_cur_tensor.accessor<float,3>();
+    auto per_point_delta_dist_tensor_accessor = per_point_delta_dist_tensor.accessor<float,3>();
+    auto per_point_direction_to_next_tensor_accessor = per_point_direction_to_next_tensor.accessor<float,3>();
 
     for(int s=0; s<nr_strands; s++){
-        for(int p=0; p<nr_verts_per_strand; p++){
 
-            Eigen::Vector3d p0;
-            Eigen::Vector3d p1;
-            p0 << 0,0,0;
-            p1 << 1,1,0;
+        Eigen::Matrix3d R_world_cur;
+        //the cur_to_world starts a the root with the TBN of the root
+        R_world_cur=tbn_roots[s];
 
-            Eigen::Affine3d tf_world_cur; //model matrix
-            tf_world_cur.setIdentity();
+        for(int p=0; p<nr_verts_per_strand-1; p++){
 
-            Eigen::Affine3d tf_cur_world;
-            tf_cur_world=tf_world_cur.inverse();
+            int idx_point= s*nr_verts_per_strand+p;
+
+            Eigen::Vector3d cur_point_world = points.row(idx_point);
+            Eigen::Vector3d next_point_world = points.row(idx_point+1);
 
 
-            //calculate new base
-            Eigen::Vector3d new_N= (p1-p0).normalized();
-            Eigen::Vector3d temp_T= tf_world_cur.linear().col(2);
+            //get tf_cur_world
+            Eigen::Vector3d t_world_cur=cur_point_world;
+            Eigen::Affine3d tf_world_cur;
+            tf_world_cur.linear()= R_world_cur;
+            tf_world_cur.translation()= t_world_cur;
+            Eigen::Affine3d tf_cur_world = tf_world_cur.inverse();
+            Eigen::Matrix3d R_cur_world= tf_cur_world.linear();
+
+            //get the frame at the new point, the z axis corresponds with the direction from cur_to_next
+            Eigen::Vector3d new_N= (next_point_world-cur_point_world).normalized();
+            Eigen::Vector3d temp_T= R_world_cur.col(0);
             Eigen::Vector3d new_B= (new_N.cross(temp_T)).normalized();
-            Eigen::Vector3d new_T= (new_B.cross(new_N)).normalized();
-            // new_TBN = torch.cat( [new_T.view(-1,3,1), new_B.view(-1,3,1), new_N.view(-1,3,1)], 2  )
+            Eigen::Vector3d new_T = (new_B.cross(new_N)).normalized();
             Eigen::Matrix3d new_TBN;
             new_TBN.col(0) = new_T;
             new_TBN.col(1) = new_B;
             new_TBN.col(2) = new_N;
 
-            Eigen::Matrix3d R_cur_next= tf_cur_world.linear()*new_TBN;
-            Eigen::AngleAxisd rodrigues=Eigen::AngleAxisd(R_cur_next);
 
-            rodrigues_vec.push_back(rodrigues);
+            Eigen::Matrix3d R_world_next = new_TBN;
 
 
-
-            // //get the first and second point just as a dummy
-            // cur_points_world= strands_xyz[:, i, :] # nr_strands x 3
-            // next_points_world= strands_xyz[:, i+1, :] # nr_strands x 3
-            // #get the current frame of the points
-            // if i==0:
-            //     R_world_cur=tbn_roots  #nr_strands  3x3  #rotation cur_frame to the world_frame
-            // T_world_cur=cur_points_world # translation nr_strands x 3
-            // #compose a full transform tf_world_cur ( transform from cur_points to world)
-            // # print("R_world_cur", R_world_cur)
-            // # print("T_world_cur", T_world_cur)
-            // # print("T_world_cur.shape", T_world_cur.shape)
-            // # tf_world_cur=torch.zeros((nr_strands, 4, 4 ) ).to("cuda")
-            // # tf_world_cur[:,0:3, 0:3] = R_world_cur
-            // # tf_world_cur[:,0:3, 3] = T_world_cur
-            // # tf_world_cur[:, 3,3]=1.0
-            // #get the transform from world to the cur_points
-            // # tf_cur_world=torch.linalg.inv(tf_world_cur)
-            // # print("tf_cur_world", tf_cur_world)
-            // #get the transform from world to the cur_points but in a faster way because the inv is kinda slow
-            // tf_cur_world=torch.zeros((nr_strands, 4, 4 ) ).to("cuda")
-            // R_cur_world=R_world_cur.transpose(1,2) #inverse oif the rotation is just the tranpose because orthogonal matrices
-            // T_cur_world= - torch.matmul(R_cur_world, T_world_cur.view(-1,3,1)).view(-1,3) # inverse of the translation block is -Rt*t, (https://math.stackexchange.com/a/1315407)
-            // # tf_cur_world[:,0:3, 0:3] = R_cur_world
-            // # tf_cur_world[:,0:3, 3] = T_cur_world
-            // # tf_cur_world[:, 3,3]=1.0
-            // # print("tf_cur_world faster ", tf_cur_world)
-            // #transform from the world coords to the cur_frame
-            // # next_points_cur_frame=  torch.matmul(R_cur_world, next_points_world.view(-1,3,1)).view(-1,3) + T_cur_world
-            // # print("next_points_cur_frame", next_points_cur_frame)
-            // #get the frame at the new point, the z axis corresponds with the direction from cur_to_next
-            // new_N= F.normalize((next_points_world-cur_points_world),dim=1)
-            // # print("new_N", new_N.max())
-            // # print("n is" , new_N.shape)
-            // temp_T= R_world_cur[:,:,0]
-            // new_B= F.normalize(  torch.cross(new_N, temp_T, dim=1), dim=1)
-            // new_T= F.normalize( torch.cross(new_B, new_N, dim=1), dim=1)
-            // new_TBN = torch.cat( [new_T.view(-1,3,1), new_B.view(-1,3,1), new_N.view(-1,3,1)], 2  )
-            // # print("new_TBN", new_TBN.max())
-            // R_world_next = new_TBN
-            // per_point_direction_to_next_list.append(new_N.view(nr_strands,1,3))
-            // # get the rotation from cur_to_next
-            // R_cur_next= torch.matmul(R_cur_world, R_world_next)
-            // # print("R_cur_next",R_cur_next.max())
-            // R_next_cur= R_cur_next.transpose(1,2)
-            // # if i==0:
-            //     # print("R_next_cur", R_next_cur)
-            // #get this rotation to the rodrigues
-            // # Rodrigues_cur_next=R_to_rvec(R_cur_next)
-            // # print("R_next_cur", R_next_cur)
+            // get the rotation from cur_to_next
+            Eigen::Matrix3d R_cur_next= R_cur_world * R_world_next;
+            Eigen::Matrix3d R_next_cur= R_cur_next.transpose();
             // Rodrigues_next_cur=R_to_rvec(R_next_cur)
-        }
-    }
+            Eigen::AngleAxisd rodrigues_axis_angle= Eigen::AngleAxisd(R_next_cur);
+            Eigen::Vector3d rodrigues_next_cur= rodrigues_axis_angle.axis() * rodrigues_axis_angle.angle();
+            //get also the delta distance from one point to the next (the delta is without the average segment)
+            double delta_dist= (next_point_world-cur_point_world).norm() - per_strand_segment_length(s);
 
+
+
+            //setup the next R_world_cur for the next iteration to now be R_world_next
+            R_world_cur=R_world_next;
+
+
+            //write  per_point_direction_to_next which is the normal vector in world coordinates
+            per_point_direction_to_next_tensor_accessor[s][p][0] = new_N.x();
+            per_point_direction_to_next_tensor_accessor[s][p][1] = new_N.y();
+            per_point_direction_to_next_tensor_accessor[s][p][2] = new_N.z();
+            //write the rodrogues_nexT_cur_vector
+            per_point_rotation_next_cur_tensor_accessor[s][p][0] = rodrigues_next_cur.x();
+            per_point_rotation_next_cur_tensor_accessor[s][p][1] = rodrigues_next_cur.y();
+            per_point_rotation_next_cur_tensor_accessor[s][p][2] = rodrigues_next_cur.z();
+            //write the detla distance
+            per_point_delta_dist_tensor_accessor[s][p][0] =delta_dist;
+
+
+
+        }
+
+        //last point on the strands doesnt have a next, so there is no rotation and no distance
+        // rotations_next_cur_per_segment.append( torch.zeros(nr_strands,1,3).cuda() )
+        // delta_distances_per_segment.append( torch.zeros(nr_strands,1,1).cuda() )
+        //no rotation
+        per_point_rotation_next_cur_tensor_accessor[s][nr_verts_per_strand-1][0] = 0;
+        per_point_rotation_next_cur_tensor_accessor[s][nr_verts_per_strand-1][1] = 0;
+        per_point_rotation_next_cur_tensor_accessor[s][nr_verts_per_strand-1][2] = 0;
+        //no delta dist
+        per_point_delta_dist_tensor_accessor[s][nr_verts_per_strand-1][0] =0;
+    }
 
 
 }

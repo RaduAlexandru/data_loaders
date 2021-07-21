@@ -48,7 +48,7 @@ struct USCHair {
     Eigen::MatrixXd full_hair_cumulative_strand_length; //Nx 1  for each point on the hair store the cumulative lenght along it's corresponding strand
     torch::Tensor per_point_rotation_next_cur_tensor; // nr_strands X nr_points_per_strand x 3 of rodrigues towards the next point. Expressed in the local coordinate system of the current point
     torch::Tensor per_point_delta_dist_tensor; // nr_strands X nr_points_per_strand x 1  of delta movement applied to the average segment lenght. This is applied to the per_point_rotation_next_cur
-    torch::Tensor per_point_direction_to_next; // nr_strands X nr_points_per_strand-1 x 3 direction in world coordinates from one point to the next one on the same strand
+    torch::Tensor per_point_direction_to_next_tensor; // nr_strands X nr_points_per_strand-1 x 3 direction in world coordinates from one point to the next one on the same strand
 } ;
 
 
@@ -85,7 +85,16 @@ private:
     // > read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
     std::shared_ptr<USCHair> read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
     void compute_root_points_atributes(Eigen::MatrixXd& uv, std::vector<Eigen::Matrix3d>& tbn_per_point, std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec); //project the points onto the closest point on the mesh and get the uv from there
-    void xyz2local(); //compute a local representation of the strands
+
+    //compute a local representation of the strands
+    // strands_xyz : tensor of nr_strands x nr_points_per_strand x 3 of coordinates in world coordinates
+    // strands_lengths: tensor of nr_strands x 1
+    // tbn_roots nr_strands x 3 x 3 #Tangent-bitangent-normal for each point at the root of the strand in world coordinates
+    // OUTPUT:
+    // per_point_rotation_next_cur tensor of nr_strands X nr_points_per_strand x 3 of rodrigues towards the next point. Expressed in the local coordinate system of the current point
+    // per_point_delta_dist tensor of nr_strands X nr_points_per_strand x 1  of delta movement applied to the average segment lenght. This is applied to the per_point_rotation_next_cur
+    // per_point_direction_to_next  nr_strands X nr_points_per_strand-1 x 3 direction in world coordinates from one point to the next one on the same strand
+    void xyz2local(int nr_strands, int nr_verts_per_strand, const Eigen::MatrixXd& points, const Eigen::MatrixXd& strand_lengths, std::vector<Eigen::Matrix3d>& tbn_roots, torch::Tensor& per_point_rotation_next_cur_tensor, torch::Tensor& per_point_delta_dist_tensor, torch::Tensor& per_point_direction_to_next_tensor);
 
 
     //objects
