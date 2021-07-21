@@ -800,7 +800,29 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
             // CHECK(R_next_cur.allFinite()) << "R_next_cur not finite s,p"  << s << " " << p;
             // Rodrigues_next_cur=R_to_rvec(R_next_cur)
             Eigen::AngleAxisd rodrigues_axis_angle= Eigen::AngleAxisd(R_next_cur);
-            Eigen::Vector3d rodrigues_next_cur= rodrigues_axis_angle.axis() * rodrigues_axis_angle.angle();
+            Eigen::Vector3d axis=rodrigues_axis_angle.axis();
+            double angle=rodrigues_axis_angle.angle();
+            //the rodrigues axis angle is ambiguous with respect to sign. So the rotation expressed by axis d and angle a is the same as the one of axis -d and angle 2pi-a
+            //we flip it in the local coordinates of the tbn of the root so that if the dot with respect to an arbitrary axis is negative, then we flip
+            double dot = axis.dot( tbn_roots[s].col(0) ); //the axis is chosen arbitrarily
+            // VLOG(1) << "angle is " << angle;
+            if(dot<0.0){
+                // VLOG(1) << "before " << axis*angle;
+                axis=-axis;
+                angle=2*M_PI-angle;
+                // VLOG(1) << "flipping at " << s <<" " << p;
+                // VLOG(1) << "after " << axis*angle;
+            }
+            // Eigen::Vector3d rodrigues_next_cur= rodrigues_axis_angle.axis() * rodrigues_axis_angle.angle();
+            Eigen::Vector3d rodrigues_next_cur= axis * angle;
+            // double dot = rodrigues_next_cur.normalized().dot( tbn_roots[s].col(0) ); //the axis is chosen arbitrarily
+            // if(dot<0.0){
+            //     double axis=
+            //     rodrigues_next_cur=-rodrigues_next_cur;
+            //     //an angle of 2pi in this direction needs to become zero in the other direciton so we do 2pi-angle
+            //     VLOG(1) << "flipping at " << s <<" " << p;
+            // }
+
             // CHECK(rodrigues_next_cur.allFinite()) << "rodrigues_next_cur not finite s,p"  << s << " " << p;
             //get also the delta distance from one point to the next (the delta is without the average segment)
             double delta_dist= (next_point_world-cur_point_world).norm() - per_strand_segment_length(s);
