@@ -34,6 +34,7 @@ using namespace configuru;
 #include "string_utils.h"
 #include "eigen_utils.h"
 #include "RandGenerator.h"
+#include "UtilsPytorch.h"
 
 using namespace radu::utils;
 using namespace easy_pbr;
@@ -43,7 +44,7 @@ using namespace easy_pbr;
 DataLoaderUSCHair::DataLoaderUSCHair(const std::string config_file):
     m_is_modified(false),
     m_is_running(false),
-    m_clouds_buffer(BUFFER_SIZE),
+    m_hairs_buffer(BUFFER_SIZE),
     m_idx_cloud_to_read(0),
     m_nr_resets(0),
     m_rand_gen(new RandGenerator)
@@ -192,7 +193,7 @@ void DataLoaderUSCHair::read_data(){
 
             // std::cout << "size approx is " << m_queue.size_approx() << '\n';
             // std::cout << "m_idx_img_to_read is " << m_idx_img_to_read << '\n';
-            if(m_clouds_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
+            if(m_hairs_buffer.size_approx()<BUFFER_SIZE-1){ //there is enough space
                 //read the frame and everything else and push it to the queue
 
                 std::string data_filepath=m_data_filenames[ m_idx_cloud_to_read ].string();
@@ -203,11 +204,15 @@ void DataLoaderUSCHair::read_data(){
 
                 std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
                 std::shared_ptr<easy_pbr::Mesh> full_hair;
-                auto ret=read_hair_sample(data_filepath);
-                strands= std::get<0>(ret);
-                full_hair= std::get<1>(ret);
+                // auto ret=read_hair_sample(data_filepath);
+                // strands= std::get<0>(ret);
+                // full_hair= std::get<1>(ret);
 
-                m_clouds_buffer.enqueue(full_hair);
+                auto hair=read_hair_sample(data_filepath);
+
+
+                // m_clouds_buffer.enqueue(full_hair);
+                m_hairs_buffer.enqueue(hair);
 
             }
 
@@ -225,15 +230,19 @@ void DataLoaderUSCHair::read_data(){
 
             VLOG(1) << "data_filepath " << data_filepath;
 
-            std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
-            std::shared_ptr<easy_pbr::Mesh> full_hair;
-            auto ret=read_hair_sample(data_filepath);
-            strands= std::get<0>(ret);
-            full_hair= std::get<1>(ret);
+            // std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
+            // std::shared_ptr<easy_pbr::Mesh> full_hair;
+            // auto ret=read_hair_sample(data_filepath);
+            // strands= std::get<0>(ret);
+            // full_hair= std::get<1>(ret);
 
-            VLOG(1) << "push";
+            // VLOG(1) << "push";
 
-            m_clouds_vec.push_back(full_hair);
+            // m_clouds_vec.push_back(full_hair);
+
+
+            auto hair=read_hair_sample(data_filepath);
+            m_hairs_vec.push_back(hair);
 
         }
 
@@ -242,11 +251,8 @@ void DataLoaderUSCHair::read_data(){
 }
 
 
-std::tuple<
-        std::vector< std::shared_ptr<easy_pbr::Mesh> >,
-        std::shared_ptr<easy_pbr::Mesh>
-    >
-DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
+
+std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
 
     //read data. most of the code is from http://www-scf.usc.edu/~liwenhu/SHM/Hair.cc
@@ -256,11 +262,12 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     CHECK(f) << "Couldn't open" << data_filepath;
 
 
-    TIME_START("load");
+    TIME_SCOPE("load");
 
-    USCHair usc_hair;
+    std::shared_ptr<USCHair> usc_hair(new USCHair);
     std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
-    std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+    // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+    usc_hair->full_hair_cloud=easy_pbr::Mesh::create();
     std::vector<Eigen::Vector3d> full_hair_points_vec;
     std::vector<double> full_hair_cumulative_strand_length_vec; //stores for each point on the hair, the cumulative strand legnth up until that point
     std::vector<int> full_hair_strand_idx_vec;
@@ -384,75 +391,130 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
     fclose(f);
     // return true;
 
-    //get the full cloud into one
-    // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
 
-    // VLOG(1) << " full_hair_points_vec" << full_hair_points_vec.size();
-    full_hair->V=vec2eigen(full_hair_points_vec);
-    // full_hair->V=vec2eigen(first_strand_hair_points_vec);
-    Eigen::MatrixXi strand_idx=vec2eigen(full_hair_strand_idx_vec);
-    // VLOG(1) << "strand_idx" << strand_idx.rows() << " " <<strand_idx.cols();
-    full_hair->add_extra_field("strand_idx", strand_idx);
-    full_hair->m_vis.m_show_points=true;
-    // VLOG(1) << "adding";
-    // VLOG(1) << "finished adding";
-
-
-
-    //compute the uv for the first points on the strand
-    // Eigen::MatrixXd uv_roots = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
+    //put everything into the hair structure
+    usc_hair->full_hair_cloud->V=vec2eigen(full_hair_points_vec);
+    usc_hair->full_hair_cloud->m_vis.m_show_points=true;
+    usc_hair->strand_meshes=strands;
+    usc_hair->per_point_strand_idx=vec2eigen(full_hair_strand_idx_vec);
+    usc_hair->position_roots=vec2eigen(first_strand_points_vec);
+    usc_hair->strand_lengths=vec2eigen(strand_lengths_vec);
+    usc_hair->full_hair_cumulative_strand_length=vec2eigen(full_hair_cumulative_strand_length_vec);
     Eigen::MatrixXd uv_roots;
     std::vector<Eigen::Matrix3d> tbn_roots;
     compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, first_strand_points_vec);
-    full_hair->add_extra_field("uv_roots", uv_roots);
-    full_hair->add_extra_field("tbn_roots", tbn_roots);
-
-    //compute also the direciton in 3 matrices for easier processing
-    Eigen::MatrixXd t_roots;
-    Eigen::MatrixXd b_roots;
-    Eigen::MatrixXd n_roots;
-    t_roots.resize(first_strand_points_vec.size(),3);
-    b_roots.resize(first_strand_points_vec.size(),3);
-    n_roots.resize(first_strand_points_vec.size(),3);
-    for(int i=0; i<first_strand_points_vec.size(); i++){
-        t_roots.row(i) = tbn_roots[i].col(0).transpose();
-        b_roots.row(i) = tbn_roots[i].col(1).transpose();
-        n_roots.row(i) = tbn_roots[i].col(2).transpose();
+    usc_hair->uv_roots=uv_roots;
+    //put into tensors
+    int nr_points=usc_hair->full_hair_cloud->V.rows();
+    torch::Tensor points_tensor=eigen2tensor(usc_hair->full_hair_cloud->V.cast<float>()).view({nr_strands_added, 100, 3 });
+    torch::Tensor tbn_roots_tensor = torch::empty({ nr_points,3,3 }, torch::dtype(torch::kFloat32) );
+    auto tbn_roots_tensor_accesor = tbn_roots_tensor.accessor<float,3>();
+    for(int i=0; i<tbn_roots.size(); i++){
+        //row 0
+        tbn_roots[i](0,0)=tbn_roots_tensor_accesor[i][0][0];
+        tbn_roots[i](0,1)=tbn_roots_tensor_accesor[i][0][1];
+        tbn_roots[i](0,2)=tbn_roots_tensor_accesor[i][0][2];
+        //row 1
+        tbn_roots[i](1,0)=tbn_roots_tensor_accesor[i][1][0];
+        tbn_roots[i](1,1)=tbn_roots_tensor_accesor[i][1][1];
+        tbn_roots[i](1,2)=tbn_roots_tensor_accesor[i][1][2];
+        //row 2
+        tbn_roots[i](2,0)=tbn_roots_tensor_accesor[i][2][0];
+        tbn_roots[i](2,1)=tbn_roots_tensor_accesor[i][2][1];
+        tbn_roots[i](2,2)=tbn_roots_tensor_accesor[i][2][2];
     }
-    full_hair->add_extra_field("t_roots", t_roots);
-    full_hair->add_extra_field("b_roots", b_roots);
-    full_hair->add_extra_field("n_roots", n_roots);
+
+    return usc_hair;
 
 
 
-    //get also the roots positions for each strand
-    Eigen::MatrixXd position_roots=vec2eigen(first_strand_points_vec);
-    full_hair->add_extra_field("position_roots", position_roots);
-
-    //add also the strand length
-    Eigen::MatrixXd strand_lengths=vec2eigen(strand_lengths_vec);
-    full_hair->add_extra_field("strand_lengths", strand_lengths);
-
-    //add cumulative strand length
-    Eigen::MatrixXd full_hair_cumulative_strand_length=vec2eigen(full_hair_cumulative_strand_length_vec);
-    full_hair->add_extra_field("full_hair_cumulative_strand_length", full_hair_cumulative_strand_length);
-
-
-    //DEBUG check also if the xyz2local is faster on cpu
-    // xyz2local();
-    // xyz2local();
-    // xyz2local();
-    // xyz2local();
-    // xyz2local();
-    // xyz2local();
 
 
 
-    TIME_END("load");
 
-    auto ret= std::make_tuple(strands, full_hair);
 
-    return ret;
+
+
+
+
+
+
+
+
+
+
+
+
+
+    // //get the full cloud into one
+    // // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
+
+    // // VLOG(1) << " full_hair_points_vec" << full_hair_points_vec.size();
+    // full_hair->V=vec2eigen(full_hair_points_vec);
+    // // full_hair->V=vec2eigen(first_strand_hair_points_vec);
+    // Eigen::MatrixXi strand_idx=vec2eigen(full_hair_strand_idx_vec);
+    // // VLOG(1) << "strand_idx" << strand_idx.rows() << " " <<strand_idx.cols();
+    // full_hair->add_extra_field("strand_idx", strand_idx);
+    // full_hair->m_vis.m_show_points=true;
+    // // VLOG(1) << "adding";
+    // // VLOG(1) << "finished adding";
+
+
+
+    // //compute the uv for the first points on the strand
+    // // Eigen::MatrixXd uv_roots = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
+    // Eigen::MatrixXd uv_roots;
+    // std::vector<Eigen::Matrix3d> tbn_roots;
+    // compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, first_strand_points_vec);
+    // full_hair->add_extra_field("uv_roots", uv_roots);
+    // full_hair->add_extra_field("tbn_roots", tbn_roots);
+
+    // //compute also the direciton in 3 matrices for easier processing
+    // Eigen::MatrixXd t_roots;
+    // Eigen::MatrixXd b_roots;
+    // Eigen::MatrixXd n_roots;
+    // t_roots.resize(first_strand_points_vec.size(),3);
+    // b_roots.resize(first_strand_points_vec.size(),3);
+    // n_roots.resize(first_strand_points_vec.size(),3);
+    // for(int i=0; i<first_strand_points_vec.size(); i++){
+    //     t_roots.row(i) = tbn_roots[i].col(0).transpose();
+    //     b_roots.row(i) = tbn_roots[i].col(1).transpose();
+    //     n_roots.row(i) = tbn_roots[i].col(2).transpose();
+    // }
+    // full_hair->add_extra_field("t_roots", t_roots);
+    // full_hair->add_extra_field("b_roots", b_roots);
+    // full_hair->add_extra_field("n_roots", n_roots);
+
+
+
+    // //get also the roots positions for each strand
+    // Eigen::MatrixXd position_roots=vec2eigen(first_strand_points_vec);
+    // full_hair->add_extra_field("position_roots", position_roots);
+
+    // //add also the strand length
+    // Eigen::MatrixXd strand_lengths=vec2eigen(strand_lengths_vec);
+    // full_hair->add_extra_field("strand_lengths", strand_lengths);
+
+    // //add cumulative strand length
+    // Eigen::MatrixXd full_hair_cumulative_strand_length=vec2eigen(full_hair_cumulative_strand_length_vec);
+    // full_hair->add_extra_field("full_hair_cumulative_strand_length", full_hair_cumulative_strand_length);
+
+
+    // //DEBUG check also if the xyz2local is faster on cpu
+    // // xyz2local();
+    // // xyz2local();
+    // // xyz2local();
+    // // xyz2local();
+    // // xyz2local();
+    // // xyz2local();
+
+
+
+    // TIME_END("load");
+
+    // auto ret= std::make_tuple(strands, full_hair);
+
+    // return ret;
 
 }
 
@@ -647,7 +709,7 @@ bool DataLoaderUSCHair::has_data(){
     if(m_load_buffered){
 
 
-        if(m_clouds_buffer.peek()==nullptr){
+        if(m_hairs_buffer.peek()==nullptr){
             return false;
         }else{
             return true;
@@ -663,12 +725,15 @@ bool DataLoaderUSCHair::has_data(){
 std::shared_ptr<Mesh> DataLoaderUSCHair::get_cloud(){
 
     std::shared_ptr<Mesh> cloud;
+    std::shared_ptr<USCHair> hair;
 
     if(m_load_buffered){
-        m_clouds_buffer.try_dequeue(cloud);
+        m_hairs_buffer.try_dequeue(hair);
+        cloud=hair->full_hair_cloud;
     }else{
         // VLOG(1) << "returning" << m_idx_cloud_to_read;
-        cloud=m_clouds_vec[m_idx_cloud_to_read];
+        hair=m_hairs_vec[m_idx_cloud_to_read];
+        cloud=hair->full_hair_cloud;
         cloud->m_is_dirty=true; //if we visualized this mesh before and we want to update it, we need to set the is_dirty
         cloud->m_is_shadowmap_dirty=true;
         m_idx_cloud_to_read++;
@@ -679,6 +744,20 @@ std::shared_ptr<Mesh> DataLoaderUSCHair::get_cloud(){
     }
 
     return cloud;
+}
+
+std::shared_ptr<USCHair> DataLoaderUSCHair::get_hair(){
+
+    std::shared_ptr<USCHair> hair;
+
+    if(m_load_buffered){
+        m_hairs_buffer.try_dequeue(hair);
+    }else{
+        // VLOG(1) << "returning" << m_idx_cloud_to_read;
+        hair=m_hairs_vec[m_idx_cloud_to_read];
+    }
+
+    return hair;
 }
 
 std::shared_ptr<Mesh> DataLoaderUSCHair::get_mesh_head(){
@@ -696,7 +775,7 @@ bool DataLoaderUSCHair::is_finished(){
     }
 
     //check that there is nothing in the ring buffers
-    if(m_clouds_buffer.peek()!=nullptr){
+    if(m_hairs_buffer.peek()!=nullptr){
         return false; //there is still something in the buffer
     }
 

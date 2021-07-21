@@ -372,6 +372,7 @@ PYBIND11_MODULE(dataloaders, m) {
         py::class_<DataLoaderUSCHair> (m, "DataLoaderUSCHair")
         .def(py::init<const std::string>())
         .def("start", &DataLoaderUSCHair::start )
+        .def("get_hair", &DataLoaderUSCHair::get_hair )
         .def("get_cloud", &DataLoaderUSCHair::get_cloud, R"EOS( get_cloud. )EOS" )
         .def("get_mesh_head", &DataLoaderUSCHair::get_mesh_head )
         .def("get_mesh_scalp", &DataLoaderUSCHair::get_mesh_scalp )
@@ -387,7 +388,7 @@ PYBIND11_MODULE(dataloaders, m) {
         //USCHair
         py::class_<USCHair> (m, "USCHair")
         .def_readwrite("full_hair_cloud", &USCHair::full_hair_cloud)
-        .def_readwrite("strands_mesh", &USCHair::strands_mesh)
+        .def_readwrite("strand_meshes", &USCHair::strand_meshes)
         // .def_readwrite("points", &USCHair::points)
         .def_readwrite("points_tensor", &USCHair::points_tensor)
         .def_readwrite("per_point_strand_idx", &USCHair::per_point_strand_idx)

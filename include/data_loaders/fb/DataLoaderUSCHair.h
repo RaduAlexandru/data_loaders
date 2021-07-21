@@ -37,7 +37,7 @@ class DataTransformer;
 // Struct to contain everything we need for one hair sample
 struct USCHair {
     std::shared_ptr<easy_pbr::Mesh> full_hair_cloud; //cloud containing the points of the hair
-    std::vector< std::shared_ptr<easy_pbr::Mesh> > strands_mesh; //vector containing a mesh for each strand
+    std::vector< std::shared_ptr<easy_pbr::Mesh> > strand_meshes; //vector containing a mesh for each strand
     // Eigen::MatrixXd points; //Nx3 points of the hair
     torch::Tensor points_tensor; //nr_strands x nr_points_per_strand x 3
     Eigen::MatrixXi per_point_strand_idx; //Nx1 index of strand for each point. Points that belong to the same strand will have the same idx
@@ -60,6 +60,7 @@ public:
     ~DataLoaderUSCHair();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
     std::shared_ptr<easy_pbr::Mesh> get_cloud();
+    std::shared_ptr<USCHair> get_hair(); //return the whole usc struct of hair
     std::shared_ptr<easy_pbr::Mesh> get_mesh_head();
     std::shared_ptr<easy_pbr::Mesh> get_mesh_scalp();
     bool has_data();
@@ -78,10 +79,11 @@ private:
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
     std::vector<Eigen::Affine3d,  Eigen::aligned_allocator<Eigen::Affine3d>  >read_pose_file(std::string m_pose_file);
     void read_data();
-    std::tuple<
-        std::vector< std::shared_ptr<easy_pbr::Mesh> >,
-        std::shared_ptr<easy_pbr::Mesh>
-    > read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
+    // std::tuple<
+    //     std::vector< std::shared_ptr<easy_pbr::Mesh> >,
+    //     std::shared_ptr<easy_pbr::Mesh>
+    // > read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
+    std::shared_ptr<USCHair> read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
     void compute_root_points_atributes(Eigen::MatrixXd& uv, std::vector<Eigen::Matrix3d>& tbn_per_point, std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec); //project the points onto the closest point on the mesh and get the uv from there
     void xyz2local(); //compute a local representation of the strands
 
@@ -112,8 +114,10 @@ private:
     bool m_is_modified; //indicate that a cloud was finished processind and you are ready to get it
     int m_nr_sequences;
     std::vector<fs::path> m_data_filenames;
-    moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
-    std::vector<std::shared_ptr<easy_pbr::Mesh> > m_clouds_vec;
+    // moodycamel::ReaderWriterQueue<std::shared_ptr<easy_pbr::Mesh> > m_clouds_buffer;
+    // std::vector<std::shared_ptr<easy_pbr::Mesh> > m_clouds_vec;
+    moodycamel::ReaderWriterQueue<std::shared_ptr<USCHair > > m_hairs_buffer;
+    std::vector<std::shared_ptr<USCHair> > m_hairs_vec;
     std::shared_ptr<easy_pbr::Mesh>  m_mesh_head;
     std::shared_ptr<easy_pbr::Mesh>  m_mesh_scalp;
 
