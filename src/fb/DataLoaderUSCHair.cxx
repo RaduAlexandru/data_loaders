@@ -327,6 +327,11 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         double strand_length=0;
         Eigen::Vector3d prev_point;
 
+
+
+
+        //some points on the strand are actually the same point in xyz and therefore will produce nans when we try to compute the rotation between them. so we go once through the reading and check if that happens
+        std::vector<Eigen::Vector3d> points_current_strand_vec; //we need to store here the points we read
         for (int j = 0; j < nverts; j++) {
             // VLOG(1) << "vert " <<j;
             // fread(&strand_points_float(i,0), 12, 1, f);
@@ -338,11 +343,27 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
             Eigen::Vector3d point;
             point << x,y,z;
+            points_current_strand_vec.push_back(point);
 
-            // VLOG(1) << "awdawd nrverts is " << nverts;
-            if (is_strand_valid){
-                // VLOG(1) << "adding";
-                // if (j==0)
+            //check if the points are the same
+            if(j>=1){ //if we are the first vertex, there is no previous
+                // float cur_segment_length= (point-prev_point).norm();
+                if( (prev_point-point).isZero() ){
+                    is_strand_valid=false;
+                }
+            }
+            prev_point=point;
+        }
+
+
+
+        if (is_strand_valid) {
+            for (int j = 0; j < nverts; j++) {
+
+
+                Eigen::Vector3d point = points_current_strand_vec[j];
+
+
                 full_hair_points_vec.push_back(point);
                 full_hair_cumulative_strand_length_vec.push_back(strand_length);
                 // full_hair_strand_idx_vec.push_back(i);
@@ -354,25 +375,87 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
                     first_strand_points_vec.push_back(point);
                 }
 
-                //debug
-                // if (i==0){
-                    // first_strand_hair_points_vec.push_back(point);
-                // }
+
+
+                //compute also the lenght of the strand
+                if(j>=1){ //if we are the first vertex, there is no previous
+                    float cur_segment_length= (point-prev_point).norm();
+                    strand_length+=cur_segment_length;
+                    // VLOG(1) << cur_segment_length << " full " <<  strand_length;
+                }
+                prev_point=point;
+
 
             }
-
-            //compute also the lenght of the strand
-            if(j>=1){ //if we are the first vertex, there is no previous
-                float cur_segment_length= (point-prev_point).norm();
-                strand_length+=cur_segment_length;
-                // VLOG(1) << cur_segment_length << " full " <<  strand_length;
-            }
-            prev_point=point;
-
-
-
-
         }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+        // for (int j = 0; j < nverts; j++) {
+        //     // VLOG(1) << "vert " <<j;
+        //     // fread(&strand_points_float(i,0), 12, 1, f);
+        //     float x,y,z;
+        //     fread(&x, 4, 1, f);
+        //     fread(&y, 4, 1, f);
+        //     fread(&z, 4, 1, f);
+        //     strand->V.row(j) << x,y,z;
+
+        //     Eigen::Vector3d point;
+        //     point << x,y,z;
+
+        //     // VLOG(1) << "awdawd nrverts is " << nverts;
+        //     if (is_strand_valid){
+        //         // VLOG(1) << "adding";
+        //         // if (j==0)
+        //         full_hair_points_vec.push_back(point);
+        //         full_hair_cumulative_strand_length_vec.push_back(strand_length);
+        //         // full_hair_strand_idx_vec.push_back(i);
+        //         full_hair_strand_idx_vec.push_back(nr_strands_added);
+
+        //         //if its the frist point, compute the uv coordinate of this first point by splatting it onto the scalp mesh
+        //         if(j==0){
+        //             // Eigen::Vector2d = compute_closest_point_uv(m_mesh_scalp, point);
+        //             first_strand_points_vec.push_back(point);
+        //         }
+
+        //         //debug
+        //         // if (i==0){
+        //             // first_strand_hair_points_vec.push_back(point);
+        //         // }
+
+        //     }
+
+        //     //compute also the lenght of the strand
+        //     if(j>=1){ //if we are the first vertex, there is no previous
+        //         float cur_segment_length= (point-prev_point).norm();
+        //         strand_length+=cur_segment_length;
+        //         // VLOG(1) << cur_segment_length << " full " <<  strand_length;
+        //     }
+        //     prev_point=point;
+
+
+
+
+        // }
+
+
+
+
+
 
         // VLOG(1) << "strand_length " <<strand_length;
         // VLOG(1) << "Given this, the segment length should be " << strand_length/100;
@@ -650,10 +733,30 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
 
         for(int p=0; p<nr_verts_per_strand-1; p++){
 
+            // CHECK(R_world_cur.allFinite()) << "R_world_cur not finite s,p"  << s << " " << p;
+
             int idx_point= s*nr_verts_per_strand+p;
 
             Eigen::Vector3d cur_point_world = points.row(idx_point);
             Eigen::Vector3d next_point_world = points.row(idx_point+1);
+
+            // if( (cur_point_world-next_point_world).isZero() ){
+            //     VLOG(1) << "cur_point_world " << cur_point_world;
+            //     VLOG(1) << "next_point_world " << cur_point_world;
+            //     VLOG(1) << "NEXT_next_point_world " << points.row(idx_point+2);
+            //     CHECK(false) <<"wtf";
+            // }
+
+
+
+            // CHECK(cur_point_world.allFinite()) << "cur_point_world not finite s,p"  << s << " " << p;
+            // CHECK(next_point_world.allFinite()) << "next_point_world not finite s,p"  << s << " " << p;
+
+            // if(s==24 && p==22){
+            //     VLOG(1) << "cur_point_world at "<< s << " " << p  << " is "<< cur_point_world;
+            //     VLOG(1) << "next_point_world at "<< s << " " << p  << " is "<< next_point_world;
+            // }
+
 
 
             //get tf_cur_world
@@ -661,11 +764,15 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
             Eigen::Affine3d tf_world_cur;
             tf_world_cur.linear()= R_world_cur;
             tf_world_cur.translation()= t_world_cur;
+            // CHECK(R_world_cur.allFinite()) << "R_world_cur not finite s,p"  << s << " " << p;
+            // CHECK(t_world_cur.allFinite()) << "t_world_cur not finite s,p"  << s << " " << p;
             Eigen::Affine3d tf_cur_world = tf_world_cur.inverse();
+            // CHECK(tf_cur_world.matrix().allFinite()) << "tf_cur_world not finite s,p"  << s << " " << p << "tf_cur_world is " << tf_cur_world.matrix() << " tf_world_cur is " << tf_world_cur.matrix();
             Eigen::Matrix3d R_cur_world= tf_cur_world.linear();
 
             //get the frame at the new point, the z axis corresponds with the direction from cur_to_next
             Eigen::Vector3d new_N= (next_point_world-cur_point_world).normalized();
+            // CHECK(!new_N.isZero()) << "whyu is this zero";
             Eigen::Vector3d temp_T= R_world_cur.col(0);
             Eigen::Vector3d new_B= (new_N.cross(temp_T)).normalized();
             Eigen::Vector3d new_T = (new_B.cross(new_N)).normalized();
@@ -674,16 +781,27 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
             new_TBN.col(1) = new_B;
             new_TBN.col(2) = new_N;
 
+            // if(s==24 && p==22){
+            //     VLOG(1) << "new tbn at "<< s << " " << p  << " is "<< new_TBN;
+            // }
+
 
             Eigen::Matrix3d R_world_next = new_TBN;
 
+            // CHECK(new_TBN.allFinite()) << "newTBN not finite s,p"  << s << " " << p;
+
 
             // get the rotation from cur_to_next
+            // CHECK(R_world_next.allFinite()) << "R_world_next not finite s,p"  << s << " " << p;
+            // CHECK(R_cur_world.allFinite()) << "R_cur_world not finite s,p"  << s << " " << p;
             Eigen::Matrix3d R_cur_next= R_cur_world * R_world_next;
+            // CHECK(R_cur_next.allFinite()) << "R_cur_next not finite s,p"  << s << " " << p;
             Eigen::Matrix3d R_next_cur= R_cur_next.transpose();
+            // CHECK(R_next_cur.allFinite()) << "R_next_cur not finite s,p"  << s << " " << p;
             // Rodrigues_next_cur=R_to_rvec(R_next_cur)
             Eigen::AngleAxisd rodrigues_axis_angle= Eigen::AngleAxisd(R_next_cur);
             Eigen::Vector3d rodrigues_next_cur= rodrigues_axis_angle.axis() * rodrigues_axis_angle.angle();
+            // CHECK(rodrigues_next_cur.allFinite()) << "rodrigues_next_cur not finite s,p"  << s << " " << p;
             //get also the delta distance from one point to the next (the delta is without the average segment)
             double delta_dist= (next_point_world-cur_point_world).norm() - per_strand_segment_length(s);
 
