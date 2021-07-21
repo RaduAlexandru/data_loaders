@@ -25,7 +25,9 @@
 #include "data_loaders/DataLoaderLLFF.h"
 //fb
 #include "data_loaders/fb/DataLoaderBlenderFB.h"
-#include "data_loaders/fb/DataLoaderUSCHair.h"
+#ifdef WITH_TORCH
+    #include "data_loaders/fb/DataLoaderUSCHair.h"
+#endif
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
 
@@ -364,22 +366,41 @@ PYBIND11_MODULE(dataloaders, m) {
     ;
 
 
-    //DataLoaderUSCHair
-    py::class_<DataLoaderUSCHair> (m, "DataLoaderUSCHair")
-    .def(py::init<const std::string>())
-    .def("start", &DataLoaderUSCHair::start )
-    .def("get_cloud", &DataLoaderUSCHair::get_cloud, R"EOS( get_cloud. )EOS" )
-    .def("get_mesh_head", &DataLoaderUSCHair::get_mesh_head )
-    .def("get_mesh_scalp", &DataLoaderUSCHair::get_mesh_scalp )
-    .def("has_data", &DataLoaderUSCHair::has_data )
-    .def("is_finished", &DataLoaderUSCHair::is_finished )
-    .def("is_finished_reading", &DataLoaderUSCHair::is_finished_reading )
-    .def("reset", &DataLoaderUSCHair::reset )
-    .def("nr_samples", &DataLoaderUSCHair::nr_samples )
-    .def("set_mode_train", &DataLoaderUSCHair::set_mode_train )
-    .def("set_mode_test", &DataLoaderUSCHair::set_mode_test )
-    .def("set_mode_validation", &DataLoaderUSCHair::set_mode_validation )
-    ;
+
+    #ifdef WITH_TORCH
+        //DataLoaderUSCHair
+        py::class_<DataLoaderUSCHair> (m, "DataLoaderUSCHair")
+        .def(py::init<const std::string>())
+        .def("start", &DataLoaderUSCHair::start )
+        .def("get_cloud", &DataLoaderUSCHair::get_cloud, R"EOS( get_cloud. )EOS" )
+        .def("get_mesh_head", &DataLoaderUSCHair::get_mesh_head )
+        .def("get_mesh_scalp", &DataLoaderUSCHair::get_mesh_scalp )
+        .def("has_data", &DataLoaderUSCHair::has_data )
+        .def("is_finished", &DataLoaderUSCHair::is_finished )
+        .def("is_finished_reading", &DataLoaderUSCHair::is_finished_reading )
+        .def("reset", &DataLoaderUSCHair::reset )
+        .def("nr_samples", &DataLoaderUSCHair::nr_samples )
+        .def("set_mode_train", &DataLoaderUSCHair::set_mode_train )
+        .def("set_mode_test", &DataLoaderUSCHair::set_mode_test )
+        .def("set_mode_validation", &DataLoaderUSCHair::set_mode_validation )
+        ;
+        //USCHair
+        py::class_<USCHair> (m, "USCHair")
+        .def_readwrite("full_hair_cloud", &USCHair::full_hair_cloud)
+        .def_readwrite("strands_mesh", &USCHair::strands_mesh)
+        // .def_readwrite("points", &USCHair::points)
+        .def_readwrite("points_tensor", &USCHair::points_tensor)
+        .def_readwrite("per_point_strand_idx", &USCHair::per_point_strand_idx)
+        .def_readwrite("uv_roots", &USCHair::uv_roots)
+        .def_readwrite("tbn_roots_tensor", &USCHair::tbn_roots_tensor)
+        .def_readwrite("position_roots", &USCHair::position_roots)
+        .def_readwrite("strand_lengths", &USCHair::strand_lengths)
+        .def_readwrite("full_hair_cumulative_strand_length", &USCHair::full_hair_cumulative_strand_length)
+        .def_readwrite("per_point_rotation_next_cur_tensor", &USCHair::per_point_rotation_next_cur_tensor)
+        .def_readwrite("per_point_delta_dist_tensor", &USCHair::per_point_delta_dist_tensor)
+        .def_readwrite("per_point_direction_to_next", &USCHair::per_point_direction_to_next)
+        ;
+    #endif
 
 
 

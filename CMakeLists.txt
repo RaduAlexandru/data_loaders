@@ -152,13 +152,9 @@ if (${catkin_FOUND} )
 endif()
 #loaders that require torch
 if(${TORCH_FOUND})
-    message("USING TORCH")
-    # target_compile_definitions(easypbr_cpp PUBLIC EASYPBR_WITH_TORCH)
     set(MY_SRC ${MY_SRC}
         ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderUSCHair.cxx
     )
-else()
-    message("NOT USING TORCH")
 endif()
 
 
@@ -173,6 +169,21 @@ endif()
 
 #lib
 add_library( dataloaders_cpp SHARED ${MY_SRC}  ${DEPS_SRC}  )
+
+
+
+
+
+
+
+if(${TORCH_FOUND})
+    message("USING TORCH")
+    target_compile_definitions(dataloaders_cpp PUBLIC WITH_TORCH)
+else()
+    message("NOT USING TORCH")
+endif()
+
+
 
 
 ##pybind

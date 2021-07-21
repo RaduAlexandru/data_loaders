@@ -258,7 +258,7 @@ DataLoaderUSCHair::read_hair_sample(const std::string data_filepath){
 
     TIME_START("load");
 
-
+    USCHair usc_hair;
     std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
     std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
     std::vector<Eigen::Vector3d> full_hair_points_vec;
