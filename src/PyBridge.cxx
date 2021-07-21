@@ -389,7 +389,7 @@ PYBIND11_MODULE(dataloaders, m) {
         .def("set_mode_validation", &DataLoaderUSCHair::set_mode_validation )
         ;
         //USCHair
-        py::class_<USCHair> (m, "USCHair")
+        py::class_<USCHair, std::shared_ptr<USCHair> > (m, "USCHair")
         .def_readwrite("full_hair_cloud", &USCHair::full_hair_cloud)
         .def_readwrite("strand_meshes", &USCHair::strand_meshes)
         // .def_readwrite("points", &USCHair::points)

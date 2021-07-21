@@ -508,6 +508,8 @@ def test_usc_hair():
         if(loader.has_data()):
             # print("HAS DATA--------")
             # pass
+            # hair=loader.get_hair()
+            # cloud=hair.full_hair_cloud
             cloud=loader.get_cloud()
             Scene.show(cloud, "cloud")
 
