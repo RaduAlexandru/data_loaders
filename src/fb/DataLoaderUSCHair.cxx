@@ -287,6 +287,8 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     // }
     strands.resize(nstrands);
 
+    double max_diff_segment=0;
+
     for (int i = 0; i < nstrands; i++) {
     // for (int i = 0; i < 1; i++) {
         // VLOG(1) << "strand " <<i;
@@ -326,6 +328,8 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         //store also the previous point on the strand so we can compute length
         double strand_length=0;
         Eigen::Vector3d prev_point;
+        double min_segment_length=99999999999999;
+        double max_segment_length=0;
 
 
 
@@ -382,12 +386,29 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
                     float cur_segment_length= (point-prev_point).norm();
                     strand_length+=cur_segment_length;
                     // VLOG(1) << cur_segment_length << " full " <<  strand_length;
+                    if(cur_segment_length>max_segment_length && cur_segment_length!=0){
+                        max_segment_length=cur_segment_length;
+                    }
+                    if(cur_segment_length<min_segment_length && cur_segment_length!=0){
+                        min_segment_length=cur_segment_length;
+                    }
                 }
                 prev_point=point;
 
 
             }
         }
+
+
+        // double diff=max_segment_length - min_segment_length;
+        // if( min_segment_length!=0 && max_segment_length!=0){
+        //     // VLOG(1) << "max segment lenght" << max_segment_length;
+        //     // VLOG(1) << "min segment lenght" << min_segment_length;
+        //     // VLOG(1) << "diff is " << max_segment_length - min_segment_length;
+        //     if(diff>max_diff_segment){
+        //         max_diff_segment=diff;
+        //     }
+        // }
 
 
 
@@ -468,6 +489,8 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
             nr_strands_added++;
         }
     }
+
+    // VLOG(1) << "max_diff_segment" << max_diff_segment;
 
     // VLOG(1) << "finished reading everything";
 
