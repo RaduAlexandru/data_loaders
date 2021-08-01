@@ -399,6 +399,7 @@ PYBIND11_MODULE(dataloaders, m) {
         .def_readwrite("tbn_roots_tensor", &USCHair::tbn_roots_tensor)
         .def_readwrite("position_roots", &USCHair::position_roots)
         .def_readwrite("strand_lengths", &USCHair::strand_lengths)
+        .def_readwrite("per_strand_R_rodri_canonical_scalp", &USCHair::per_strand_R_rodri_canonical_scalp)
         .def_readwrite("full_hair_cumulative_strand_length", &USCHair::full_hair_cumulative_strand_length)
         .def_readwrite("per_point_rotation_next_cur_tensor", &USCHair::per_point_rotation_next_cur_tensor)
         .def_readwrite("per_point_delta_dist_tensor", &USCHair::per_point_delta_dist_tensor)

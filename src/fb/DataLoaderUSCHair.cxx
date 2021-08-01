@@ -285,7 +285,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     //     fclose(f);
     //     return false;
     // }
-    strands.resize(nstrands);
+    // strands.resize(nstrands);
 
     double max_diff_segment=0;
 
@@ -293,7 +293,6 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     // for (int i = 0; i < 1; i++) {
         // VLOG(1) << "strand " <<i;
         int nverts = 0;
-        std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
         fread(&nverts, 4, 1, f);
 
         // if (nverts==1){
@@ -307,7 +306,6 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         //     return false;
         // }
         // strands[i].resize(nverts);
-        strand->V.resize(nverts,3);
         // Eigen::VectorXf strand_points_float;
         // strand_points_float.resize(nverts,3);
 
@@ -343,7 +341,6 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
             fread(&x, 4, 1, f);
             fread(&y, 4, 1, f);
             fread(&z, 4, 1, f);
-            strand->V.row(j) << x,y,z;
 
             Eigen::Vector3d point;
             point << x,y,z;
@@ -362,10 +359,13 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
 
         if (is_strand_valid) {
+            std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
+            strand->V.resize(nverts,3);
             for (int j = 0; j < nverts; j++) {
 
 
                 Eigen::Vector3d point = points_current_strand_vec[j];
+                strand->V.row(j) =point;
 
 
                 full_hair_points_vec.push_back(point);
@@ -397,97 +397,15 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
 
             }
-        }
-
-
-        // double diff=max_segment_length - min_segment_length;
-        // if( min_segment_length!=0 && max_segment_length!=0){
-        //     // VLOG(1) << "max segment lenght" << max_segment_length;
-        //     // VLOG(1) << "min segment lenght" << min_segment_length;
-        //     // VLOG(1) << "diff is " << max_segment_length - min_segment_length;
-        //     if(diff>max_diff_segment){
-        //         max_diff_segment=diff;
-        //     }
-        // }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-        // for (int j = 0; j < nverts; j++) {
-        //     // VLOG(1) << "vert " <<j;
-        //     // fread(&strand_points_float(i,0), 12, 1, f);
-        //     float x,y,z;
-        //     fread(&x, 4, 1, f);
-        //     fread(&y, 4, 1, f);
-        //     fread(&z, 4, 1, f);
-        //     strand->V.row(j) << x,y,z;
-
-        //     Eigen::Vector3d point;
-        //     point << x,y,z;
-
-        //     // VLOG(1) << "awdawd nrverts is " << nverts;
-        //     if (is_strand_valid){
-        //         // VLOG(1) << "adding";
-        //         // if (j==0)
-        //         full_hair_points_vec.push_back(point);
-        //         full_hair_cumulative_strand_length_vec.push_back(strand_length);
-        //         // full_hair_strand_idx_vec.push_back(i);
-        //         full_hair_strand_idx_vec.push_back(nr_strands_added);
-
-        //         //if its the frist point, compute the uv coordinate of this first point by splatting it onto the scalp mesh
-        //         if(j==0){
-        //             // Eigen::Vector2d = compute_closest_point_uv(m_mesh_scalp, point);
-        //             first_strand_points_vec.push_back(point);
-        //         }
-
-        //         //debug
-        //         // if (i==0){
-        //             // first_strand_hair_points_vec.push_back(point);
-        //         // }
-
-        //     }
-
-        //     //compute also the lenght of the strand
-        //     if(j>=1){ //if we are the first vertex, there is no previous
-        //         float cur_segment_length= (point-prev_point).norm();
-        //         strand_length+=cur_segment_length;
-        //         // VLOG(1) << cur_segment_length << " full " <<  strand_length;
-        //     }
-        //     prev_point=point;
-
-
-
-
-        // }
-
-
-
-
-
-
-        // VLOG(1) << "strand_length " <<strand_length;
-        // VLOG(1) << "Given this, the segment length should be " << strand_length/100;
-
-
-        //finished reading this strand
-        if (is_strand_valid){
+            //finished reading this strand
             strands.push_back(strand);
             strand_lengths_vec.push_back(strand_length);
             nr_strands_added++;
+
         }
+
+
+
     }
 
     // VLOG(1) << "max_diff_segment" << max_diff_segment;
@@ -546,6 +464,50 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     //compute local hair representation
     xyz2local(nr_strands_added, 100, usc_hair->full_hair_cloud->V, usc_hair->strand_lengths, tbn_roots,
             usc_hair->per_point_rotation_next_cur_tensor, usc_hair->per_point_delta_dist_tensor, usc_hair->per_point_direction_to_next_tensor);
+
+
+    //rotate from world coord to scalp coords
+    //position_roots is t_world_scalp so the translation from scalp to world
+    //tbn_roots is the R_world_scalp so the rotation from scalp to world
+    //we put the stands from world position to scalp coordinates and in the scalp cooridnates we define a rotation R_canonical_scalp so from scalp to some canonical representation
+    //get the transformation for each strand that maps from world to sclap coords
+    std::vector<Eigen::Affine3d> tf_scalp_world_vec;
+    for (int i=0; i<nr_strands_added; i++){
+        Eigen::Affine3d tf_world_scalp;
+        tf_world_scalp.setIdentity();
+        tf_world_scalp.linear() = tbn_roots[i];
+        tf_world_scalp.translation() = first_strand_points_vec[i];
+        Eigen::Affine3d tf_scalp_world=tf_world_scalp.inverse();
+        tf_scalp_world_vec.push_back(tf_scalp_world);
+    }
+    //transform the strands to scalp coords
+    std::vector< std::shared_ptr<easy_pbr::Mesh> > strands_scalp_coords_vec;
+    std::vector< Eigen::Vector3d > per_strand_R_rodri_canonical_scalp_vec;
+    for (int i=0; i<nr_strands_added; i++){
+        std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
+        // VLOG(1) << "accesing at " << i <<" strands.ize " << strands.size();
+        // VLOG(1) << "strands[i[ has V" << strands[i]->V.rows();
+        auto what=  strands[i]->clone();
+        strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
+        strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
+
+        //scale the strand by the strand length
+        strands_scalp_coords->V.array()/strand_lengths_vec[i];
+        //get the first and last vected on the strand in order to compute a direciton
+        Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
+        Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
+        Eigen::Vector3d strand_dir= (last_point - first_point).normalized();
+
+        //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
+        Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitZ();
+        Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
+        double angle=std::acos( strand_dir.dot(canonical_direction)  );
+        Eigen::Vector3d axis_angle=axis*angle;
+        per_strand_R_rodri_canonical_scalp_vec.push_back(axis_angle);
+    }
+    usc_hair->per_strand_R_rodri_canonical_scalp=vec2eigen(per_strand_R_rodri_canonical_scalp_vec);
+
+
 
     return usc_hair;
 

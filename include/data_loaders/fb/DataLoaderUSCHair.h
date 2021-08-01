@@ -47,6 +47,7 @@ class USCHair : public std::enable_shared_from_this<USCHair> {
         torch::Tensor tbn_roots_tensor; //nr_strands x 3 x 3  tanent-bitangent-normal for the root points
         Eigen::MatrixXd position_roots; //nr_strands x 3 positions of the roots in world coords
         Eigen::MatrixXd strand_lengths; //nr_strands x 1 strand lengths
+        Eigen::MatrixXd per_strand_R_rodri_canonical_scalp; //nr_strands x3 rotations in rodrigues format that maps from sclap coordinates to some canonical space that makes learning easier. Applied only after normalizing the strands by the strand_lengths.
         Eigen::MatrixXd full_hair_cumulative_strand_length; //Nx 1  for each point on the hair store the cumulative lenght along it's corresponding strand
         torch::Tensor per_point_rotation_next_cur_tensor; // nr_strands X nr_points_per_strand x 3 of rodrigues towards the next point. Expressed in the local coordinate system of the current point
         torch::Tensor per_point_delta_dist_tensor; // nr_strands X nr_points_per_strand x 1  of delta movement applied to the average segment lenght. This is applied to the per_point_rotation_next_cur
