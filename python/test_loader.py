@@ -502,6 +502,8 @@ def test_blender_fb():
 
 def test_usc_hair():
     loader=DataLoaderUSCHair(config_path)
+    loader.set_mode_train()
+    # loader.set_mode_test()
     loader.start()
 
     while True:

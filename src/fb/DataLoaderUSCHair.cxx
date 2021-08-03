@@ -138,6 +138,20 @@ void DataLoaderUSCHair::init_data_reading(){
         }
     }
 
+    //get the filenames for the mode
+    std::vector<fs::path> data_filenames_for_mode;
+    for (size_t i = 0; i < data_filenames_all.size(); i++) {
+        //every 8th goes into the test
+        if (m_mode=="train" && i%9==0){
+            continue;
+        }
+        if (m_mode=="test" && i%9!=0){
+            continue;
+        }
+        data_filenames_for_mode.push_back(  data_filenames_all[i] );
+    }
+    data_filenames_all=data_filenames_for_mode;
+
 
     //shuffle the filles to be read if necessary
     if(m_shuffle){
@@ -492,7 +506,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
 
         //scale the strand by the strand length
-        strands_scalp_coords->V.array()/strand_lengths_vec[i];
+        // strands_scalp_coords->V.array()/strand_lengths_vec[i];
         //get the first and last vected on the strand in order to compute a direciton
         Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
         Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
@@ -502,6 +516,14 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitZ();
         Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
         double angle=std::acos( strand_dir.dot(canonical_direction)  );
+
+        // //in order to avoid the rodrigues ambiguity, we flip the axis so that it's aligned for example witht he y axis
+        // double dot = axis.dot( Eigen::Vector3d::UnitX()); //the axis is chosen arbitrarily
+        // if(dot<0.0){
+        //     axis=-axis;
+        //     angle=2*M_PI-angle;
+        // }
+
         Eigen::Vector3d axis_angle=axis*angle;
         per_strand_R_rodri_canonical_scalp_vec.push_back(axis_angle);
     }
