@@ -497,11 +497,12 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     //transform the strands to scalp coords
     std::vector< std::shared_ptr<easy_pbr::Mesh> > strands_scalp_coords_vec;
     std::vector< Eigen::Vector3d > per_strand_R_rodri_canonical_scalp_vec;
+    std::vector< Eigen::Vector3d > per_strand_dir_vec;
     for (int i=0; i<nr_strands_added; i++){
         std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
         // VLOG(1) << "accesing at " << i <<" strands.ize " << strands.size();
         // VLOG(1) << "strands[i[ has V" << strands[i]->V.rows();
-        auto what=  strands[i]->clone();
+        // auto what=  strands[i]->clone();
         strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
         strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
 
@@ -510,8 +511,13 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         //get the first and last vected on the strand in order to compute a direciton
         Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
         // Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
-        Eigen::Vector3d average_point=strands_scalp_coords->V.colwise().mean();
-        Eigen::Vector3d strand_dir= (average_point - first_point).normalized();
+        // Eigen::Vector3d average_point=strands_scalp_coords->V.colwise().mean();
+        //get avg dir as sum of all direction of the strand
+        // Eigen::Vector3d strand_dir= (average_point - first_point).normalized();
+        int nr_points=strands_scalp_coords->V.rows();
+        Eigen::Vector3d strand_dir =  (strands_scalp_coords->V.block(1,0, nr_points-1, 3 )  -  strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) ).colwise().sum();
+        strand_dir=strand_dir.normalized();
+
 
         //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
         Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitZ();
@@ -527,8 +533,10 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
         Eigen::Vector3d axis_angle=axis*angle;
         per_strand_R_rodri_canonical_scalp_vec.push_back(axis_angle);
+        per_strand_dir_vec.push_back(strand_dir);
     }
     usc_hair->per_strand_R_rodri_canonical_scalp=vec2eigen(per_strand_R_rodri_canonical_scalp_vec);
+    usc_hair->per_strand_dir=vec2eigen(per_strand_dir_vec);
 
 
 
