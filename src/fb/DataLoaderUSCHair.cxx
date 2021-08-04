@@ -515,6 +515,8 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         //get avg dir as sum of all direction of the strand
         // Eigen::Vector3d strand_dir= (average_point - first_point).normalized();
         int nr_points=strands_scalp_coords->V.rows();
+        //take the first 30 percent of the points for comuting the direction
+        nr_points=nr_points*0.3;
         Eigen::Vector3d strand_dir =  (strands_scalp_coords->V.block(1,0, nr_points-1, 3 )  -  strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) ).colwise().sum();
         strand_dir=strand_dir.normalized();
 
