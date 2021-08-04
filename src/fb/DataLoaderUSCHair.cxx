@@ -497,7 +497,8 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     //transform the strands to scalp coords
     std::vector< std::shared_ptr<easy_pbr::Mesh> > strands_scalp_coords_vec;
     std::vector< Eigen::Vector3d > per_strand_R_rodri_canonical_scalp_vec;
-    std::vector< Eigen::Vector3d > per_strand_dir_vec;
+    std::vector< Eigen::Matrix3d > per_strand_R_3x3_canonical_scalp_vec;
+    std::vector< Eigen::Vector3d > per_strand_dir_along_vec;
     for (int i=0; i<nr_strands_added; i++){
         std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
         // VLOG(1) << "accesing at " << i <<" strands.ize " << strands.size();
@@ -535,10 +536,52 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
         Eigen::Vector3d axis_angle=axis*angle;
         per_strand_R_rodri_canonical_scalp_vec.push_back(axis_angle);
-        per_strand_dir_vec.push_back(strand_dir);
+        per_strand_dir_along_vec.push_back(strand_dir);
+        Eigen::AngleAxisd angle_axis_eigen;
+        angle_axis_eigen.axis()=axis;
+        angle_axis_eigen.angle()=angle;
+        per_strand_R_3x3_canonical_scalp_vec.push_back(angle_axis_eigen.toRotationMatrix());
     }
     usc_hair->per_strand_R_rodri_canonical_scalp=vec2eigen(per_strand_R_rodri_canonical_scalp_vec);
-    usc_hair->per_strand_dir=vec2eigen(per_strand_dir_vec);
+    usc_hair->per_strand_dir_along=vec2eigen(per_strand_dir_along_vec);
+
+
+
+
+
+
+    // //after rotating towards an axis that is along the strand,there is till an axis of ambiguity so we compute another rotation across the strand
+    // //align the hair so that the end point of the strand is on a certain axis
+    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // std::vector< Eigen::Vector3d > per_strand_R_rodri_across_canonical_vec; //goes from a canonical space to a canonical space that is across
+    // std::vector< Eigen::Vector3d > per_strand_dir_across_vec;
+    //  for (int i=0; i<nr_strands_added; i++){
+    //     std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
+    //     strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
+    //     strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
+    //     Eigen::Affine3d tf_canonical_scalp;
+    //     tf_canonical_scalp.setIdentity();
+    //     tf_canonical_scalp.linear()= per_strand_R_3x3_canonical_scalp_vec[i];
+    //     strands_scalp_coords->transform_vertices_cpu( tf_canonical_scalp, true );
+
+    //     //scale the strand by the strand length
+    //     Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
+    //     Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
+    //     Eigen::Vector3d strand_dir= (last_point - first_point);
+    //     strand_dir.z()=0;
+    //     float weight=strand_dir.norm();
+    //     strand_dir=strand_dir.normalized(); //is a direction that no z coordinate
+
+
+    //     //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
+    //     Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitX();
+    //     Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
+    //     double angle=std::acos( strand_dir.dot(canonical_direction)  );
+
+    //     Eigen::Vector3d axis_angle=axis*angle;
+    //     // per_strand_R_rodri_canonical_scalp_vec.push_back(axis_angle);
+    //     // per_strand_dir_vec.push_back(strand_dir);
+    // }
 
 
 
