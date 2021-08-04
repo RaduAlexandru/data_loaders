@@ -509,8 +509,9 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         // strands_scalp_coords->V.array()/strand_lengths_vec[i];
         //get the first and last vected on the strand in order to compute a direciton
         Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
-        Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
-        Eigen::Vector3d strand_dir= (last_point - first_point).normalized();
+        // Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
+        Eigen::Vector3d average_point=strands_scalp_coords->V.colwise().mean();
+        Eigen::Vector3d strand_dir= (average_point - first_point).normalized();
 
         //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
         Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitZ();
