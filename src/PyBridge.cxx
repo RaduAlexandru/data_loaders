@@ -405,6 +405,9 @@ PYBIND11_MODULE(dataloaders, m) {
         .def_readwrite("per_point_rotation_next_cur_tensor", &USCHair::per_point_rotation_next_cur_tensor)
         .def_readwrite("per_point_delta_dist_tensor", &USCHair::per_point_delta_dist_tensor)
         .def_readwrite("per_point_direction_to_next_tensor", &USCHair::per_point_direction_to_next_tensor)
+        .def_readwrite("per_strand_R_rodri_across_canonical", &USCHair::per_strand_R_rodri_across_canonical)
+        .def_readwrite("per_strand_across_canonical_weight", &USCHair::per_strand_across_canonical_weight)
+        .def_readwrite("per_strand_dir_across", &USCHair::per_strand_dir_across)
         ;
     #endif
 

@@ -517,13 +517,13 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         // Eigen::Vector3d strand_dir= (average_point - first_point).normalized();
         int nr_points=strands_scalp_coords->V.rows();
         //take the first 30 percent of the points for comuting the direction
-        nr_points=nr_points*0.3;
+        nr_points=nr_points*0.2;
         Eigen::Vector3d strand_dir =  (strands_scalp_coords->V.block(1,0, nr_points-1, 3 )  -  strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) ).colwise().sum();
         strand_dir=strand_dir.normalized();
 
 
         //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
-        Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitZ();
+        Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitY();
         Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
         double angle=std::acos( strand_dir.dot(canonical_direction)  );
 
@@ -550,38 +550,71 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
 
 
-    // //after rotating towards an axis that is along the strand,there is till an axis of ambiguity so we compute another rotation across the strand
-    // //align the hair so that the end point of the strand is on a certain axis
-    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    // std::vector< Eigen::Vector3d > per_strand_R_rodri_across_canonical_vec; //goes from a canonical space to a canonical space that is across
-    // std::vector< Eigen::Vector3d > per_strand_dir_across_vec;
-    //  for (int i=0; i<nr_strands_added; i++){
-    //     std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
-    //     strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
-    //     strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
-    //     Eigen::Affine3d tf_canonical_scalp;
-    //     tf_canonical_scalp.setIdentity();
-    //     tf_canonical_scalp.linear()= per_strand_R_3x3_canonical_scalp_vec[i];
-    //     strands_scalp_coords->transform_vertices_cpu( tf_canonical_scalp, true );
+    //after rotating towards an axis that is along the strand,there is till an axis of ambiguity so we compute another rotation across the strand
+    //align the hair so that the end point of the strand is on a certain axis
+    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    std::vector< Eigen::Vector3d > per_strand_R_rodri_across_canonical_vec; //goes from a canonical space to a canonical space that is across
+    std::vector< double > per_strand_across_canonical_weight_vec;
+    std::vector< Eigen::Vector3d > per_strand_dir_across_vec;
+     for (int i=0; i<nr_strands_added; i++){
+        std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
+        strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
+        strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
+        Eigen::Affine3d tf_canonical_scalp;
+        tf_canonical_scalp.setIdentity();
+        tf_canonical_scalp.linear()= per_strand_R_3x3_canonical_scalp_vec[i];
+        strands_scalp_coords->transform_vertices_cpu( tf_canonical_scalp, true );
 
-    //     //scale the strand by the strand length
-    //     Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
-    //     Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
-    //     Eigen::Vector3d strand_dir= (last_point - first_point);
-    //     strand_dir.z()=0;
-    //     float weight=strand_dir.norm();
-    //     strand_dir=strand_dir.normalized(); //is a direction that no z coordinate
+        //scale the strand by the strand length
+        Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
+        ////attempt 1, just the last point
+        // Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
+        /////attempt 2 just the min or the max point, depending on which is further
+        // Eigen::Vector2d max_point2d, min_point2d;
+        // Eigen::Vector3d max_point=strands_scalp_coords->V.colwise().maxCoeff();
+        // max_point2d << max_point.x(), max_point.z();
+        // Eigen::Vector3d min_point=strands_scalp_coords->V.colwise().minCoeff();
+        // min_point2d << min_point.x(), min_point.z();
+        // double max_norm= max_point2d.norm();
+        // double min_norm= min_point2d.norm();
+        // Eigen::Vector3d last_point=max_point;
+        // if (min_norm>max_norm){
+        //     last_point=min_point;
+        // }
+        //attempt 3 with the mean
+        // Eigen::Vector3d last_point = strands_scalp_coords->V.colwise().mean();
+        //attempt 4 with the mean but only of the first few points
+        // int nr_points=strands_scalp_coords->V.rows();
+        // nr_points=nr_points*0.2;
+        // Eigen::Vector3d last_point = strands_scalp_coords->V.block(0,0, nr_points, 3 ).colwise().mean();
+        ////attempt 4 with the mean but only of the first few points
+        int nr_points=strands_scalp_coords->V.rows();
+        nr_points=nr_points*0.2;
+        Eigen::Vector3d last_point = strands_scalp_coords->V.block(20,0, 20, 3 ).colwise().mean();
+        Eigen::Vector3d strand_dir= (last_point - first_point);
+        strand_dir.y()=0;
+        float weight=strand_dir.norm();
+        strand_dir=strand_dir.normalized(); //is a direction that no z coordinate
 
 
-    //     //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
-    //     Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitX();
-    //     Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
-    //     double angle=std::acos( strand_dir.dot(canonical_direction)  );
+        //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
+        Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitX();
+        //we flip the strand dir so that it os pointing towards the canonical one
+        if ( strand_dir.dot(canonical_direction) <0.0){
+            // strand_dir=-strand_dir;
+        }
 
-    //     Eigen::Vector3d axis_angle=axis*angle;
-    //     // per_strand_R_rodri_canonical_scalp_vec.push_back(axis_angle);
-    //     // per_strand_dir_vec.push_back(strand_dir);
-    // }
+        Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
+        double angle=std::acos( strand_dir.dot(canonical_direction)  );
+
+        Eigen::Vector3d axis_angle=axis*angle;
+        per_strand_R_rodri_across_canonical_vec.push_back(axis_angle);
+        per_strand_across_canonical_weight_vec.push_back(weight);
+        per_strand_dir_across_vec.push_back(strand_dir);
+    }
+    usc_hair->per_strand_R_rodri_across_canonical=vec2eigen(per_strand_R_rodri_across_canonical_vec);
+    usc_hair->per_strand_across_canonical_weight=vec2eigen(per_strand_across_canonical_weight_vec);
+    usc_hair->per_strand_dir_across=vec2eigen(per_strand_dir_across_vec);
 
 
 
