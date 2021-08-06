@@ -487,11 +487,18 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     //get the transformation for each strand that maps from world to sclap coords
     std::vector<Eigen::Affine3d> tf_scalp_world_vec;
     for (int i=0; i<nr_strands_added; i++){
+        CHECK(tbn_roots[i].allFinite()) << "tbn_roots[i] is " << tbn_roots[i];
+        CHECK(!tbn_roots[i].isZero()) << "tbn_roots[i] is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
+        CHECK(!tbn_roots[i].col(0).isZero()) << "tbn_roots[i] col0 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
+        CHECK(!tbn_roots[i].col(1).isZero()) << "tbn_roots[i] col1 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
+        CHECK(!tbn_roots[i].col(2).isZero()) << "tbn_roots[i] col2 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
         Eigen::Affine3d tf_world_scalp;
         tf_world_scalp.setIdentity();
         tf_world_scalp.linear() = tbn_roots[i];
         tf_world_scalp.translation() = first_strand_points_vec[i];
+        CHECK(tf_world_scalp.matrix().allFinite()) << "tf_world_scalp " << tf_world_scalp.matrix();
         Eigen::Affine3d tf_scalp_world=tf_world_scalp.inverse();
+        CHECK(tf_scalp_world.matrix().allFinite()) << " tf_scalp_world " << tf_scalp_world.matrix() << " tf_world_scalp is " << tf_world_scalp.matrix() << " tbn roots is" << tbn_roots[i] << " strand pos is " << first_strand_points_vec[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
         tf_scalp_world_vec.push_back(tf_scalp_world);
     }
     //transform the strands to scalp coords
@@ -504,6 +511,9 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         // VLOG(1) << "accesing at " << i <<" strands.ize " << strands.size();
         // VLOG(1) << "strands[i[ has V" << strands[i]->V.rows();
         // auto what=  strands[i]->clone();
+
+        CHECK(strands[i]->V.allFinite()) << "original strand v is " << strands[i]->V;
+
         strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
         strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
 
@@ -519,12 +529,15 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         //take the first 30 percent of the points for comuting the direction
         nr_points=nr_points*0.2;
         Eigen::Vector3d strand_dir =  (strands_scalp_coords->V.block(1,0, nr_points-1, 3 )  -  strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) ).colwise().sum();
+        CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i << " V is " << strands_scalp_coords->V << "block 1 is " << strands_scalp_coords->V.block(1,0, nr_points-1, 3 ) << "block 2 is " << strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) << "original strand v is " << strands[i]->V << "matrix is "<< tf_scalp_world_vec[i].matrix();
         strand_dir=strand_dir.normalized();
+        CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i << " V is " << strands_scalp_coords->V << "block 1 is " << strands_scalp_coords->V.block(1,0, nr_points-1, 3 ) << "block 2 is " << strands_scalp_coords->V.block(0,0, nr_points-1, 3 );
 
 
         //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
         Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitY();
         Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
+        CHECK(axis.allFinite()) << "axis is not finite at " <<i;
         double angle=std::acos( strand_dir.dot(canonical_direction)  );
 
         // //in order to avoid the rodrigues ambiguity, we flip the axis so that it's aligned for example witht he y axis
@@ -553,68 +566,74 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     //after rotating towards an axis that is along the strand,there is till an axis of ambiguity so we compute another rotation across the strand
     //align the hair so that the end point of the strand is on a certain axis
     ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    std::vector< Eigen::Vector3d > per_strand_R_rodri_across_canonical_vec; //goes from a canonical space to a canonical space that is across
-    std::vector< double > per_strand_across_canonical_weight_vec;
-    std::vector< Eigen::Vector3d > per_strand_dir_across_vec;
-     for (int i=0; i<nr_strands_added; i++){
-        std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
-        strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
-        strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
-        Eigen::Affine3d tf_canonical_scalp;
-        tf_canonical_scalp.setIdentity();
-        tf_canonical_scalp.linear()= per_strand_R_3x3_canonical_scalp_vec[i];
-        strands_scalp_coords->transform_vertices_cpu( tf_canonical_scalp, true );
+    bool compute_dir_across=false;
+    if (compute_dir_across){
+        std::vector< Eigen::Vector3d > per_strand_R_rodri_across_canonical_vec; //goes from a canonical space to a canonical space that is across
+        std::vector< double > per_strand_across_canonical_weight_vec;
+        std::vector< Eigen::Vector3d > per_strand_dir_across_vec;
+        for (int i=0; i<nr_strands_added; i++){
+            std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
+            strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
+            strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
+            Eigen::Affine3d tf_canonical_scalp;
+            tf_canonical_scalp.setIdentity();
+            tf_canonical_scalp.linear()= per_strand_R_3x3_canonical_scalp_vec[i];
+            strands_scalp_coords->transform_vertices_cpu( tf_canonical_scalp, true );
 
-        //scale the strand by the strand length
-        Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
-        ////attempt 1, just the last point
-        // Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
-        /////attempt 2 just the min or the max point, depending on which is further
-        // Eigen::Vector2d max_point2d, min_point2d;
-        // Eigen::Vector3d max_point=strands_scalp_coords->V.colwise().maxCoeff();
-        // max_point2d << max_point.x(), max_point.z();
-        // Eigen::Vector3d min_point=strands_scalp_coords->V.colwise().minCoeff();
-        // min_point2d << min_point.x(), min_point.z();
-        // double max_norm= max_point2d.norm();
-        // double min_norm= min_point2d.norm();
-        // Eigen::Vector3d last_point=max_point;
-        // if (min_norm>max_norm){
-        //     last_point=min_point;
-        // }
-        //attempt 3 with the mean
-        // Eigen::Vector3d last_point = strands_scalp_coords->V.colwise().mean();
-        //attempt 4 with the mean but only of the first few points
-        // int nr_points=strands_scalp_coords->V.rows();
-        // nr_points=nr_points*0.2;
-        // Eigen::Vector3d last_point = strands_scalp_coords->V.block(0,0, nr_points, 3 ).colwise().mean();
-        ////attempt 4 with the mean but only of the first few points
-        int nr_points=strands_scalp_coords->V.rows();
-        nr_points=nr_points*0.2;
-        Eigen::Vector3d last_point = strands_scalp_coords->V.block(20,0, 20, 3 ).colwise().mean();
-        Eigen::Vector3d strand_dir= (last_point - first_point);
-        strand_dir.y()=0;
-        float weight=strand_dir.norm();
-        strand_dir=strand_dir.normalized(); //is a direction that no z coordinate
+            //scale the strand by the strand length
+            Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
+            ////attempt 1, just the last point
+            Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
+            /////attempt 2 just the min or the max point, depending on which is further
+            // Eigen::Vector2d max_point2d, min_point2d;
+            // Eigen::Vector3d max_point=strands_scalp_coords->V.colwise().maxCoeff();
+            // max_point2d << max_point.x(), max_point.z();
+            // Eigen::Vector3d min_point=strands_scalp_coords->V.colwise().minCoeff();
+            // min_point2d << min_point.x(), min_point.z();
+            // double max_norm= max_point2d.norm();
+            // double min_norm= min_point2d.norm();
+            // Eigen::Vector3d last_point=max_point;
+            // if (min_norm>max_norm){
+            //     last_point=min_point;
+            // }
+            //attempt 3 with the mean
+            // Eigen::Vector3d last_point = strands_scalp_coords->V.colwise().mean();
+            //attempt 4 with the mean but only of the first few points
+            // int nr_points=strands_scalp_coords->V.rows();
+            // nr_points=nr_points*0.2;
+            // Eigen::Vector3d last_point = strands_scalp_coords->V.block(0,0, nr_points, 3 ).colwise().mean();
+            ////attempt 4 with the mean but only of the first few points
+            // int nr_points=strands_scalp_coords->V.rows();
+            // nr_points=nr_points*0.2;
+            // Eigen::Vector3d last_point = strands_scalp_coords->V.block(20,0, 20, 3 ).colwise().mean();
+            Eigen::Vector3d strand_dir= (last_point - first_point);
+            CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i;
+            strand_dir.y()=0;
+            float weight=strand_dir.norm();
+            strand_dir=strand_dir.normalized(); //is a direction that no z coordinate
+            CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i;
 
 
-        //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
-        Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitX();
-        //we flip the strand dir so that it os pointing towards the canonical one
-        if ( strand_dir.dot(canonical_direction) <0.0){
-            // strand_dir=-strand_dir;
+            //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
+            Eigen::Vector3d canonical_direction= Eigen::Vector3d::UnitX();
+            //we flip the strand dir so that it os pointing towards the canonical one
+            // if ( strand_dir.dot(Eigen::Vector3d::UnitZ()) <0.0){
+                // strand_dir=-strand_dir;
+            // }
+
+            Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
+            CHECK(axis.allFinite()) << "axis is not finite at " <<i;
+            double angle=std::acos( strand_dir.dot(canonical_direction)  );
+
+            Eigen::Vector3d axis_angle=axis*angle;
+            per_strand_R_rodri_across_canonical_vec.push_back(axis_angle);
+            per_strand_across_canonical_weight_vec.push_back(weight);
+            per_strand_dir_across_vec.push_back(strand_dir);
         }
-
-        Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
-        double angle=std::acos( strand_dir.dot(canonical_direction)  );
-
-        Eigen::Vector3d axis_angle=axis*angle;
-        per_strand_R_rodri_across_canonical_vec.push_back(axis_angle);
-        per_strand_across_canonical_weight_vec.push_back(weight);
-        per_strand_dir_across_vec.push_back(strand_dir);
+        usc_hair->per_strand_R_rodri_across_canonical=vec2eigen(per_strand_R_rodri_across_canonical_vec);
+        usc_hair->per_strand_across_canonical_weight=vec2eigen(per_strand_across_canonical_weight_vec);
+        usc_hair->per_strand_dir_across=vec2eigen(per_strand_dir_across_vec);
     }
-    usc_hair->per_strand_R_rodri_across_canonical=vec2eigen(per_strand_R_rodri_across_canonical_vec);
-    usc_hair->per_strand_across_canonical_weight=vec2eigen(per_strand_across_canonical_weight_vec);
-    usc_hair->per_strand_dir_across=vec2eigen(per_strand_dir_across_vec);
 
 
 
@@ -765,18 +784,32 @@ void DataLoaderUSCHair::compute_root_points_atributes(Eigen::MatrixXd& uv, std::
         Eigen::Vector3d T,B,N;
         N= mesh->NV.row(idx_p0)*b0 + mesh->NV.row(idx_p1)*b1 + mesh->NV.row(idx_p2)*b2;
         T= mesh->V_tangent_u.row(idx_p0)*b0 + mesh->V_tangent_u.row(idx_p1)*b1 + mesh->V_tangent_u.row(idx_p2)*b2;
-        N=N.normalized();
-        T=T.normalized();
+        N.normalize();
+        T.normalize();
         B=N.cross(T);
+        Eigen::Vector3d Tw,Bw,Nw;
+        Tw=T;
+        Bw=B;
+        Nw=N;
+        CHECK(!N.isZero()) << "N is zero why ";
+        CHECK(!T.isZero()) << "T is zero why ";
+        CHECK(!B.isZero()) << "B is zero why ";
         //rotate from model coordinates to world
-        T=mesh->model_matrix().linear()*T;
-        B=mesh->model_matrix().linear()*B;
-        N=mesh->model_matrix().linear()*N;
+        T=mesh->model_matrix().linear()*Tw;
+        B=mesh->model_matrix().linear()*Bw;
+        N=mesh->model_matrix().linear()*Nw;
+        CHECK(!N.isZero()) << "N is zero why " << " linear is " << mesh->model_matrix().linear() << " Nw is " << Nw << " n is " << N;
+        CHECK(!T.isZero()) << "T is zero why " << " linear is " << mesh->model_matrix().linear() << " Tw is " << Tw << " t is " << T;
+        CHECK(!B.isZero()) << "B is zero why " << " linear is " << mesh->model_matrix().linear() << " Bw is " << Bw << " n is " << B;
         Eigen::Matrix3d TBN;
         TBN.col(0)=T;
         TBN.col(1)=B;
         TBN.col(2)=N;
+        CHECK(!TBN.isZero()) << "TBN is zero! " << TBN << " i is " << i << " points is " << points.rows();
         tbn_per_point[i] = TBN;
+        CHECK(!tbn_per_point[i].col(0).isZero()) << "tbn_per_point[i] col0 is zero! " << tbn_per_point[i] << " i is " << i << " tbn roots size is " <<tbn_per_point.size();
+        CHECK(!tbn_per_point[i].col(1).isZero()) << "tbn_per_point[i] col1 is zero! " << tbn_per_point[i] << " i is " << i << " tbn roots size is " <<tbn_per_point.size();
+        CHECK(!tbn_per_point[i].col(2).isZero()) << "tbn_per_point[i] col2 is zero! " << tbn_per_point[i] << " i is " << i << " tbn roots size is " <<tbn_per_point.size();
 
 
 
