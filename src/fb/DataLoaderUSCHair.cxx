@@ -164,10 +164,13 @@ void DataLoaderUSCHair::init_data_reading(){
 
     //ADDS THE clouds to the member std_vector of paths
     //read a maximum nr of images HAVE TO DO IT HERE BECAUSE WE HAVE TO SORT THEM FIRST
-    int nr_filenames_to_check= m_do_overfit? 1 : data_filenames_all.size(); //if we do overfit we only add one cloud
-    for (size_t i = 0; i < nr_filenames_to_check; i++) {
+    // int nr_filenames_to_check= m_do_overfit? 1 : data_filenames_all.size(); //if we do overfit we only add one cloud
+    for (size_t i = 0; i < data_filenames_all.size(); i++) {
         if( (int)i>=m_nr_clouds_to_skip && ((int)m_data_filenames.size()<m_nr_clouds_to_read || m_nr_clouds_to_read<0 ) ){
             m_data_filenames.push_back(data_filenames_all[i]);
+            if (m_do_overfit && m_data_filenames.size()==1){ //if we do overfit we only add one cloud
+                break;
+            }
         }
     }
 
