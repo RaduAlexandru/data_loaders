@@ -81,6 +81,8 @@ public:
     void set_mode_test();
     void set_mode_validation();
 
+    std::shared_ptr<USCHair> get_random_roots(const int nr_strands); //create random roots and return their position, uv and tbn
+
 
 private:
 

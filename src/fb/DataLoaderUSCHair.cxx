@@ -20,6 +20,7 @@ using namespace configuru;
 
 #include <igl/point_mesh_squared_distance.h>
 #include <igl/barycentric_coordinates.h>
+#include <igl/random_points_on_mesh.h>
 
 
 //boost
@@ -990,6 +991,61 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
     }
 
 
+}
+
+
+std::shared_ptr<USCHair> DataLoaderUSCHair::get_random_roots(const int nr_strands){
+    //create random points that are on the scalp mesh
+
+    Eigen::MatrixXd barycentric;
+    Eigen::MatrixXi face_indices; //nr_strand x 1 indices onto F
+
+    igl::random_points_on_mesh(nr_strands, m_mesh_scalp->V, m_mesh_scalp->F, barycentric, face_indices);
+    //get the points
+    std::vector<Eigen::Vector3d> points_vec;
+    for(int i=0; i<nr_strands; i++){
+        Eigen::Vector3d point;
+        point.setZero();
+        int face_index= face_indices(i);
+        int vertex_index_0 = m_mesh_scalp->F(face_index, 0);
+        int vertex_index_1 = m_mesh_scalp->F(face_index, 1);
+        int vertex_index_2 = m_mesh_scalp->F(face_index, 2);
+        float barycentric_0= barycentric(i, 0);
+        float barycentric_1= barycentric(i, 1);
+        float barycentric_2= barycentric(i, 2);
+        point=  barycentric_0*m_mesh_scalp->V.row(vertex_index_0) +
+                barycentric_1*m_mesh_scalp->V.row(vertex_index_1) +
+                barycentric_2*m_mesh_scalp->V.row(vertex_index_2);
+        points_vec.push_back(point);
+    }
+
+    std::shared_ptr<USCHair> usc_hair(new USCHair);
+    Eigen::MatrixXd uv_roots;
+    std::vector<Eigen::Matrix3d> tbn_roots;
+    compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, points_vec);
+    usc_hair->position_roots=vec2eigen(points_vec);
+    usc_hair->uv_roots=uv_roots;
+
+
+    //tbn roots to tensor
+    usc_hair->tbn_roots_tensor = torch::empty({ nr_strands,3,3 }, torch::dtype(torch::kFloat32) );
+    auto tbn_roots_tensor_accesor = usc_hair->tbn_roots_tensor.accessor<float,3>();
+    for(int i=0; i<tbn_roots.size(); i++){
+        // //row 0
+        tbn_roots_tensor_accesor[i][0][0]=tbn_roots[i](0,0);
+        tbn_roots_tensor_accesor[i][0][1]=tbn_roots[i](0,1);
+        tbn_roots_tensor_accesor[i][0][2]=tbn_roots[i](0,2);
+        //row 1
+        tbn_roots_tensor_accesor[i][1][0]=tbn_roots[i](1,0);
+        tbn_roots_tensor_accesor[i][1][1]=tbn_roots[i](1,1);
+        tbn_roots_tensor_accesor[i][1][2]=tbn_roots[i](1,2);
+        //row 2
+        tbn_roots_tensor_accesor[i][2][0]=tbn_roots[i](2,0);
+        tbn_roots_tensor_accesor[i][2][1]=tbn_roots[i](2,1);
+        tbn_roots_tensor_accesor[i][2][2]=tbn_roots[i](2,2);
+    }
+
+    return usc_hair;
 }
 
 

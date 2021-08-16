@@ -387,6 +387,7 @@ PYBIND11_MODULE(dataloaders, m) {
         .def("set_mode_train", &DataLoaderUSCHair::set_mode_train )
         .def("set_mode_test", &DataLoaderUSCHair::set_mode_test )
         .def("set_mode_validation", &DataLoaderUSCHair::set_mode_validation )
+        .def("get_random_roots", &DataLoaderUSCHair::get_random_roots )
         ;
         //USCHair
         py::class_<USCHair, std::shared_ptr<USCHair> > (m, "USCHair")
