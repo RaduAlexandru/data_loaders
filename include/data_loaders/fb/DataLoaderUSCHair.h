@@ -52,7 +52,7 @@ class USCHair : public std::enable_shared_from_this<USCHair> {
         Eigen::MatrixXd full_hair_cumulative_strand_length; //Nx 1  for each point on the hair store the cumulative lenght along it's corresponding strand
         torch::Tensor per_point_rotation_next_cur_tensor; // nr_strands X nr_points_per_strand x 3 of rodrigues towards the next point. Expressed in the local coordinate system of the current point
         torch::Tensor per_point_delta_dist_tensor; // nr_strands X nr_points_per_strand x 1  of delta movement applied to the average segment lenght. This is applied to the per_point_rotation_next_cur
-        torch::Tensor per_point_direction_to_next_tensor; // nr_strands X nr_points_per_strand-1 x 3 direction in world coordinates from one point to the next one on the same strand
+        torch::Tensor per_point_direction_to_next_tensor; // nr_strands X nr_points_per_strand x 3 direction in world coordinates from one point to the next one on the same strand. The last point on the strand since it has no direction to the next, just repeats the direction from the previous
 
         //rotation from the canonical space which is z align to anothe canonical space which is x aligned
         Eigen::MatrixXd per_strand_R_rodri_across_canonical; //nr_strands x3

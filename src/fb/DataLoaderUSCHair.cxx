@@ -851,7 +851,7 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
     //make the tensors
     per_point_rotation_next_cur_tensor = torch::empty({  nr_strands,nr_verts_per_strand,3   }, torch::dtype(torch::kFloat32) );
     per_point_delta_dist_tensor = torch::empty({  nr_strands,nr_verts_per_strand,1     }, torch::dtype(torch::kFloat32) );
-    per_point_direction_to_next_tensor =  torch::empty({  nr_strands,nr_verts_per_strand-1, 3     }, torch::dtype(torch::kFloat32) );
+    per_point_direction_to_next_tensor =  torch::empty({  nr_strands,nr_verts_per_strand, 3     }, torch::dtype(torch::kFloat32) );
     auto per_point_rotation_next_cur_tensor_accessor = per_point_rotation_next_cur_tensor.accessor<float,3>();
     auto per_point_delta_dist_tensor_accessor = per_point_delta_dist_tensor.accessor<float,3>();
     auto per_point_direction_to_next_tensor_accessor = per_point_direction_to_next_tensor.accessor<float,3>();
@@ -861,6 +861,7 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
         Eigen::Matrix3d R_world_cur;
         //the cur_to_world starts a the root with the TBN of the root
         R_world_cur=tbn_roots[s];
+        Eigen::Vector3d last_N;
 
         for(int p=0; p<nr_verts_per_strand-1; p++){
 
@@ -903,6 +904,7 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
 
             //get the frame at the new point, the z axis corresponds with the direction from cur_to_next
             Eigen::Vector3d new_N= (next_point_world-cur_point_world).normalized();
+            last_N=new_N;
             // CHECK(!new_N.isZero()) << "whyu is this zero";
             Eigen::Vector3d temp_T= R_world_cur.col(0);
             Eigen::Vector3d new_B= (new_N.cross(temp_T)).normalized();
@@ -988,6 +990,11 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
         per_point_rotation_next_cur_tensor_accessor[s][nr_verts_per_strand-1][2] = 0;
         //no delta dist
         per_point_delta_dist_tensor_accessor[s][nr_verts_per_strand-1][0] =0;
+
+        //last point on the strand does not have a next so we just copy the last diretion we set
+        per_point_direction_to_next_tensor_accessor[s][nr_verts_per_strand-1][0] = last_N.x();
+        per_point_direction_to_next_tensor_accessor[s][nr_verts_per_strand-1][1] = last_N.y();
+        per_point_direction_to_next_tensor_accessor[s][nr_verts_per_strand-1][2] = last_N.z();
     }
 
 
