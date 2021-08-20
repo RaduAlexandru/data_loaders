@@ -23,12 +23,15 @@ public:
 
     //params
     Eigen::Vector3f m_random_translation_xyz_magnitude;
+    float m_rotation_x_max_angle;
     float m_rotation_y_max_angle;
+    float m_rotation_z_max_angle;
     Eigen::Vector3f m_random_stretch_xyz_magnitude;
     float m_adaptive_subsampling_falloff_start;
     float m_adaptive_subsampling_falloff_end;
     float m_random_subsample_percentage;
     bool m_random_mirror_x;
+    bool m_random_mirror_y;
     bool m_random_mirror_z;
     bool m_random_rotation_90_degrees_y;
 

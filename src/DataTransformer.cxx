@@ -43,12 +43,15 @@ void DataTransformer::init_params(const Config& transformer_config){
 
     m_random_translation_xyz_magnitude=transformer_config["random_translation_xyz_magnitude"];
     // m_random_translation_xz_magnitude=transformer_config["random_translation_xz_magnitude"];
+    m_rotation_x_max_angle=transformer_config["rotation_x_max_angle"];
     m_rotation_y_max_angle=transformer_config["rotation_y_max_angle"];
+    m_rotation_z_max_angle=transformer_config["rotation_z_max_angle"];
     m_random_stretch_xyz_magnitude=transformer_config["random_stretch_xyz_magnitude"];
     m_adaptive_subsampling_falloff_start=transformer_config["adaptive_subsampling_falloff_start"];
     m_adaptive_subsampling_falloff_end=transformer_config["adaptive_subsampling_falloff_end"];
     m_random_subsample_percentage=transformer_config["random_subsample_percentage"];
     m_random_mirror_x=transformer_config["random_mirror_x"];
+    m_random_mirror_y=transformer_config["random_mirror_y"];
     m_random_mirror_z=transformer_config["random_mirror_z"];
     m_random_rotation_90_degrees_y=transformer_config["random_rotation_90_degrees_y"];
 
@@ -126,15 +129,39 @@ MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
         mesh->V.col(2)*=stretch_factor_z;
     }
 
+
+    //random rotation in x
+    if(m_rotation_x_max_angle!=0){
+        Eigen::Affine3d tf;
+        tf.setIdentity();
+        Eigen::Matrix3d tf_rot;
+        float rand_angle_degrees=m_rand_gen->rand_float(-m_rotation_x_max_angle/2, m_rotation_x_max_angle/2);
+        float rand_angle_radians=rand_angle_degrees * M_PI / 180.0;
+        tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitX());
+        tf.matrix().block<3,3>(0,0)=tf_rot;
+        mesh->transform_vertices_cpu(tf);
+    }
+
     //random rotation in y
     if(m_rotation_y_max_angle!=0){
         Eigen::Affine3d tf;
         tf.setIdentity();
         Eigen::Matrix3d tf_rot;
         float rand_angle_degrees=m_rand_gen->rand_float(-m_rotation_y_max_angle/2, m_rotation_y_max_angle/2);
-        // float rand_angle_radians=degrees2radians(rand_angle_degrees);
         float rand_angle_radians=rand_angle_degrees * M_PI / 180.0;
         tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitY());
+        tf.matrix().block<3,3>(0,0)=tf_rot;
+        mesh->transform_vertices_cpu(tf);
+    }
+
+    //random rotation in z
+    if(m_rotation_z_max_angle!=0){
+        Eigen::Affine3d tf;
+        tf.setIdentity();
+        Eigen::Matrix3d tf_rot;
+        float rand_angle_degrees=m_rand_gen->rand_float(-m_rotation_z_max_angle/2, m_rotation_z_max_angle/2);
+        float rand_angle_radians=rand_angle_degrees * M_PI / 180.0;
+        tf_rot = Eigen::AngleAxisd(rand_angle_radians, Eigen::Vector3d::UnitZ());
         tf.matrix().block<3,3>(0,0)=tf_rot;
         mesh->transform_vertices_cpu(tf);
     }
@@ -144,6 +171,13 @@ MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
         bool do_flip=m_rand_gen->rand_bool(0.5); //50/50 will do a flip
         if(do_flip){
             mesh->V.col(0)=-mesh->V.col(0);
+        }
+    }
+    //random mirror along the xz plane will negate the y coordinate
+    if(m_random_mirror_y){
+        bool do_flip=m_rand_gen->rand_bool(0.5); //50/50 will do a flip
+        if(do_flip){
+            mesh->V.col(1)=-mesh->V.col(1);
         }
     }
     //random mirror along the xy plane will negate the z coordinate
