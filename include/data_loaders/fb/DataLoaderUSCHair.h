@@ -41,23 +41,22 @@ class USCHair : public std::enable_shared_from_this<USCHair> {
         std::shared_ptr<easy_pbr::Mesh> full_hair_cloud; //cloud containing the points of the hair
         std::vector< std::shared_ptr<easy_pbr::Mesh> > strand_meshes; //vector containing a mesh for each strand
         // Eigen::MatrixXd points; //Nx3 points of the hair
-        torch::Tensor points_tensor; //nr_strands x nr_points_per_strand x 3
-        Eigen::MatrixXi per_point_strand_idx; //Nx1 index of strand for each point. Points that belong to the same strand will have the same idx
+        // Eigen::MatrixXi per_point_strand_idx; //Nx1 index of strand for each point. Points that belong to the same strand will have the same idx
         Eigen::MatrixXd uv_roots; // nr_strands x 2 uv for only the points on the roots
         torch::Tensor tbn_roots_tensor; //nr_strands x 3 x 3  tanent-bitangent-normal for the root points
         Eigen::MatrixXd position_roots; //nr_strands x 3 positions of the roots in world coords
-        Eigen::MatrixXd strand_lengths; //nr_strands x 1 strand lengths
-        Eigen::MatrixXd per_strand_R_rodri_canonical_scalp; //nr_strands x3 rotations in rodrigues format that maps from sclap coordinates to some canonical space that makes learning easier. Applied only after normalizing the strands by the strand_lengths.
-        Eigen::MatrixXd per_strand_dir_along; //nr_strand x3 directions of the strand after the points were transformed in scalp coords
-        Eigen::MatrixXd full_hair_cumulative_strand_length; //Nx 1  for each point on the hair store the cumulative lenght along it's corresponding strand
-        torch::Tensor per_point_rotation_next_cur_tensor; // nr_strands X nr_points_per_strand x 3 of rodrigues towards the next point. Expressed in the local coordinate system of the current point
-        torch::Tensor per_point_delta_dist_tensor; // nr_strands X nr_points_per_strand x 1  of delta movement applied to the average segment lenght. This is applied to the per_point_rotation_next_cur
+        // Eigen::MatrixXd strand_lengths; //nr_strands x 1 strand lengths
+        // Eigen::MatrixXd per_strand_R_rodri_canonical_scalp; //nr_strands x3 rotations in rodrigues format that maps from sclap coordinates to some canonical space that makes learning easier. Applied only after normalizing the strands by the strand_lengths.
+        // Eigen::MatrixXd per_strand_dir_along; //nr_strand x3 directions of the strand after the points were transformed in scalp coords
+        // Eigen::MatrixXd full_hair_cumulative_strand_length; //Nx 1  for each point on the hair store the cumulative lenght along it's corresponding strand
+        // torch::Tensor per_point_rotation_next_cur_tensor; // nr_strands X nr_points_per_strand x 3 of rodrigues towards the next point. Expressed in the local coordinate system of the current point
+        // torch::Tensor per_point_delta_dist_tensor; // nr_strands X nr_points_per_strand x 1  of delta movement applied to the average segment lenght. This is applied to the per_point_rotation_next_cur
         torch::Tensor per_point_direction_to_next_tensor; // nr_strands X nr_points_per_strand x 3 direction in world coordinates from one point to the next one on the same strand. The last point on the strand since it has no direction to the next, just repeats the direction from the previous
 
         //rotation from the canonical space which is z align to anothe canonical space which is x aligned
-        Eigen::MatrixXd per_strand_R_rodri_across_canonical; //nr_strands x3
-        Eigen::MatrixXd per_strand_across_canonical_weight; //nr strands x1
-        Eigen::MatrixXd per_strand_dir_across; //nr_strand x3 irections across the strand after the points were transformed in canonical coords
+        // Eigen::MatrixXd per_strand_R_rodri_across_canonical; //nr_strands x3
+        // Eigen::MatrixXd per_strand_across_canonical_weight; //nr strands x1
+        // Eigen::MatrixXd per_strand_dir_across; //nr_strand x3 irections across the strand after the points were transformed in canonical coords
 } ;
 
 
@@ -96,6 +95,7 @@ private:
     // > read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
     std::shared_ptr<USCHair> read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
     void compute_root_points_atributes(Eigen::MatrixXd& uv, std::vector<Eigen::Matrix3d>& tbn_per_point, std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec); //project the points onto the closest point on the mesh and get the uv from there
+    void compute_all_atributes(std::shared_ptr<USCHair>& usc_hair);
 
     //compute a local representation of the strands
     // strands_xyz : tensor of nr_strands x nr_points_per_strand x 3 of coordinates in world coordinates
@@ -110,6 +110,7 @@ private:
 
     //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
+    std::shared_ptr<DataTransformer> m_transformer;
 
     //params
     bool m_autostart;

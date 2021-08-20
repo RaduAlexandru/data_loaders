@@ -36,6 +36,7 @@ using namespace configuru;
 #include "eigen_utils.h"
 #include "RandGenerator.h"
 #include "UtilsPytorch.h"
+#include "data_loaders/DataTransformer.h"
 
 using namespace radu::utils;
 using namespace easy_pbr;
@@ -52,21 +53,11 @@ DataLoaderUSCHair::DataLoaderUSCHair(const std::string config_file):
 {
 
     init_params(config_file);
-    // read_pose_file();
-    // create_transformation_matrices();
-    // std::cout << " creating thread" << "\n";
     if(m_autostart){
         // m_is_running=true;
         start();
 
-        // if(m_load_buffered){
-            // m_loader_thread=std::thread(&DataLoaderUSCHair::start, this);  //starts the spin in another thread
-        // }else{
-            // init_data_reading();
-            // read_data(); //starts reading but on the main thread
-        // }
     }
-    // std::cout << " finidhed creating thread" << "\n";
 
 }
 
@@ -108,6 +99,10 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
     // m_do_adaptive_subsampling=loader_config["do_adaptive_subsampling"];
     m_dataset_path=(std::string)loader_config["dataset_path"];
     m_scalp_mesh_path = (std::string)loader_config["scalp_mesh_path"];
+
+    //data transformer
+    Config transformer_config=loader_config["transformer"];
+    m_transformer=std::make_shared<DataTransformer>(transformer_config);
 
 }
 
@@ -283,49 +278,23 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     TIME_SCOPE("load");
 
     std::shared_ptr<USCHair> usc_hair(new USCHair);
-    std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
+    // std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
     // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
-    usc_hair->full_hair_cloud=easy_pbr::Mesh::create();
-    std::vector<Eigen::Vector3d> full_hair_points_vec;
-    std::vector<double> full_hair_cumulative_strand_length_vec; //stores for each point on the hair, the cumulative strand legnth up until that point
-    std::vector<int> full_hair_strand_idx_vec;
-    std::vector<Eigen::Vector3d> first_strand_points_vec;
-    std::vector<double> strand_lengths_vec;
-    int nr_strands_added=0;
-    //debug
-    // std::vector<Eigen::Vector3d> first_strand_hair_points_vec;
+    // usc_hair->full_hair_cloud=easy_pbr::Mesh::create();
+    // std::vector<Eigen::Vector3d> full_hair_points_vec;
+    // std::vector<double> full_hair_cumulative_strand_length_vec; //stores for each point on the hair, the cumulative strand legnth up until that point
+    // std::vector<int> full_hair_strand_idx_vec;
+    // std::vector<Eigen::Vector3d> first_strand_points_vec;
+    // std::vector<double> strand_lengths_vec;
+    // int nr_strands_added=0;
 
     int nstrands = 0;
     fread(&nstrands, 4, 1, f);
-    // VLOG(1) << "nr strands" << nstrands;
-    // if (!fread(&nstrands, 4, 1, f)) {
-    //     fprintf(stderr, "Couldn't read number of strands\n");
-    //     fclose(f);
-    //     return false;
-    // }
-    // strands.resize(nstrands);
 
-    double max_diff_segment=0;
 
     for (int i = 0; i < nstrands; i++) {
-    // for (int i = 0; i < 1; i++) {
-        // VLOG(1) << "strand " <<i;
         int nverts = 0;
         fread(&nverts, 4, 1, f);
-
-        // if (nverts==1){
-            // continue; //if the nr verts is 1 it means that there is no actual strand
-        // }
-
-        // VLOG(1) << "nrverts is " << nverts;
-        // if (!fread(&nverts, 4, 1, f)) {
-        //     fprintf(stderr, "Couldn't read number of vertices\n");
-        //     fclose(f);
-        //     return false;
-        // }
-        // strands[i].resize(nverts);
-        // Eigen::VectorXf strand_points_float;
-        // strand_points_float.resize(nverts,3);
 
 
 
@@ -337,15 +306,12 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         if (m_rand_gen->rand_bool(m_percentage_strand_drop)){
             is_strand_valid=false;
         }
-        if(m_load_only_strand_with_idx>=0 && nr_strands_added!=m_load_only_strand_with_idx){ //loads only one strand with a certain index
+        if(m_load_only_strand_with_idx>=0 && usc_hair->strand_meshes.size()!=m_load_only_strand_with_idx){ //loads only one strand with a certain index
             is_strand_valid=false;
         }
 
         //store also the previous point on the strand so we can compute length
-        double strand_length=0;
         Eigen::Vector3d prev_point;
-        double min_segment_length=99999999999999;
-        double max_segment_length=0;
 
 
 
@@ -366,7 +332,6 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
             //check if the points are the same
             if(j>=1){ //if we are the first vertex, there is no previous
-                // float cur_segment_length= (point-prev_point).norm();
                 if( (prev_point-point).isZero() ){
                     is_strand_valid=false;
                 }
@@ -375,7 +340,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         }
 
 
-
+        //now we add the valid strands
         if (is_strand_valid) {
             std::shared_ptr<easy_pbr::Mesh> strand= easy_pbr::Mesh::create();
             strand->V.resize(nverts,3);
@@ -386,39 +351,9 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
                 strand->V.row(j) =point;
 
 
-                full_hair_points_vec.push_back(point);
-                full_hair_cumulative_strand_length_vec.push_back(strand_length);
-                // full_hair_strand_idx_vec.push_back(i);
-                full_hair_strand_idx_vec.push_back(nr_strands_added);
-
-                //if its the frist point, compute the uv coordinate of this first point by splatting it onto the scalp mesh
-                if(j==0){
-                    // Eigen::Vector2d = compute_closest_point_uv(m_mesh_scalp, point);
-                    first_strand_points_vec.push_back(point);
-                }
-
-
-
-                //compute also the lenght of the strand
-                if(j>=1){ //if we are the first vertex, there is no previous
-                    float cur_segment_length= (point-prev_point).norm();
-                    strand_length+=cur_segment_length;
-                    // VLOG(1) << cur_segment_length << " full " <<  strand_length;
-                    if(cur_segment_length>max_segment_length && cur_segment_length!=0){
-                        max_segment_length=cur_segment_length;
-                    }
-                    if(cur_segment_length<min_segment_length && cur_segment_length!=0){
-                        min_segment_length=cur_segment_length;
-                    }
-                }
-                prev_point=point;
-
-
             }
             //finished reading this strand
-            strands.push_back(strand);
-            strand_lengths_vec.push_back(strand_length);
-            nr_strands_added++;
+            usc_hair->strand_meshes.push_back(strand);
 
         }
 
@@ -426,46 +361,268 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
     }
 
-    // VLOG(1) << "max_diff_segment" << max_diff_segment;
-
-    // VLOG(1) << "finished reading everything";
 
     fclose(f);
-    // return true;
 
 
-    //put everything into the hair structure
-    usc_hair->full_hair_cloud->V=vec2eigen(full_hair_points_vec);
+
+    //augment the data
+    if(m_mode=="train"){
+        for (int i = 0; i < usc_hair->strand_meshes.size(); i++) {
+            usc_hair->strand_meshes[i] = m_transformer->transform(usc_hair->strand_meshes[i]);
+        }
+    }
+
+
+    compute_all_atributes(usc_hair); //populate the rest of atributes given these strands;
+
+    return usc_hair;
+
+
+
+    // //put everything into the hair structure
+    // usc_hair->full_hair_cloud->V=vec2eigen(full_hair_points_vec);
+    // usc_hair->full_hair_cloud->m_vis.m_show_points=true;
+    // usc_hair->strand_meshes=strands;
+    // usc_hair->per_point_strand_idx=vec2eigen(full_hair_strand_idx_vec);
+    // usc_hair->position_roots=vec2eigen(first_strand_points_vec);
+    // usc_hair->strand_lengths=vec2eigen(strand_lengths_vec);
+    // usc_hair->full_hair_cumulative_strand_length=vec2eigen(full_hair_cumulative_strand_length_vec);
+    // Eigen::MatrixXd uv_roots;
+    // std::vector<Eigen::Matrix3d> tbn_roots;
+    // compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, first_strand_points_vec);
+    // usc_hair->uv_roots=uv_roots;
+    // //put into tensors
+    // int nr_points=usc_hair->full_hair_cloud->V.rows();
+    // usc_hair->points_tensor=eigen2tensor(usc_hair->full_hair_cloud->V.cast<float>()).view({nr_strands_added, 100, 3 });
+    // usc_hair->tbn_roots_tensor = torch::empty({ nr_strands_added,3,3 }, torch::dtype(torch::kFloat32) );
+    // auto tbn_roots_tensor_accesor = usc_hair->tbn_roots_tensor.accessor<float,3>();
+    // for(int i=0; i<tbn_roots.size(); i++){
+    //     // //row 0
+    //     // tbn_roots[i](0,0)=tbn_roots_tensor_accesor[i][0][0];
+    //     // tbn_roots[i](0,1)=tbn_roots_tensor_accesor[i][0][1];
+    //     // tbn_roots[i](0,2)=tbn_roots_tensor_accesor[i][0][2];
+    //     // //row 1
+    //     // tbn_roots[i](1,0)=tbn_roots_tensor_accesor[i][1][0];
+    //     // tbn_roots[i](1,1)=tbn_roots_tensor_accesor[i][1][1];
+    //     // tbn_roots[i](1,2)=tbn_roots_tensor_accesor[i][1][2];
+    //     // //row 2
+    //     // tbn_roots[i](2,0)=tbn_roots_tensor_accesor[i][2][0];
+    //     // tbn_roots[i](2,1)=tbn_roots_tensor_accesor[i][2][1];
+    //     // tbn_roots[i](2,2)=tbn_roots_tensor_accesor[i][2][2];
+
+
+    //     // //row 0
+    //     tbn_roots_tensor_accesor[i][0][0]=tbn_roots[i](0,0);
+    //     tbn_roots_tensor_accesor[i][0][1]=tbn_roots[i](0,1);
+    //     tbn_roots_tensor_accesor[i][0][2]=tbn_roots[i](0,2);
+    //     //row 1
+    //     tbn_roots_tensor_accesor[i][1][0]=tbn_roots[i](1,0);
+    //     tbn_roots_tensor_accesor[i][1][1]=tbn_roots[i](1,1);
+    //     tbn_roots_tensor_accesor[i][1][2]=tbn_roots[i](1,2);
+    //     //row 2
+    //     tbn_roots_tensor_accesor[i][2][0]=tbn_roots[i](2,0);
+    //     tbn_roots_tensor_accesor[i][2][1]=tbn_roots[i](2,1);
+    //     tbn_roots_tensor_accesor[i][2][2]=tbn_roots[i](2,2);
+    // }
+    // //compute local hair representation
+    // xyz2local(nr_strands_added, 100, usc_hair->full_hair_cloud->V, usc_hair->strand_lengths, tbn_roots,
+    //         usc_hair->per_point_rotation_next_cur_tensor, usc_hair->per_point_delta_dist_tensor, usc_hair->per_point_direction_to_next_tensor);
+
+
+    // //rotate from world coord to scalp coords
+    // //position_roots is t_world_scalp so the translation from scalp to world
+    // //tbn_roots is the R_world_scalp so the rotation from scalp to world
+    // //we put the stands from world position to scalp coordinates and in the scalp cooridnates we define a rotation R_canonical_scalp so from scalp to some canonical representation
+    // //get the transformation for each strand that maps from world to sclap coords
+    // std::vector<Eigen::Affine3d> tf_scalp_world_vec;
+    // for (int i=0; i<nr_strands_added; i++){
+    //     CHECK(tbn_roots[i].allFinite()) << "tbn_roots[i] is " << tbn_roots[i];
+    //     CHECK(!tbn_roots[i].isZero()) << "tbn_roots[i] is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
+    //     CHECK(!tbn_roots[i].col(0).isZero()) << "tbn_roots[i] col0 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
+    //     CHECK(!tbn_roots[i].col(1).isZero()) << "tbn_roots[i] col1 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
+    //     CHECK(!tbn_roots[i].col(2).isZero()) << "tbn_roots[i] col2 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
+    //     Eigen::Affine3d tf_world_scalp;
+    //     tf_world_scalp.setIdentity();
+    //     tf_world_scalp.linear() = tbn_roots[i];
+    //     tf_world_scalp.translation() = first_strand_points_vec[i];
+    //     CHECK(tf_world_scalp.matrix().allFinite()) << "tf_world_scalp " << tf_world_scalp.matrix();
+    //     Eigen::Affine3d tf_scalp_world=tf_world_scalp.inverse();
+    //     CHECK(tf_scalp_world.matrix().allFinite()) << " tf_scalp_world " << tf_scalp_world.matrix() << " tf_world_scalp is " << tf_world_scalp.matrix() << " tbn roots is" << tbn_roots[i] << " strand pos is " << first_strand_points_vec[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
+    //     tf_scalp_world_vec.push_back(tf_scalp_world);
+    // }
+    // //transform the strands to scalp coords
+    // std::vector< std::shared_ptr<easy_pbr::Mesh> > strands_scalp_coords_vec;
+    // std::vector< Eigen::Vector3d > per_strand_R_rodri_canonical_scalp_vec;
+    // std::vector< Eigen::Matrix3d > per_strand_R_3x3_canonical_scalp_vec;
+    // std::vector< Eigen::Vector3d > per_strand_dir_along_vec;
+    // for (int i=0; i<nr_strands_added; i++){
+    //     std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
+    //     // VLOG(1) << "accesing at " << i <<" strands.ize " << strands.size();
+    //     // VLOG(1) << "strands[i[ has V" << strands[i]->V.rows();
+    //     // auto what=  strands[i]->clone();
+
+    //     CHECK(strands[i]->V.allFinite()) << "original strand v is " << strands[i]->V;
+
+    //     strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
+    //     strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
+
+    //     //scale the strand by the strand length
+    //     // strands_scalp_coords->V.array()/strand_lengths_vec[i];
+    //     //get the first and last vected on the strand in order to compute a direciton
+    //     Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
+    //     // Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
+    //     // Eigen::Vector3d average_point=strands_scalp_coords->V.colwise().mean();
+    //     //get avg dir as sum of all direction of the strand
+    //     // Eigen::Vector3d strand_dir= (average_point - first_point).normalized();
+    //     int nr_points=strands_scalp_coords->V.rows();
+    //     //take the first 30 percent of the points for comuting the direction
+    //     nr_points=nr_points*0.2;
+    //     Eigen::Vector3d strand_dir =  (strands_scalp_coords->V.block(1,0, nr_points-1, 3 )  -  strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) ).colwise().sum();
+    //     CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i << " V is " << strands_scalp_coords->V << "block 1 is " << strands_scalp_coords->V.block(1,0, nr_points-1, 3 ) << "block 2 is " << strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) << "original strand v is " << strands[i]->V << "matrix is "<< tf_scalp_world_vec[i].matrix();
+    //     strand_dir=strand_dir.normalized();
+    //     CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i << " V is " << strands_scalp_coords->V << "block 1 is " << strands_scalp_coords->V.block(1,0, nr_points-1, 3 ) << "block 2 is " << strands_scalp_coords->V.block(0,0, nr_points-1, 3 );
+
+
+    //     //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
+    //     Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitY();
+    //     Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
+    //     CHECK(axis.allFinite()) << "axis is not finite at " <<i;
+    //     double angle=std::acos( strand_dir.dot(canonical_direction)  );
+
+    //     // //in order to avoid the rodrigues ambiguity, we flip the axis so that it's aligned for example witht he y axis
+    //     // double dot = axis.dot( Eigen::Vector3d::UnitX()); //the axis is chosen arbitrarily
+    //     // if(dot<0.0){
+    //     //     axis=-axis;
+    //     //     angle=2*M_PI-angle;
+    //     // }
+
+    //     Eigen::Vector3d axis_angle=axis*angle;
+    //     per_strand_R_rodri_canonical_scalp_vec.push_back(axis_angle);
+    //     per_strand_dir_along_vec.push_back(strand_dir);
+    //     Eigen::AngleAxisd angle_axis_eigen;
+    //     angle_axis_eigen.axis()=axis;
+    //     angle_axis_eigen.angle()=angle;
+    //     per_strand_R_3x3_canonical_scalp_vec.push_back(angle_axis_eigen.toRotationMatrix());
+    // }
+    // usc_hair->per_strand_R_rodri_canonical_scalp=vec2eigen(per_strand_R_rodri_canonical_scalp_vec);
+    // usc_hair->per_strand_dir_along=vec2eigen(per_strand_dir_along_vec);
+
+
+
+
+
+
+    // //after rotating towards an axis that is along the strand,there is till an axis of ambiguity so we compute another rotation across the strand
+    // //align the hair so that the end point of the strand is on a certain axis
+    // ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    // bool compute_dir_across=false;
+    // if (compute_dir_across){
+    //     std::vector< Eigen::Vector3d > per_strand_R_rodri_across_canonical_vec; //goes from a canonical space to a canonical space that is across
+    //     std::vector< double > per_strand_across_canonical_weight_vec;
+    //     std::vector< Eigen::Vector3d > per_strand_dir_across_vec;
+    //     for (int i=0; i<nr_strands_added; i++){
+    //         std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
+    //         strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
+    //         strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
+    //         Eigen::Affine3d tf_canonical_scalp;
+    //         tf_canonical_scalp.setIdentity();
+    //         tf_canonical_scalp.linear()= per_strand_R_3x3_canonical_scalp_vec[i];
+    //         strands_scalp_coords->transform_vertices_cpu( tf_canonical_scalp, true );
+
+    //         //scale the strand by the strand length
+    //         Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
+    //         ////attempt 1, just the last point
+    //         Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
+    //         /////attempt 2 just the min or the max point, depending on which is further
+    //         // Eigen::Vector2d max_point2d, min_point2d;
+    //         // Eigen::Vector3d max_point=strands_scalp_coords->V.colwise().maxCoeff();
+    //         // max_point2d << max_point.x(), max_point.z();
+    //         // Eigen::Vector3d min_point=strands_scalp_coords->V.colwise().minCoeff();
+    //         // min_point2d << min_point.x(), min_point.z();
+    //         // double max_norm= max_point2d.norm();
+    //         // double min_norm= min_point2d.norm();
+    //         // Eigen::Vector3d last_point=max_point;
+    //         // if (min_norm>max_norm){
+    //         //     last_point=min_point;
+    //         // }
+    //         //attempt 3 with the mean
+    //         // Eigen::Vector3d last_point = strands_scalp_coords->V.colwise().mean();
+    //         //attempt 4 with the mean but only of the first few points
+    //         // int nr_points=strands_scalp_coords->V.rows();
+    //         // nr_points=nr_points*0.2;
+    //         // Eigen::Vector3d last_point = strands_scalp_coords->V.block(0,0, nr_points, 3 ).colwise().mean();
+    //         ////attempt 4 with the mean but only of the first few points
+    //         // int nr_points=strands_scalp_coords->V.rows();
+    //         // nr_points=nr_points*0.2;
+    //         // Eigen::Vector3d last_point = strands_scalp_coords->V.block(20,0, 20, 3 ).colwise().mean();
+    //         Eigen::Vector3d strand_dir= (last_point - first_point);
+    //         CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i;
+    //         strand_dir.y()=0;
+    //         float weight=strand_dir.norm();
+    //         strand_dir=strand_dir.normalized(); //is a direction that no z coordinate
+    //         CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i;
+
+
+    //         //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
+    //         Eigen::Vector3d canonical_direction= Eigen::Vector3d::UnitX();
+    //         //we flip the strand dir so that it os pointing towards the canonical one
+    //         // if ( strand_dir.dot(Eigen::Vector3d::UnitZ()) <0.0){
+    //             // strand_dir=-strand_dir;
+    //         // }
+
+    //         Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
+    //         CHECK(axis.allFinite()) << "axis is not finite at " <<i;
+    //         double angle=std::acos( strand_dir.dot(canonical_direction)  );
+
+    //         Eigen::Vector3d axis_angle=axis*angle;
+    //         per_strand_R_rodri_across_canonical_vec.push_back(axis_angle);
+    //         per_strand_across_canonical_weight_vec.push_back(weight);
+    //         per_strand_dir_across_vec.push_back(strand_dir);
+    //     }
+    //     usc_hair->per_strand_R_rodri_across_canonical=vec2eigen(per_strand_R_rodri_across_canonical_vec);
+    //     usc_hair->per_strand_across_canonical_weight=vec2eigen(per_strand_across_canonical_weight_vec);
+    //     usc_hair->per_strand_dir_across=vec2eigen(per_strand_dir_across_vec);
+    // }
+
+
+
+    // return usc_hair;
+
+
+
+
+
+}
+
+void DataLoaderUSCHair::compute_all_atributes(std::shared_ptr<USCHair>& usc_hair){
+
+    CHECK(usc_hair->strand_meshes.size()!=0) << "Strand meshes is empty";
+
+    int nr_strands= usc_hair->strand_meshes.size();
+
+    //fill in the full hair cloud full_hair_cloud
+    usc_hair->full_hair_cloud=Mesh::create();
+    usc_hair->full_hair_cloud->add( usc_hair->strand_meshes  );
     usc_hair->full_hair_cloud->m_vis.m_show_points=true;
-    usc_hair->strand_meshes=strands;
-    usc_hair->per_point_strand_idx=vec2eigen(full_hair_strand_idx_vec);
-    usc_hair->position_roots=vec2eigen(first_strand_points_vec);
-    usc_hair->strand_lengths=vec2eigen(strand_lengths_vec);
-    usc_hair->full_hair_cumulative_strand_length=vec2eigen(full_hair_cumulative_strand_length_vec);
+
+    //get the root positions
+    std::vector<Eigen::Vector3d> position_roots_vec;
+    for (int i=0; i<nr_strands; i++){
+        position_roots_vec.push_back( usc_hair->strand_meshes[i]->V.row(0) );
+    }
+    usc_hair->position_roots=vec2eigen(position_roots_vec);
+
+
+    //get uv and tbn
     Eigen::MatrixXd uv_roots;
     std::vector<Eigen::Matrix3d> tbn_roots;
-    compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, first_strand_points_vec);
+    compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, position_roots_vec);
     usc_hair->uv_roots=uv_roots;
-    //put into tensors
-    int nr_points=usc_hair->full_hair_cloud->V.rows();
-    usc_hair->points_tensor=eigen2tensor(usc_hair->full_hair_cloud->V.cast<float>()).view({nr_strands_added, 100, 3 });
-    usc_hair->tbn_roots_tensor = torch::empty({ nr_strands_added,3,3 }, torch::dtype(torch::kFloat32) );
+    //get the tbn into the tensor
+    usc_hair->tbn_roots_tensor = torch::empty({ nr_strands,3,3 }, torch::dtype(torch::kFloat32) );
     auto tbn_roots_tensor_accesor = usc_hair->tbn_roots_tensor.accessor<float,3>();
     for(int i=0; i<tbn_roots.size(); i++){
-        // //row 0
-        // tbn_roots[i](0,0)=tbn_roots_tensor_accesor[i][0][0];
-        // tbn_roots[i](0,1)=tbn_roots_tensor_accesor[i][0][1];
-        // tbn_roots[i](0,2)=tbn_roots_tensor_accesor[i][0][2];
-        // //row 1
-        // tbn_roots[i](1,0)=tbn_roots_tensor_accesor[i][1][0];
-        // tbn_roots[i](1,1)=tbn_roots_tensor_accesor[i][1][1];
-        // tbn_roots[i](1,2)=tbn_roots_tensor_accesor[i][1][2];
-        // //row 2
-        // tbn_roots[i](2,0)=tbn_roots_tensor_accesor[i][2][0];
-        // tbn_roots[i](2,1)=tbn_roots_tensor_accesor[i][2][1];
-        // tbn_roots[i](2,2)=tbn_roots_tensor_accesor[i][2][2];
-
-
         // //row 0
         tbn_roots_tensor_accesor[i][0][0]=tbn_roots[i](0,0);
         tbn_roots_tensor_accesor[i][0][1]=tbn_roots[i](0,1);
@@ -479,259 +636,29 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         tbn_roots_tensor_accesor[i][2][1]=tbn_roots[i](2,1);
         tbn_roots_tensor_accesor[i][2][2]=tbn_roots[i](2,2);
     }
-    //compute local hair representation
-    xyz2local(nr_strands_added, 100, usc_hair->full_hair_cloud->V, usc_hair->strand_lengths, tbn_roots,
-            usc_hair->per_point_rotation_next_cur_tensor, usc_hair->per_point_delta_dist_tensor, usc_hair->per_point_direction_to_next_tensor);
 
 
-    //rotate from world coord to scalp coords
-    //position_roots is t_world_scalp so the translation from scalp to world
-    //tbn_roots is the R_world_scalp so the rotation from scalp to world
-    //we put the stands from world position to scalp coordinates and in the scalp cooridnates we define a rotation R_canonical_scalp so from scalp to some canonical representation
-    //get the transformation for each strand that maps from world to sclap coords
-    std::vector<Eigen::Affine3d> tf_scalp_world_vec;
-    for (int i=0; i<nr_strands_added; i++){
-        CHECK(tbn_roots[i].allFinite()) << "tbn_roots[i] is " << tbn_roots[i];
-        CHECK(!tbn_roots[i].isZero()) << "tbn_roots[i] is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
-        CHECK(!tbn_roots[i].col(0).isZero()) << "tbn_roots[i] col0 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
-        CHECK(!tbn_roots[i].col(1).isZero()) << "tbn_roots[i] col1 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
-        CHECK(!tbn_roots[i].col(2).isZero()) << "tbn_roots[i] col2 is zero! " << tbn_roots[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
-        Eigen::Affine3d tf_world_scalp;
-        tf_world_scalp.setIdentity();
-        tf_world_scalp.linear() = tbn_roots[i];
-        tf_world_scalp.translation() = first_strand_points_vec[i];
-        CHECK(tf_world_scalp.matrix().allFinite()) << "tf_world_scalp " << tf_world_scalp.matrix();
-        Eigen::Affine3d tf_scalp_world=tf_world_scalp.inverse();
-        CHECK(tf_scalp_world.matrix().allFinite()) << " tf_scalp_world " << tf_scalp_world.matrix() << " tf_world_scalp is " << tf_world_scalp.matrix() << " tbn roots is" << tbn_roots[i] << " strand pos is " << first_strand_points_vec[i] << " i is " << i << " tbn roots size is " <<tbn_roots.size();
-        tf_scalp_world_vec.push_back(tf_scalp_world);
-    }
-    //transform the strands to scalp coords
-    std::vector< std::shared_ptr<easy_pbr::Mesh> > strands_scalp_coords_vec;
-    std::vector< Eigen::Vector3d > per_strand_R_rodri_canonical_scalp_vec;
-    std::vector< Eigen::Matrix3d > per_strand_R_3x3_canonical_scalp_vec;
-    std::vector< Eigen::Vector3d > per_strand_dir_along_vec;
-    for (int i=0; i<nr_strands_added; i++){
-        std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
-        // VLOG(1) << "accesing at " << i <<" strands.ize " << strands.size();
-        // VLOG(1) << "strands[i[ has V" << strands[i]->V.rows();
-        // auto what=  strands[i]->clone();
-
-        CHECK(strands[i]->V.allFinite()) << "original strand v is " << strands[i]->V;
-
-        strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
-        strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
-
-        //scale the strand by the strand length
-        // strands_scalp_coords->V.array()/strand_lengths_vec[i];
-        //get the first and last vected on the strand in order to compute a direciton
-        Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
-        // Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
-        // Eigen::Vector3d average_point=strands_scalp_coords->V.colwise().mean();
-        //get avg dir as sum of all direction of the strand
-        // Eigen::Vector3d strand_dir= (average_point - first_point).normalized();
-        int nr_points=strands_scalp_coords->V.rows();
-        //take the first 30 percent of the points for comuting the direction
-        nr_points=nr_points*0.2;
-        Eigen::Vector3d strand_dir =  (strands_scalp_coords->V.block(1,0, nr_points-1, 3 )  -  strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) ).colwise().sum();
-        CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i << " V is " << strands_scalp_coords->V << "block 1 is " << strands_scalp_coords->V.block(1,0, nr_points-1, 3 ) << "block 2 is " << strands_scalp_coords->V.block(0,0, nr_points-1, 3 ) << "original strand v is " << strands[i]->V << "matrix is "<< tf_scalp_world_vec[i].matrix();
-        strand_dir=strand_dir.normalized();
-        CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i << " V is " << strands_scalp_coords->V << "block 1 is " << strands_scalp_coords->V.block(1,0, nr_points-1, 3 ) << "block 2 is " << strands_scalp_coords->V.block(0,0, nr_points-1, 3 );
-
-
-        //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
-        Eigen::Vector3d canonical_direction= - Eigen::Vector3d::UnitY();
-        Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
-        CHECK(axis.allFinite()) << "axis is not finite at " <<i;
-        double angle=std::acos( strand_dir.dot(canonical_direction)  );
-
-        // //in order to avoid the rodrigues ambiguity, we flip the axis so that it's aligned for example witht he y axis
-        // double dot = axis.dot( Eigen::Vector3d::UnitX()); //the axis is chosen arbitrarily
-        // if(dot<0.0){
-        //     axis=-axis;
-        //     angle=2*M_PI-angle;
-        // }
-
-        Eigen::Vector3d axis_angle=axis*angle;
-        per_strand_R_rodri_canonical_scalp_vec.push_back(axis_angle);
-        per_strand_dir_along_vec.push_back(strand_dir);
-        Eigen::AngleAxisd angle_axis_eigen;
-        angle_axis_eigen.axis()=axis;
-        angle_axis_eigen.angle()=angle;
-        per_strand_R_3x3_canonical_scalp_vec.push_back(angle_axis_eigen.toRotationMatrix());
-    }
-    usc_hair->per_strand_R_rodri_canonical_scalp=vec2eigen(per_strand_R_rodri_canonical_scalp_vec);
-    usc_hair->per_strand_dir_along=vec2eigen(per_strand_dir_along_vec);
-
-
-
-
-
-
-    //after rotating towards an axis that is along the strand,there is till an axis of ambiguity so we compute another rotation across the strand
-    //align the hair so that the end point of the strand is on a certain axis
-    ////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
-    bool compute_dir_across=false;
-    if (compute_dir_across){
-        std::vector< Eigen::Vector3d > per_strand_R_rodri_across_canonical_vec; //goes from a canonical space to a canonical space that is across
-        std::vector< double > per_strand_across_canonical_weight_vec;
-        std::vector< Eigen::Vector3d > per_strand_dir_across_vec;
-        for (int i=0; i<nr_strands_added; i++){
-            std::shared_ptr<easy_pbr::Mesh> strands_scalp_coords;
-            strands_scalp_coords=std::make_shared<easy_pbr::Mesh>(strands[i]->clone());
-            strands_scalp_coords->transform_vertices_cpu( tf_scalp_world_vec[i], true );
-            Eigen::Affine3d tf_canonical_scalp;
-            tf_canonical_scalp.setIdentity();
-            tf_canonical_scalp.linear()= per_strand_R_3x3_canonical_scalp_vec[i];
-            strands_scalp_coords->transform_vertices_cpu( tf_canonical_scalp, true );
-
-            //scale the strand by the strand length
-            Eigen::Vector3d first_point=strands_scalp_coords->V.row(0);
-            ////attempt 1, just the last point
-            Eigen::Vector3d last_point=strands_scalp_coords->V.row(  strands_scalp_coords->V.rows()-1  );
-            /////attempt 2 just the min or the max point, depending on which is further
-            // Eigen::Vector2d max_point2d, min_point2d;
-            // Eigen::Vector3d max_point=strands_scalp_coords->V.colwise().maxCoeff();
-            // max_point2d << max_point.x(), max_point.z();
-            // Eigen::Vector3d min_point=strands_scalp_coords->V.colwise().minCoeff();
-            // min_point2d << min_point.x(), min_point.z();
-            // double max_norm= max_point2d.norm();
-            // double min_norm= min_point2d.norm();
-            // Eigen::Vector3d last_point=max_point;
-            // if (min_norm>max_norm){
-            //     last_point=min_point;
-            // }
-            //attempt 3 with the mean
-            // Eigen::Vector3d last_point = strands_scalp_coords->V.colwise().mean();
-            //attempt 4 with the mean but only of the first few points
-            // int nr_points=strands_scalp_coords->V.rows();
-            // nr_points=nr_points*0.2;
-            // Eigen::Vector3d last_point = strands_scalp_coords->V.block(0,0, nr_points, 3 ).colwise().mean();
-            ////attempt 4 with the mean but only of the first few points
-            // int nr_points=strands_scalp_coords->V.rows();
-            // nr_points=nr_points*0.2;
-            // Eigen::Vector3d last_point = strands_scalp_coords->V.block(20,0, 20, 3 ).colwise().mean();
-            Eigen::Vector3d strand_dir= (last_point - first_point);
-            CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i;
-            strand_dir.y()=0;
-            float weight=strand_dir.norm();
-            strand_dir=strand_dir.normalized(); //is a direction that no z coordinate
-            CHECK(strand_dir.allFinite()) << "strand dir is not finite at " <<i;
-
-
-            //get the rotation that aligns this strand dir with some predefined direction like for example the[0,0,-1]
-            Eigen::Vector3d canonical_direction= Eigen::Vector3d::UnitX();
-            //we flip the strand dir so that it os pointing towards the canonical one
-            // if ( strand_dir.dot(Eigen::Vector3d::UnitZ()) <0.0){
-                // strand_dir=-strand_dir;
-            // }
-
-            Eigen::Vector3d axis= (strand_dir.cross(canonical_direction)).normalized();
-            CHECK(axis.allFinite()) << "axis is not finite at " <<i;
-            double angle=std::acos( strand_dir.dot(canonical_direction)  );
-
-            Eigen::Vector3d axis_angle=axis*angle;
-            per_strand_R_rodri_across_canonical_vec.push_back(axis_angle);
-            per_strand_across_canonical_weight_vec.push_back(weight);
-            per_strand_dir_across_vec.push_back(strand_dir);
+    //get the per_point direction to the next point on the strand
+    int nr_verts_per_strand=100;
+    usc_hair->per_point_direction_to_next_tensor =  torch::empty({  nr_strands,nr_verts_per_strand, 3  }, torch::dtype(torch::kFloat32) );
+    auto per_point_direction_to_next_tensor_accessor = usc_hair->per_point_direction_to_next_tensor.accessor<float,3>();
+    for(int s=0; s<nr_strands; s++){
+        Eigen::Vector3d last_dir;
+        for(int p=0; p<nr_verts_per_strand-1; p++){
+            Eigen::Vector3d cur_point_world = usc_hair->strand_meshes[s]->V.row(p);
+            Eigen::Vector3d next_point_world = usc_hair->strand_meshes[s]->V.row(p+1);
+            Eigen::Vector3d dir= (next_point_world-cur_point_world).normalized();
+            last_dir=dir;
+            //write the dir
+            per_point_direction_to_next_tensor_accessor[s][p][0] = dir.x();
+            per_point_direction_to_next_tensor_accessor[s][p][1] = dir.y();
+            per_point_direction_to_next_tensor_accessor[s][p][2] = dir.z();
         }
-        usc_hair->per_strand_R_rodri_across_canonical=vec2eigen(per_strand_R_rodri_across_canonical_vec);
-        usc_hair->per_strand_across_canonical_weight=vec2eigen(per_strand_across_canonical_weight_vec);
-        usc_hair->per_strand_dir_across=vec2eigen(per_strand_dir_across_vec);
+         //last point on the strand does not have a next so we just copy the last diretion we set
+        per_point_direction_to_next_tensor_accessor[s][nr_verts_per_strand-1][0] = last_dir.x();
+        per_point_direction_to_next_tensor_accessor[s][nr_verts_per_strand-1][1] = last_dir.y();
+        per_point_direction_to_next_tensor_accessor[s][nr_verts_per_strand-1][2] = last_dir.z();
     }
-
-
-
-    return usc_hair;
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // //get the full cloud into one
-    // // std::shared_ptr<easy_pbr::Mesh> full_hair=easy_pbr::Mesh::create();
-
-    // // VLOG(1) << " full_hair_points_vec" << full_hair_points_vec.size();
-    // full_hair->V=vec2eigen(full_hair_points_vec);
-    // // full_hair->V=vec2eigen(first_strand_hair_points_vec);
-    // Eigen::MatrixXi strand_idx=vec2eigen(full_hair_strand_idx_vec);
-    // // VLOG(1) << "strand_idx" << strand_idx.rows() << " " <<strand_idx.cols();
-    // full_hair->add_extra_field("strand_idx", strand_idx);
-    // full_hair->m_vis.m_show_points=true;
-    // // VLOG(1) << "adding";
-    // // VLOG(1) << "finished adding";
-
-
-
-    // //compute the uv for the first points on the strand
-    // // Eigen::MatrixXd uv_roots = compute_closest_point_uv(m_mesh_scalp, first_strand_points_vec);
-    // Eigen::MatrixXd uv_roots;
-    // std::vector<Eigen::Matrix3d> tbn_roots;
-    // compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, first_strand_points_vec);
-    // full_hair->add_extra_field("uv_roots", uv_roots);
-    // full_hair->add_extra_field("tbn_roots", tbn_roots);
-
-    // //compute also the direciton in 3 matrices for easier processing
-    // Eigen::MatrixXd t_roots;
-    // Eigen::MatrixXd b_roots;
-    // Eigen::MatrixXd n_roots;
-    // t_roots.resize(first_strand_points_vec.size(),3);
-    // b_roots.resize(first_strand_points_vec.size(),3);
-    // n_roots.resize(first_strand_points_vec.size(),3);
-    // for(int i=0; i<first_strand_points_vec.size(); i++){
-    //     t_roots.row(i) = tbn_roots[i].col(0).transpose();
-    //     b_roots.row(i) = tbn_roots[i].col(1).transpose();
-    //     n_roots.row(i) = tbn_roots[i].col(2).transpose();
-    // }
-    // full_hair->add_extra_field("t_roots", t_roots);
-    // full_hair->add_extra_field("b_roots", b_roots);
-    // full_hair->add_extra_field("n_roots", n_roots);
-
-
-
-    // //get also the roots positions for each strand
-    // Eigen::MatrixXd position_roots=vec2eigen(first_strand_points_vec);
-    // full_hair->add_extra_field("position_roots", position_roots);
-
-    // //add also the strand length
-    // Eigen::MatrixXd strand_lengths=vec2eigen(strand_lengths_vec);
-    // full_hair->add_extra_field("strand_lengths", strand_lengths);
-
-    // //add cumulative strand length
-    // Eigen::MatrixXd full_hair_cumulative_strand_length=vec2eigen(full_hair_cumulative_strand_length_vec);
-    // full_hair->add_extra_field("full_hair_cumulative_strand_length", full_hair_cumulative_strand_length);
-
-
-    // //DEBUG check also if the xyz2local is faster on cpu
-    // // xyz2local();
-    // // xyz2local();
-    // // xyz2local();
-    // // xyz2local();
-    // // xyz2local();
-    // // xyz2local();
-
-
-
-    // TIME_END("load");
-
-    // auto ret= std::make_tuple(strands, full_hair);
-
-    // return ret;
 
 }
 
@@ -795,42 +722,20 @@ void DataLoaderUSCHair::compute_root_points_atributes(Eigen::MatrixXd& uv, std::
         Tw=T;
         Bw=B;
         Nw=N;
-        CHECK(!N.isZero()) << "N is zero why ";
-        CHECK(!T.isZero()) << "T is zero why ";
-        CHECK(!B.isZero()) << "B is zero why ";
         //rotate from model coordinates to world
         T=mesh->model_matrix().linear()*Tw;
         B=mesh->model_matrix().linear()*Bw;
         N=mesh->model_matrix().linear()*Nw;
-        CHECK(!N.isZero()) << "N is zero why " << " linear is " << mesh->model_matrix().linear() << " Nw is " << Nw << " n is " << N;
-        CHECK(!T.isZero()) << "T is zero why " << " linear is " << mesh->model_matrix().linear() << " Tw is " << Tw << " t is " << T;
-        CHECK(!B.isZero()) << "B is zero why " << " linear is " << mesh->model_matrix().linear() << " Bw is " << Bw << " n is " << B;
         Eigen::Matrix3d TBN;
         TBN.col(0)=T;
         TBN.col(1)=B;
         TBN.col(2)=N;
-        CHECK(!TBN.isZero()) << "TBN is zero! " << TBN << " i is " << i << " points is " << points.rows();
         tbn_per_point[i] = TBN;
-        CHECK(!tbn_per_point[i].col(0).isZero()) << "tbn_per_point[i] col0 is zero! " << tbn_per_point[i] << " i is " << i << " tbn roots size is " <<tbn_per_point.size();
-        CHECK(!tbn_per_point[i].col(1).isZero()) << "tbn_per_point[i] col1 is zero! " << tbn_per_point[i] << " i is " << i << " tbn roots size is " <<tbn_per_point.size();
-        CHECK(!tbn_per_point[i].col(2).isZero()) << "tbn_per_point[i] col2 is zero! " << tbn_per_point[i] << " i is " << i << " tbn roots size is " <<tbn_per_point.size();
 
 
 
     }
 
-
-    // //show the mesh
-    // std::shared_ptr<easy_pbr::Mesh> closest_mesh= easy_pbr::Mesh::create();
-    // // closest_mesh->V= closest_points;
-    // closest_mesh->V= mesh->V;
-    // closest_mesh->F.resize(1,3);
-    // closest_mesh->F.row(0) =  mesh->F.row(closest_face_indices(0));
-    // easy_pbr::Scene::show(closest_mesh,"closest_mesh");
-
-    // return UV;
-
-    // uv=UV;
 
 
 }
