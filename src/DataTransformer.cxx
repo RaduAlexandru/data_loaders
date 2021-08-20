@@ -42,7 +42,7 @@ void DataTransformer::init_params(const Config& transformer_config){
     // Config loader_config=cfg["loader_semantic_kitti"];
 
     m_random_translation_xyz_magnitude=transformer_config["random_translation_xyz_magnitude"];
-    m_random_translation_xz_magnitude=transformer_config["random_translation_xz_magnitude"];
+    // m_random_translation_xz_magnitude=transformer_config["random_translation_xz_magnitude"];
     m_rotation_y_max_angle=transformer_config["rotation_y_max_angle"];
     m_random_stretch_xyz_magnitude=transformer_config["random_stretch_xyz_magnitude"];
     m_adaptive_subsampling_falloff_start=transformer_config["adaptive_subsampling_falloff_start"];
@@ -91,32 +91,36 @@ MeshSharedPtr DataTransformer::transform(MeshSharedPtr& mesh){
         mesh->remove_marked_vertices(is_vertex_to_be_removed, false);
     }
 
-    if(m_random_translation_xyz_magnitude!=0.0){
-        float translation_strength=m_random_translation_xyz_magnitude;
+    if(m_random_translation_xyz_magnitude.isZero()){
+        float translation_strength_x=m_random_translation_xyz_magnitude.x();
+        float translation_strength_y=m_random_translation_xyz_magnitude.y();
+        float translation_strength_z=m_random_translation_xyz_magnitude.z();
         Eigen::Affine3d tf;
         tf.setIdentity();
-        tf.translation().x()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
-        tf.translation().y()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
-        tf.translation().z()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
+        tf.translation().x()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength_x;
+        tf.translation().y()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength_y;
+        tf.translation().z()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength_z;
         mesh->transform_vertices_cpu(tf);
     }
 
-    if(m_random_translation_xz_magnitude!=0.0){
-        float translation_strength=m_random_translation_xz_magnitude;
-        Eigen::Affine3d tf;
-        tf.setIdentity();
-        tf.translation().x()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
-        tf.translation().z()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
-        mesh->transform_vertices_cpu(tf);
-    }
+    // if(m_random_translation_xz_magnitude!=0.0){
+    //     float translation_strength=m_random_translation_xz_magnitude;
+    //     Eigen::Affine3d tf;
+    //     tf.setIdentity();
+    //     tf.translation().x()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
+    //     tf.translation().z()=m_rand_gen->rand_float(-1.0, 1.0)*translation_strength;
+    //     mesh->transform_vertices_cpu(tf);
+    // }
 
 
 
-    if(m_random_stretch_xyz_magnitude!=0.0){
-        float s=m_random_stretch_xyz_magnitude;
-        float stretch_factor_x=1.0 + m_rand_gen->rand_float(-s, s);
-        float stretch_factor_y=1.0 + m_rand_gen->rand_float(-s, s);
-        float stretch_factor_z=1.0 + m_rand_gen->rand_float(-s, s);
+    if(!m_random_stretch_xyz_magnitude.isZero()){
+        float sx=m_random_stretch_xyz_magnitude.x();
+        float sy=m_random_stretch_xyz_magnitude.y();
+        float sz=m_random_stretch_xyz_magnitude.z();
+        float stretch_factor_x=1.0 + m_rand_gen->rand_float(-sx, sx);
+        float stretch_factor_y=1.0 + m_rand_gen->rand_float(-sy, sy);
+        float stretch_factor_z=1.0 + m_rand_gen->rand_float(-sz, sz);
         mesh->V.col(0)*=stretch_factor_x;
         mesh->V.col(1)*=stretch_factor_y;
         mesh->V.col(2)*=stretch_factor_z;

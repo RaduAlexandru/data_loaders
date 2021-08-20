@@ -22,10 +22,9 @@ public:
     std::shared_ptr<easy_pbr::Mesh> transform(std::shared_ptr<easy_pbr::Mesh>& mesh);
 
     //params
-    float m_random_translation_xyz_magnitude;
-    float m_random_translation_xz_magnitude;
+    Eigen::Vector3f m_random_translation_xyz_magnitude;
     float m_rotation_y_max_angle;
-    float m_random_stretch_xyz_magnitude;
+    Eigen::Vector3f m_random_stretch_xyz_magnitude;
     float m_adaptive_subsampling_falloff_start;
     float m_adaptive_subsampling_falloff_end;
     float m_random_subsample_percentage;
