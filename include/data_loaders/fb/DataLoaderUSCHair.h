@@ -95,6 +95,7 @@ private:
     // > read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
     std::shared_ptr<USCHair> read_hair_sample(const std::string data_filepath); //returns a full hair mesha and also a vector of meshes corresponding with the strands
     void compute_root_points_atributes(Eigen::MatrixXd& uv, std::vector<Eigen::Matrix3d>& tbn_per_point, std::shared_ptr<easy_pbr::Mesh> mesh, std::vector<Eigen::Vector3d> points_vec); //project the points onto the closest point on the mesh and get the uv from there
+    void compute_full_hair(std::shared_ptr<USCHair>& usc_hair);
     void compute_all_atributes(std::shared_ptr<USCHair>& usc_hair);
 
     //compute a local representation of the strands
@@ -124,6 +125,7 @@ private:
     int m_load_only_strand_with_idx;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
+    bool m_augment_per_strand; //agument either ech strand indivually or the whole hairstyle
     // bool m_do_adaptive_subsampling; //randomly drops points from the cloud, dropping with more probability the ones that are closes and with less the ones further
     std::thread m_loader_thread;
     uint32_t m_idx_cloud_to_read;

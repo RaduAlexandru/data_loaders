@@ -95,6 +95,7 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
     m_load_only_strand_with_idx=loader_config["load_only_strand_with_idx"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
+    m_augment_per_strand= loader_config["augment_per_strand"];
     m_load_buffered=loader_config["load_buffered"];
     // m_do_adaptive_subsampling=loader_config["do_adaptive_subsampling"];
     m_dataset_path=(std::string)loader_config["dataset_path"];
@@ -368,11 +369,18 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
     //augment the data
     if(m_mode=="train"){
-        for (int i = 0; i < usc_hair->strand_meshes.size(); i++) {
-            usc_hair->strand_meshes[i] = m_transformer->transform(usc_hair->strand_meshes[i]);
+        if (m_augment_per_strand){ //agument each strand individually
+            for (int i = 0; i < usc_hair->strand_meshes.size(); i++) {
+                usc_hair->strand_meshes[i] = m_transformer->transform(usc_hair->strand_meshes[i]);
+            }
+            compute_full_hair(usc_hair);
+        }else{ //agument the whole hair
+            compute_full_hair(usc_hair);
+            usc_hair->full_hair_cloud = m_transformer->transform(usc_hair->full_hair_cloud);
         }
+    }else{
+        compute_full_hair(usc_hair); //if we don;t do training we still need to compute the full hair
     }
-
 
     compute_all_atributes(usc_hair); //populate the rest of atributes given these strands;
 
@@ -595,16 +603,21 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
 }
 
+void DataLoaderUSCHair::compute_full_hair(std::shared_ptr<USCHair>& usc_hair){
+
+    //fill in the full hair cloud full_hair_cloud
+    usc_hair->full_hair_cloud=Mesh::create();
+    usc_hair->full_hair_cloud->add( usc_hair->strand_meshes  );
+    usc_hair->full_hair_cloud->m_vis.m_show_points=true;
+
+}
+
 void DataLoaderUSCHair::compute_all_atributes(std::shared_ptr<USCHair>& usc_hair){
 
     CHECK(usc_hair->strand_meshes.size()!=0) << "Strand meshes is empty";
 
     int nr_strands= usc_hair->strand_meshes.size();
 
-    //fill in the full hair cloud full_hair_cloud
-    usc_hair->full_hair_cloud=Mesh::create();
-    usc_hair->full_hair_cloud->add( usc_hair->strand_meshes  );
-    usc_hair->full_hair_cloud->m_vis.m_show_points=true;
 
     //get the root positions
     std::vector<Eigen::Vector3d> position_roots_vec;
