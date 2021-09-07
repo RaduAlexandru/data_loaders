@@ -126,6 +126,7 @@ private:
     bool m_shuffle;
     bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
     bool m_augment_per_strand; //agument either ech strand indivually or the whole hairstyle
+    bool m_augment_in_tbn_space; //agument in either the normal space or in tbn space
     // bool m_do_adaptive_subsampling; //randomly drops points from the cloud, dropping with more probability the ones that are closes and with less the ones further
     std::thread m_loader_thread;
     uint32_t m_idx_cloud_to_read;

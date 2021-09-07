@@ -96,6 +96,7 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_augment_per_strand= loader_config["augment_per_strand"];
+    m_augment_in_tbn_space = loader_config["augment_in_tbn_space"];
     m_load_buffered=loader_config["load_buffered"];
     // m_do_adaptive_subsampling=loader_config["do_adaptive_subsampling"];
     m_dataset_path=(std::string)loader_config["dataset_path"];
@@ -366,12 +367,42 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     fclose(f);
 
 
+    //if we augment in tbn space we need to compute the tbn for each strand
+    Eigen::MatrixXd uv_roots;
+    std::vector<Eigen::Matrix3d> tbn_roots;
+    if (m_augment_in_tbn_space){
+        std::vector<Eigen::Vector3d> position_roots_vec;
+        for (int i=0; i<usc_hair->strand_meshes.size(); i++){
+            position_roots_vec.push_back( usc_hair->strand_meshes[i]->V.row(0) );
+        }
+        //get uv and tbn
+        compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, position_roots_vec);
+    }
+
+
+
+
 
     //augment the data
     if(m_mode=="train"){
         if (m_augment_per_strand){ //agument each strand individually
             for (int i = 0; i < usc_hair->strand_meshes.size(); i++) {
+
+                Eigen::Affine3d tf_world_scalp;
+                Eigen::Affine3d tf_scalp_world;
+                if (m_augment_in_tbn_space){
+                    //get it in tbn space
+                    tf_world_scalp.linear()= tbn_roots[i];
+                    tf_world_scalp.translation()= usc_hair->strand_meshes[i]->V.row(0);
+                    tf_scalp_world=tf_world_scalp.inverse();
+                    usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_scalp_world, true);
+                }
                 usc_hair->strand_meshes[i] = m_transformer->transform(usc_hair->strand_meshes[i]);
+                if (m_augment_in_tbn_space){
+                    //move from tbn space back
+                    usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_world_scalp, true);
+
+                }
             }
             compute_full_hair(usc_hair);
         }else{ //agument the whole hair
