@@ -525,7 +525,7 @@ void DataLoaderBlenderFB::load_images_in_frame(easy_pbr::Frame& frame){
 
     rgb_32f=rgb_32f*m_exposure_change;
     frame.rgb_32f= rgb_32f;
-    cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+    cv::cvtColor(frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY);
 
     frame.width=frame.rgb_32f.cols;
     frame.height=frame.rgb_32f.rows;
