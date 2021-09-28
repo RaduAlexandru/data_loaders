@@ -390,19 +390,22 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
                 Eigen::Affine3d tf_world_scalp;
                 Eigen::Affine3d tf_scalp_world;
-                if (m_augment_in_tbn_space){
-                    //get it in tbn space
+                tf_world_scalp.translation()= usc_hair->strand_meshes[i]->V.row(0);
+                if (m_augment_in_tbn_space){ //also rotate according to the tbn
                     tf_world_scalp.linear()= tbn_roots[i];
-                    tf_world_scalp.translation()= usc_hair->strand_meshes[i]->V.row(0);
-                    tf_scalp_world=tf_world_scalp.inverse();
-                    usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_scalp_world, true);
                 }
-                usc_hair->strand_meshes[i] = m_transformer->transform(usc_hair->strand_meshes[i]);
-                if (m_augment_in_tbn_space){
-                    //move from tbn space back
-                    usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_world_scalp, true);
+                tf_scalp_world=tf_world_scalp.inverse();
+                usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_scalp_world, true);
 
-                }
+                //optionally augment the hair bounce now that we are in tbn coords
+                // if (m_augment_hair_bounce){
+                    // usc_hair->strand_meshes[i]=augment_hair_bounce(usc_hair->strand_meshes[i]);
+                // }
+
+                usc_hair->strand_meshes[i] = m_transformer->transform(usc_hair->strand_meshes[i]);
+
+                usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_world_scalp, true);
+
             }
             compute_full_hair(usc_hair);
         }else{ //agument the whole hair
@@ -948,6 +951,15 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
 
 
 }
+
+// std::shared_ptr<easy_pbr::Mesh> DataLoaderUSCHair::augment_hair_bounce(std::shared_ptr<easy_pbr::Mesh> mesh){
+
+//     CHECK(m_augment_in_tbn_space) << "We are assuming we are in tbn space";
+
+//     float bounce_ammount= m_rand_gen->rand_float(0, 0.3);
+//     Eigen::Vector3d
+
+// }
 
 
 std::shared_ptr<USCHair> DataLoaderUSCHair::get_random_roots(const int nr_strands){

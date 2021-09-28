@@ -108,6 +108,9 @@ private:
     // per_point_direction_to_next  nr_strands X nr_points_per_strand-1 x 3 direction in world coordinates from one point to the next one on the same strand
     void xyz2local(int nr_strands, int nr_verts_per_strand, const Eigen::MatrixXd& points, const Eigen::MatrixXd& strand_lengths, std::vector<Eigen::Matrix3d>& tbn_roots, torch::Tensor& per_point_rotation_next_cur_tensor, torch::Tensor& per_point_delta_dist_tensor, torch::Tensor& per_point_direction_to_next_tensor);
 
+    // std::shared_ptr<easy_pbr::Mesh> augment_hair_bounce(std::shared_ptr<easy_pbr::Mesh> mesh); //make the hair bounce by adding a bit of the z direction once it's in tbn
+
+
 
     //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
