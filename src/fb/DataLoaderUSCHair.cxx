@@ -290,8 +290,8 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         if (nverts==1){ //if the nr of vertices per strand is 1 it means that this is no actual strand, it's jsut the root node
             is_strand_valid=false;
         }
-        //randomly drop some strands
-        if (m_rand_gen->rand_bool(m_percentage_strand_drop)){
+        //randomly drop some strands but only if we are loading with buffer, if we are loadig unbuffered we do this selection the get_cloud itself
+        if (m_rand_gen->rand_bool(m_percentage_strand_drop) && m_load_buffered){
             is_strand_valid=false;
         }
         if(m_load_only_strand_with_idx>=0 && usc_hair->strand_meshes.size()!=m_load_only_strand_with_idx){ //loads only one strand with a certain index
@@ -1066,7 +1066,13 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::get_hair(){
     std::shared_ptr<USCHair> aug_hair(new USCHair); //we create a new augmented one
     //copyt all the stuff so thet internally we keep the same strands
     for (int i = 0; i < hair->strand_meshes.size(); i++) {
-        aug_hair->strand_meshes.push_back( std::make_shared<Mesh>(hair->strand_meshes[i]->clone()) );
+        bool is_strand_valid=true;
+        if (m_rand_gen->rand_bool(m_percentage_strand_drop) && !m_load_buffered){ //if we have them all stored in a vector we do here the subsampling
+            is_strand_valid=false;
+        }
+        if(is_strand_valid){
+            aug_hair->strand_meshes.push_back( std::make_shared<Mesh>(hair->strand_meshes[i]->clone()) );
+        }
     }
     // aug_hair->uv_roots=hair->uv_roots;
     // aug_hair->tbn_roots_tensor=hair->tbn_roots_tensor.clone();
