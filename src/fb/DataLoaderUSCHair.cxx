@@ -218,15 +218,11 @@ void DataLoaderUSCHair::read_data(){
 
 
                 std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
-                std::shared_ptr<easy_pbr::Mesh> full_hair;
-                // auto ret=read_hair_sample(data_filepath);
-                // strands= std::get<0>(ret);
-                // full_hair= std::get<1>(ret);
+
 
                 auto hair=read_hair_sample(data_filepath);
 
 
-                // m_clouds_buffer.enqueue(full_hair);
                 m_hairs_buffer.enqueue(hair);
 
             }
@@ -244,16 +240,6 @@ void DataLoaderUSCHair::read_data(){
             std::string data_filepath=m_data_filenames[ i ].string();
 
             VLOG(1) << "data_filepath " << data_filepath;
-
-            // std::vector< std::shared_ptr<easy_pbr::Mesh> > strands;
-            // std::shared_ptr<easy_pbr::Mesh> full_hair;
-            // auto ret=read_hair_sample(data_filepath);
-            // strands= std::get<0>(ret);
-            // full_hair= std::get<1>(ret);
-
-            // VLOG(1) << "push";
-
-            // m_clouds_vec.push_back(full_hair);
 
 
             auto hair=read_hair_sample(data_filepath);
@@ -367,56 +353,58 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     fclose(f);
 
 
-    //if we augment in tbn space we need to compute the tbn for each strand
-    Eigen::MatrixXd uv_roots;
-    std::vector<Eigen::Matrix3d> tbn_roots;
-    if (m_augment_in_tbn_space){
-        std::vector<Eigen::Vector3d> position_roots_vec;
-        for (int i=0; i<usc_hair->strand_meshes.size(); i++){
-            position_roots_vec.push_back( usc_hair->strand_meshes[i]->V.row(0) );
-        }
-        //get uv and tbn
-        compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, position_roots_vec);
-    }
+    // //if we augment in tbn space we need to compute the tbn for each strand
+    // Eigen::MatrixXd uv_roots;
+    // std::vector<Eigen::Matrix3d> tbn_roots;
+    // if (m_augment_in_tbn_space){
+    //     std::vector<Eigen::Vector3d> position_roots_vec;
+    //     for (int i=0; i<usc_hair->strand_meshes.size(); i++){
+    //         position_roots_vec.push_back( usc_hair->strand_meshes[i]->V.row(0) );
+    //     }
+    //     //get uv and tbn
+    //     compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, position_roots_vec);
+    // }
 
 
 
 
 
-    //augment the data
-    if(m_mode=="train"){
-        if (m_augment_per_strand){ //agument each strand individually
-            for (int i = 0; i < usc_hair->strand_meshes.size(); i++) {
+    // //augment the data
+    // if(m_mode=="train"){
+    //     if (m_augment_per_strand){ //agument each strand individually
+    //         for (int i = 0; i < usc_hair->strand_meshes.size(); i++) {
 
-                Eigen::Affine3d tf_world_scalp;
-                Eigen::Affine3d tf_scalp_world;
-                tf_world_scalp.translation()= usc_hair->strand_meshes[i]->V.row(0);
-                if (m_augment_in_tbn_space){ //also rotate according to the tbn
-                    tf_world_scalp.linear()= tbn_roots[i];
-                }
-                tf_scalp_world=tf_world_scalp.inverse();
-                usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_scalp_world, true);
+    //             Eigen::Affine3d tf_world_scalp;
+    //             Eigen::Affine3d tf_scalp_world;
+    //             tf_world_scalp.translation()= usc_hair->strand_meshes[i]->V.row(0);
+    //             if (m_augment_in_tbn_space){ //also rotate according to the tbn
+    //                 tf_world_scalp.linear()= tbn_roots[i];
+    //             }
+    //             tf_scalp_world=tf_world_scalp.inverse();
+    //             usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_scalp_world, true);
 
-                //optionally augment the hair bounce now that we are in tbn coords
-                // if (m_augment_hair_bounce){
-                    // usc_hair->strand_meshes[i]=augment_hair_bounce(usc_hair->strand_meshes[i]);
-                // }
+    //             //optionally augment the hair bounce now that we are in tbn coords
+    //             // if (m_augment_hair_bounce){
+    //                 // usc_hair->strand_meshes[i]=augment_hair_bounce(usc_hair->strand_meshes[i]);
+    //             // }
 
-                usc_hair->strand_meshes[i] = m_transformer->transform(usc_hair->strand_meshes[i]);
+    //             usc_hair->strand_meshes[i] = m_transformer->transform(usc_hair->strand_meshes[i]);
 
-                usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_world_scalp, true);
+    //             usc_hair->strand_meshes[i]->transform_vertices_cpu(tf_world_scalp, true);
 
-            }
-            compute_full_hair(usc_hair);
-        }else{ //agument the whole hair
-            compute_full_hair(usc_hair);
-            usc_hair->full_hair_cloud = m_transformer->transform(usc_hair->full_hair_cloud);
-        }
-    }else{
-        compute_full_hair(usc_hair); //if we don;t do training we still need to compute the full hair
-    }
+    //         }
+    //         compute_full_hair(usc_hair);
+    //     }else{ //agument the whole hair
+    //         compute_full_hair(usc_hair);
+    //         usc_hair->full_hair_cloud = m_transformer->transform(usc_hair->full_hair_cloud);
+    //     }
+    // }else{
+    //     compute_full_hair(usc_hair); //if we don;t do training we still need to compute the full hair
+    // }
 
-    compute_all_atributes(usc_hair); //populate the rest of atributes given these strands;
+    // compute_all_atributes(usc_hair); //populate the rest of atributes given these strands;
+
+    // compute_full_hair(usc_hair);
 
     return usc_hair;
 
@@ -1036,29 +1024,29 @@ bool DataLoaderUSCHair::has_data(){
 }
 
 
-std::shared_ptr<Mesh> DataLoaderUSCHair::get_cloud(){
+// std::shared_ptr<Mesh> DataLoaderUSCHair::get_cloud(){
 
-    std::shared_ptr<Mesh> cloud;
-    std::shared_ptr<USCHair> hair;
+//     std::shared_ptr<Mesh> cloud;
+//     std::shared_ptr<USCHair> hair;
 
-    if(m_load_buffered){
-        m_hairs_buffer.try_dequeue(hair);
-        cloud=hair->full_hair_cloud;
-    }else{
-        // VLOG(1) << "returning" << m_idx_cloud_to_read;
-        hair=m_hairs_vec[m_idx_cloud_to_read];
-        cloud=hair->full_hair_cloud;
-        cloud->m_is_dirty=true; //if we visualized this mesh before and we want to update it, we need to set the is_dirty
-        cloud->m_is_shadowmap_dirty=true;
-        m_idx_cloud_to_read++;
-        // m_idx_cloud_to_return++;
-        // if (m_idx_cloud_to_return>=m_clouds_vec.size()){
-            // m_idx_cloud_to_return=0;
-        // }
-    }
+//     if(m_load_buffered){
+//         m_hairs_buffer.try_dequeue(hair);
+//         cloud=hair->full_hair_cloud;
+//     }else{
+//         // VLOG(1) << "returning" << m_idx_cloud_to_read;
+//         hair=m_hairs_vec[m_idx_cloud_to_read];
+//         cloud=hair->full_hair_cloud;
+//         cloud->m_is_dirty=true; //if we visualized this mesh before and we want to update it, we need to set the is_dirty
+//         cloud->m_is_shadowmap_dirty=true;
+//         m_idx_cloud_to_read++;
+//         // m_idx_cloud_to_return++;
+//         // if (m_idx_cloud_to_return>=m_clouds_vec.size()){
+//             // m_idx_cloud_to_return=0;
+//         // }
+//     }
 
-    return cloud;
-}
+//     return cloud;
+// }
 
 std::shared_ptr<USCHair> DataLoaderUSCHair::get_hair(){
 
@@ -1070,13 +1058,72 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::get_hair(){
     }else{
         // VLOG(1) << "returning" << m_idx_cloud_to_read;
         hair=m_hairs_vec[m_idx_cloud_to_read];
-        cloud=hair->full_hair_cloud;
-        cloud->m_is_dirty=true; //if we visualized this mesh before and we want to update it, we need to set the is_dirty
-        cloud->m_is_shadowmap_dirty=true;
         m_idx_cloud_to_read++;
     }
 
-    return hair;
+
+    //augment the data
+    std::shared_ptr<USCHair> aug_hair(new USCHair); //we create a new augmented one
+    //copyt all the stuff so thet internally we keep the same strands
+    for (int i = 0; i < hair->strand_meshes.size(); i++) {
+        aug_hair->strand_meshes.push_back( std::make_shared<Mesh>(hair->strand_meshes[i]->clone()) );
+    }
+    // aug_hair->uv_roots=hair->uv_roots;
+    // aug_hair->tbn_roots_tensor=hair->tbn_roots_tensor.clone();
+    // aug_hair->position_roots=hair->position_roots;
+
+    //if we augment in tbn space we need to compute the tbn for each strand
+    Eigen::MatrixXd uv_roots;
+    std::vector<Eigen::Matrix3d> tbn_roots;
+    if (m_augment_in_tbn_space){
+        std::vector<Eigen::Vector3d> position_roots_vec;
+        for (int i=0; i<aug_hair->strand_meshes.size(); i++){
+            position_roots_vec.push_back( aug_hair->strand_meshes[i]->V.row(0) );
+        }
+        //get uv and tbn
+        compute_root_points_atributes(uv_roots, tbn_roots, m_mesh_scalp, position_roots_vec);
+    }
+
+    //actual aguemnt
+    if(m_mode=="train"){
+        if (m_augment_per_strand){ //agument each strand individually
+            for (int i = 0; i < aug_hair->strand_meshes.size(); i++) {
+
+                Eigen::Affine3d tf_world_scalp;
+                Eigen::Affine3d tf_scalp_world;
+                tf_world_scalp.translation()= aug_hair->strand_meshes[i]->V.row(0);
+                if (m_augment_in_tbn_space){ //also rotate according to the tbn
+                    tf_world_scalp.linear()= tbn_roots[i];
+                }
+                tf_scalp_world=tf_world_scalp.inverse();
+                aug_hair->strand_meshes[i]->transform_vertices_cpu(tf_scalp_world, true);
+
+                //optionally augment the hair bounce now that we are in tbn coords
+                // if (m_augment_hair_bounce){
+                    // usc_hair->strand_meshes[i]=augment_hair_bounce(usc_hair->strand_meshes[i]);
+                // }
+
+                aug_hair->strand_meshes[i] = m_transformer->transform(aug_hair->strand_meshes[i]);
+
+                aug_hair->strand_meshes[i]->transform_vertices_cpu(tf_world_scalp, true);
+
+            }
+            compute_full_hair(aug_hair);
+        }else{ //agument the whole hair
+            compute_full_hair(aug_hair);
+            aug_hair->full_hair_cloud = m_transformer->transform(aug_hair->full_hair_cloud);
+        }
+    }else{
+        compute_full_hair(aug_hair); //if we don;t do training we still need to compute the full hair
+    }
+
+    compute_all_atributes(aug_hair); //populate the rest of atributes given these stran
+
+    cloud=aug_hair->full_hair_cloud;
+    cloud->m_is_dirty=true; //if we visualized this mesh before and we want to update it, we need to set the is_dirty
+    cloud->m_is_shadowmap_dirty=true;
+
+    return aug_hair;
 }
 
 std::shared_ptr<Mesh> DataLoaderUSCHair::get_mesh_head(){

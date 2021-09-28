@@ -376,7 +376,7 @@ PYBIND11_MODULE(dataloaders, m) {
         .def(py::init<const std::string>())
         .def("start", &DataLoaderUSCHair::start )
         .def("get_hair", &DataLoaderUSCHair::get_hair )
-        .def("get_cloud", &DataLoaderUSCHair::get_cloud, R"EOS( get_cloud. )EOS" )
+        // .def("get_cloud", &DataLoaderUSCHair::get_cloud, R"EOS( get_cloud. )EOS" )
         .def("get_mesh_head", &DataLoaderUSCHair::get_mesh_head )
         .def("get_mesh_scalp", &DataLoaderUSCHair::get_mesh_scalp )
         .def("has_data", &DataLoaderUSCHair::has_data )

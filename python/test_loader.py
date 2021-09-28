@@ -512,7 +512,7 @@ def test_usc_hair():
             # pass
             # hair=loader.get_hair()
             # cloud=hair.full_hair_cloud
-            cloud=loader.get_cloud()
+            cloud=loader.get_hair().full_hair_cloud.clone()
             Scene.show(cloud, "cloud")
 
             #show also the head

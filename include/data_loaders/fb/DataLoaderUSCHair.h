@@ -67,7 +67,7 @@ public:
     DataLoaderUSCHair(const std::string config_file);
     ~DataLoaderUSCHair();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
-    std::shared_ptr<easy_pbr::Mesh> get_cloud();
+    // std::shared_ptr<easy_pbr::Mesh> get_cloud();
     std::shared_ptr<USCHair> get_hair(); //return the whole usc struct of hair
     std::shared_ptr<easy_pbr::Mesh> get_mesh_head();
     std::shared_ptr<easy_pbr::Mesh> get_mesh_scalp();
