@@ -1175,6 +1175,7 @@ void DataLoaderUSCHair::reset(){
         unsigned seed = m_nr_resets;
         auto rng = std::default_random_engine(seed);
         std::shuffle(std::begin(m_data_filenames), std::end(m_data_filenames), rng);
+        std::shuffle(std::begin(m_hairs_vec), std::end(m_hairs_vec), rng);
     }
 
     m_idx_cloud_to_read=0;
