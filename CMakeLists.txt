@@ -136,7 +136,6 @@ set(MY_SRC
     ${PROJECT_SOURCE_DIR}/src/DataLoaderLLFF.cxx
     #fb
     ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderBlenderFB.cxx
-    ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderUSCHair.cxx
 )
 set(DEPS_SRC
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp
