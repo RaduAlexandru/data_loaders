@@ -114,7 +114,7 @@ class CMakeBuild(build_ext):
             #simlink the libraries from the devel space towards the current dir so that the egg link can find them
             catkin_lib_dir=os.path.join(current_workspace,"devel/lib/")
             libs = [f for f in os.listdir(catkin_lib_dir) if os.path.isfile(os.path.join(catkin_lib_dir, f))]
-            print(libs)
+            # print(libs)
             for lib in libs:
                 if "dataloaders" in lib:
                     print ("linking ", lib)
