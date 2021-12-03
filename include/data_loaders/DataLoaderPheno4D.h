@@ -31,12 +31,12 @@ namespace easy_pbr{
 class DataTransformer;
 
 
-class DataLoaderPhenorob
+class DataLoaderPheno4D
 {
 public:
     EIGEN_MAKE_ALIGNED_OPERATOR_NEW
-    DataLoaderPhenorob(const std::string config_file);
-    ~DataLoaderPhenorob();
+    DataLoaderPheno4D(const std::string config_file);
+    ~DataLoaderPheno4D();
     void start(); //starts the thread that reads the data from disk. This gets called automatically if we have autostart=true
     std::shared_ptr<easy_pbr::Mesh> get_cloud();
     std::shared_ptr<easy_pbr::Mesh> get_cloud_with_idx(const int idx);

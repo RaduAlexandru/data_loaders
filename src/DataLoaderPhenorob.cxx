@@ -1,4 +1,4 @@
-#include "data_loaders/DataLoaderPhenorob.h"
+#include "data_loaders/DataLoaderPheno4D.h"
 
 //c++
 #include <algorithm>
@@ -34,7 +34,7 @@ using namespace easy_pbr;
 
 #define BUFFER_SIZE 5 //clouds are stored in a queue until they are acessed, the queue stores a maximum of X items
 
-DataLoaderPhenorob::DataLoaderPhenorob(const std::string config_file):
+DataLoaderPheno4D::DataLoaderPheno4D(const std::string config_file):
     m_is_modified(false),
     m_is_running(false),
     m_clouds_buffer(BUFFER_SIZE),
@@ -53,13 +53,13 @@ DataLoaderPhenorob::DataLoaderPhenorob(const std::string config_file):
     if(m_autostart){
         init_data_reading();
         m_is_running=true;
-        m_loader_thread=std::thread(&DataLoaderPhenorob::read_data, this);  //starts the spin in another thread
+        m_loader_thread=std::thread(&DataLoaderPheno4D::read_data, this);  //starts the spin in another thread
     }
     // std::cout << " finidhed creating thread" << "\n";
 
 }
 
-DataLoaderPhenorob::~DataLoaderPhenorob(){
+DataLoaderPheno4D::~DataLoaderPheno4D(){
 
     // std::cout << "finishing" << std::endl;
     m_is_running=false;
@@ -67,7 +67,7 @@ DataLoaderPhenorob::~DataLoaderPhenorob(){
     m_loader_thread.join();
 }
 
-void DataLoaderPhenorob::init_params(const std::string config_file){
+void DataLoaderPheno4D::init_params(const std::string config_file){
     //get the config filename
     // ros::NodeHandle private_nh("~");
     // std::string config_file= getParamElseThrow<std::string>(private_nh, "config_file");
@@ -113,7 +113,7 @@ void DataLoaderPhenorob::init_params(const std::string config_file){
 
 }
 
-void DataLoaderPhenorob::start(){
+void DataLoaderPheno4D::start(){
     CHECK(m_is_running==false) << "The loader thread is already running. Please check in the config file that autostart is not already set to true. Or just don't call start()";
 
     init_data_reading();
@@ -122,11 +122,11 @@ void DataLoaderPhenorob::start(){
     if (m_preload){
         read_data(); //if we prelaod we don't need to use any threads and it may cause some other issues
     }else{
-        m_loader_thread=std::thread(&DataLoaderPhenorob::read_data, this);  //starts the spin in another thread
+        m_loader_thread=std::thread(&DataLoaderPheno4D::read_data, this);  //starts the spin in another thread
     }
 }
 
-void DataLoaderPhenorob::init_data_reading(){
+void DataLoaderPheno4D::init_data_reading(){
 
     // std::vector<fs::path> sample_filenames_all;
 
@@ -260,7 +260,7 @@ void DataLoaderPhenorob::init_data_reading(){
 
 }
 
-void DataLoaderPhenorob::read_data(){
+void DataLoaderPheno4D::read_data(){
 
     loguru::set_thread_name("loader_thread_kitti");
 
@@ -313,7 +313,7 @@ void DataLoaderPhenorob::read_data(){
 
 }
 
-std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_filename){
+std::shared_ptr<Mesh> DataLoaderPheno4D::read_sample(const fs::path sample_filename){
 
     std::vector<Eigen::VectorXd> points_vec;
     std::vector<int> labels_vec;
@@ -445,7 +445,7 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::read_sample(const fs::path sample_file
 }
 
 
-bool DataLoaderPhenorob::has_data(){
+bool DataLoaderPheno4D::has_data(){
     if (m_preload){
         return true;
     }else{
@@ -458,7 +458,7 @@ bool DataLoaderPhenorob::has_data(){
 }
 
 
-std::shared_ptr<Mesh> DataLoaderPhenorob::get_cloud(){
+std::shared_ptr<Mesh> DataLoaderPheno4D::get_cloud(){
 
     if (m_preload){
         CHECK(m_idx_cloud_to_return<m_clouds_vec.size()) << " m_idx_cloud_to_return is out of bounds. m_idx_cloud_to_return is " << m_idx_cloud_to_return << " and clouds vec is " << m_clouds_vec.size();
@@ -488,7 +488,7 @@ std::shared_ptr<Mesh> DataLoaderPhenorob::get_cloud(){
 
 }
 
-std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorob::get_cloud_with_idx(const int idx){
+std::shared_ptr<easy_pbr::Mesh> DataLoaderPheno4D::get_cloud_with_idx(const int idx){
     CHECK(idx<nr_samples() ) << "Idx is outside of range. Idx is " << idx << " and we have nr of samples" << nr_samples();
 
     fs::path sample_filename=m_sample_filenames[ idx ];
@@ -505,7 +505,7 @@ std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorob::get_cloud_with_idx(const int
     return cloud;
 }
 
-bool DataLoaderPhenorob::is_finished(){
+bool DataLoaderPheno4D::is_finished(){
 
 
     if(m_preload){
@@ -533,7 +533,7 @@ bool DataLoaderPhenorob::is_finished(){
 }
 
 
-bool DataLoaderPhenorob::is_finished_reading(){
+bool DataLoaderPheno4D::is_finished_reading(){
 
     if (m_preload){
         if (m_idx_cloud_to_return>=m_clouds_vec.size()){
@@ -555,7 +555,7 @@ bool DataLoaderPhenorob::is_finished_reading(){
 
 }
 
-void DataLoaderPhenorob::reset(){
+void DataLoaderPheno4D::reset(){
     m_nr_resets++;
     // we shuffle again the data so as to have freshly shuffled data for the next epoch
     if(m_shuffle_days){
@@ -571,62 +571,62 @@ void DataLoaderPhenorob::reset(){
     m_idx_cloud_to_return=0;
 }
 
-int DataLoaderPhenorob::nr_samples(){
+int DataLoaderPheno4D::nr_samples(){
     if (m_preload){
         return m_clouds_vec.size();
     }else{
         return m_sample_filenames.size();
     }
 }
-std::shared_ptr<LabelMngr> DataLoaderPhenorob::label_mngr(){
+std::shared_ptr<LabelMngr> DataLoaderPheno4D::label_mngr(){
     CHECK(m_label_mngr) << "label_mngr was not created";
     return m_label_mngr;
 }
-// void DataLoaderPhenorob::set_mode_train(){
+// void DataLoaderPheno4D::set_mode_train(){
 //     m_mode="train";
 // }
-// void DataLoaderPhenorob::set_mode_test(){
+// void DataLoaderPheno4D::set_mode_test(){
 //     m_mode="test";
 // }
-// void DataLoaderPhenorob::set_mode_validation(){
+// void DataLoaderPheno4D::set_mode_validation(){
 //     m_mode="val";
 // }
-// void DataLoaderPhenorob::set_sequence(const std::string sequence){
+// void DataLoaderPheno4D::set_sequence(const std::string sequence){
 //     m_sequence=sequence;
 // }
 // void DataLoaderSemanticKitti::set_adaptive_subsampling(const bool adaptive_subsampling){
 //     m_do_adaptive_subsampling=adaptive_subsampling;
 // }
-void DataLoaderPhenorob::set_day(const std::string day_format){
+void DataLoaderPheno4D::set_day(const std::string day_format){
     // Set a concrete day from which we read The format of the string is something like 0325 in which the first two characters is the month and the last 2 is the day
     //CHECK that we have 4 characters
     CHECK(day_format.size()==4) << "Day format should have 4 characters (0325), first 2 corresponding to month and last 2 corresponding to day";
 
     m_selected_day=day_format;
 }
-void DataLoaderPhenorob::set_plant_nr(const int nr){
+void DataLoaderPheno4D::set_plant_nr(const int nr){
     m_selected_plant_nr=nr;
 }
-void DataLoaderPhenorob::set_nr_plants_to_skip(const int new_val){
+void DataLoaderPheno4D::set_nr_plants_to_skip(const int new_val){
     m_nr_plants_to_skip=new_val;
 }
-void DataLoaderPhenorob::set_nr_plants_to_read(const int new_val){
+void DataLoaderPheno4D::set_nr_plants_to_read(const int new_val){
     m_nr_plants_to_read=new_val;
 }
-void DataLoaderPhenorob::set_nr_days_to_skip(const int new_val){
+void DataLoaderPheno4D::set_nr_days_to_skip(const int new_val){
     m_nr_days_to_skip=new_val;
 }
-void DataLoaderPhenorob::set_nr_days_to_read(const int new_val){
+void DataLoaderPheno4D::set_nr_days_to_read(const int new_val){
     m_nr_days_to_read=new_val;
 }
-void DataLoaderPhenorob::set_do_augmentation(const bool val){
+void DataLoaderPheno4D::set_do_augmentation(const bool val){
     m_do_augmentation=val;
 }
-void DataLoaderPhenorob::set_segmentation_method(const std::string method ){
+void DataLoaderPheno4D::set_segmentation_method(const std::string method ){
     m_segmentation_method=method;
     CHECK(m_segmentation_method=="leaf_tip" || m_segmentation_method=="leaf_collar") << "Segmentation type should be leaf_tip or leaf_collar but it is set to " << m_segmentation_method;
 }
-void DataLoaderPhenorob::set_preload(const bool val){
+void DataLoaderPheno4D::set_preload(const bool val){
     m_preload=val;
 }
 

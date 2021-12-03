@@ -209,8 +209,8 @@ def test_nerf():
 
         view.update()
 
-def test_phenorob():
-    loader=DataLoaderPhenorob(config_path)
+def test_pheno4d():
+    loader=DataLoaderPheno4D(config_path)
     loader.start()
     loader.set_do_augmentation(True)
 
@@ -548,7 +548,7 @@ def test_usc_hair():
 # test_stanford3dscene()
 # test_shapenet_img()
 # test_nerf()
-# test_phenorob()
+# test_pheno4d()
 # test_colmap()
 # test_easypbr()
 # test_srn()

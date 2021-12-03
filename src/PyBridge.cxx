@@ -17,7 +17,7 @@
 #include "data_loaders/DataLoaderStanford3DScene.h"
 #include "data_loaders/DataLoaderImg.h"
 #include "data_loaders/DataLoaderSemanticKitti.h"
-#include "data_loaders/DataLoaderPhenorob.h"
+#include "data_loaders/DataLoaderPheno4D.h"
 #include "data_loaders/DataLoaderScanNet.h"
 #include "data_loaders/DataLoaderNerf.h"
 #include "data_loaders/DataLoaderEasyPBR.h"
@@ -171,26 +171,26 @@ PYBIND11_MODULE(dataloaders, m) {
     // .def("set_adaptive_subsampling", &DataLoaderSemanticKitti::set_adaptive_subsampling )
     ;
 
-    //DataLoaderPhenorob
-    py::class_<DataLoaderPhenorob> (m, "DataLoaderPhenorob")
+    //DataLoaderPheno4D
+    py::class_<DataLoaderPheno4D> (m, "DataLoaderPheno4D")
     .def(py::init<const std::string>())
-    .def("start", &DataLoaderPhenorob::start )
-    .def("get_cloud", &DataLoaderPhenorob::get_cloud, R"EOS( get_cloud. )EOS" )
-    .def("get_cloud_with_idx", &DataLoaderPhenorob::get_cloud_with_idx )
-    .def("has_data", &DataLoaderPhenorob::has_data )
-    .def("is_finished", &DataLoaderPhenorob::is_finished )
-    .def("is_finished_reading", &DataLoaderPhenorob::is_finished_reading )
-    .def("reset", &DataLoaderPhenorob::reset )
-    .def("nr_samples", &DataLoaderPhenorob::nr_samples )
-    .def("label_mngr", &DataLoaderPhenorob::label_mngr )
-    .def("set_plant_nr", &DataLoaderPhenorob::set_plant_nr )
-    .def("set_nr_plants_to_skip", &DataLoaderPhenorob::set_nr_plants_to_skip )
-    .def("set_nr_plants_to_read", &DataLoaderPhenorob::set_nr_plants_to_read )
-    .def("set_nr_days_to_skip", &DataLoaderPhenorob::set_nr_days_to_skip )
-    .def("set_nr_days_to_read", &DataLoaderPhenorob::set_nr_days_to_read )
-    .def("set_day", &DataLoaderPhenorob::set_day )
-    .def("set_do_augmentation", &DataLoaderPhenorob::set_do_augmentation )
-    .def("set_segmentation_method", &DataLoaderPhenorob::set_segmentation_method )
+    .def("start", &DataLoaderPheno4D::start )
+    .def("get_cloud", &DataLoaderPheno4D::get_cloud, R"EOS( get_cloud. )EOS" )
+    .def("get_cloud_with_idx", &DataLoaderPheno4D::get_cloud_with_idx )
+    .def("has_data", &DataLoaderPheno4D::has_data )
+    .def("is_finished", &DataLoaderPheno4D::is_finished )
+    .def("is_finished_reading", &DataLoaderPheno4D::is_finished_reading )
+    .def("reset", &DataLoaderPheno4D::reset )
+    .def("nr_samples", &DataLoaderPheno4D::nr_samples )
+    .def("label_mngr", &DataLoaderPheno4D::label_mngr )
+    .def("set_plant_nr", &DataLoaderPheno4D::set_plant_nr )
+    .def("set_nr_plants_to_skip", &DataLoaderPheno4D::set_nr_plants_to_skip )
+    .def("set_nr_plants_to_read", &DataLoaderPheno4D::set_nr_plants_to_read )
+    .def("set_nr_days_to_skip", &DataLoaderPheno4D::set_nr_days_to_skip )
+    .def("set_nr_days_to_read", &DataLoaderPheno4D::set_nr_days_to_read )
+    .def("set_day", &DataLoaderPheno4D::set_day )
+    .def("set_do_augmentation", &DataLoaderPheno4D::set_do_augmentation )
+    .def("set_segmentation_method", &DataLoaderPheno4D::set_segmentation_method )
     ;
 
     py::class_<DataLoaderScanNet> (m, "DataLoaderScanNet")
