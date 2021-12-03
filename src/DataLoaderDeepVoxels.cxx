@@ -346,8 +346,9 @@ void DataLoaderDeepVoxels::read_data(){
 
 
         if(m_subsample_factor>1){
-            frame.K/=m_subsample_factor;
-            frame.K(2,2)=1.0;
+            // frame.K/=m_subsample_factor;
+            // frame.K(2,2)=1.0;
+            frame.rescale_K(1.0/m_subsample_factor);
         }
 
 

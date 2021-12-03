@@ -255,8 +255,9 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
             Eigen::Matrix3f K = opengl_proj_to_intrinsics(P, 224, 224);
             // VLOG(1) << "K is " << K;
             frame.K=K;
-            frame.K/=m_subsample_factor;
-            frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+            // frame.K/=m_subsample_factor;
+            // frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+            frame.rescale_K(1.0/m_subsample_factor);
 
             // frame.K(1,1)=435.55555555555554 ;
 

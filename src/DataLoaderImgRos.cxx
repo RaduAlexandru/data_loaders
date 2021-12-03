@@ -205,8 +205,9 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     }
 
     //adjust the K matrix to the size of the img
-    frame.K/=cam.m_img_subsample_factor;
-    frame.K(2,2)=1.0;
+    // frame.K/=cam.m_img_subsample_factor;
+    // frame.K(2,2)=1.0;
+    frame.rescale_K(1.0/cam.m_img_subsample_factor);
 
 
     //get pose

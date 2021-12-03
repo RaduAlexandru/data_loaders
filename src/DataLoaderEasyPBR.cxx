@@ -278,8 +278,9 @@ void DataLoaderEasyPBR::read_data(){
         //intrinsics
         frame.K=m_filename2intrinsics[key].cast<float>();
         if(m_subsample_factor>1){
-            frame.K/=m_subsample_factor;
-            frame.K(2,2)=1.0;
+            // frame.K/=m_subsample_factor;
+            // frame.K(2,2)=1.0;
+            frame.rescale_K(1.0/m_subsample_factor);
         }
         // VLOG(1) << "K is" << frame.K;
         // VLOG(1) << "width and height is " << frame.width <<  " " << frame.height;

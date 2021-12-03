@@ -278,8 +278,9 @@ void DataLoaderSRN::read_scene(const std::string scene_path){
             frame.K(1,1) =  131.250000;
             frame.K(0,2) =  64;
             frame.K(1,2) =  64;
-            frame.K/=m_subsample_factor;
-            frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+            // frame.K/=m_subsample_factor;
+            // frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+            frame.rescale_K(1.0/m_subsample_factor);
 
 
 

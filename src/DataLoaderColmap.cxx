@@ -395,8 +395,9 @@ void DataLoaderColmap::read_data(){
           frame.K(1,1) = fy; //fy
           frame.K(0,2) = cx; //cx
           frame.K(1,2) = cy; //cy
-          frame.K = frame.K/m_subsample_factor;
-          frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+          // frame.K = frame.K/m_subsample_factor;
+          // frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+          frame.rescale_K(1.0/m_subsample_factor);
 
           // VLOG(1) << "K is " << frame.K;
 
