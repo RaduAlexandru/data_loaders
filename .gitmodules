@@ -13,3 +13,6 @@
 [submodule "deps/libigl"]
 	path = deps/libigl
 	url = https://github.com/libigl/libigl
+[submodule "deps/yaml-cpp"]
+	path = deps/yaml-cpp
+	url = git@github.com:jbeder/yaml-cpp.git

@@ -118,7 +118,8 @@ set(MY_SRC
     ${PROJECT_SOURCE_DIR}/src/DataLoaderShapeNetImg.cxx
     ${PROJECT_SOURCE_DIR}/src/DataTransformer.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderSemanticKitti.cxx
-    ${PROJECT_SOURCE_DIR}/src/DataLoaderPhenorob.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderPheno4D.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderPhenorobCP1.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderStanfordIndoor.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderToyExample.cxx
     # ${PROJECT_SOURCE_DIR}/src/DataLoaderCloudRos.cxx

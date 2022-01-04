@@ -537,6 +537,30 @@ def test_usc_hair():
         view.update()
 
 
+def test_phenorob_cp1():
+    loader=DataLoaderPhenorobCP1(config_path)
+    loader.set_mode_all()
+    loader.start()
+
+
+
+    #get frame
+    frame=loader.get_block_with_idx(0).get_rgb_frame_at_idx(0)
+    if frame.is_shell:
+        frame.load_images()
+    print("frame cam id is ", frame.cam_id)
+
+    while True:
+
+        frustum_mesh=frame.create_frustum_mesh(0.05)
+        frustum_mesh.m_vis.m_line_width=1
+        # frustum_mesh.m_is_dirty=True
+        Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+
+
+        view.update()
+
+
 
 
 # test_volref()
@@ -556,4 +580,5 @@ def test_usc_hair():
 # test_deep_voxels()
 # test_llff()
 # test_blender_fb()
-test_usc_hair()
+# test_usc_hair()
+test_phenorob_cp1()
