@@ -24,7 +24,13 @@ using namespace configuru;
 #include "RandGenerator.h"
 
 //json
-#include "json11/json11.hpp"
+// #include "json11/json11.hpp"
+
+//json 
+// #include "yaml-cpp/parser.h"
+// #include "yaml-cpp/node/node.h"
+// #include "yaml-cpp/node/parse.h"
+#include "yaml-cpp/yaml.h"
 
 
 //boost
@@ -161,6 +167,14 @@ void DataLoaderPhenorobCP1::init_poses(){
     // Config cfg = configuru::parse_file(rgb_pose_file, JSON);
     //  std::string topic =  (std::string)cfg["cam0"]["rostopic"];
     // VLOG(1) << "topic is " << topic;
+
+
+
+    YAML::Node config = YAML::LoadFile(rgb_pose_file);
+    const std::string topic = config["cam0"]["rostopic"].as<std::string>();
+    VLOG(1) << "topic is " << topic;
+
+    // YAML::Node config;
 
 
 

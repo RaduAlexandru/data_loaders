@@ -91,6 +91,8 @@ message("--------------------------------------EASYPBR_SRC_PATH is ", ${EASYPBR_
 add_subdirectory( ${EASYPBR_SRC_PATH}/deps/pybind11 ./../../build/pybind11 EXCLUDE_FROM_ALL)
 #pybind attempt 3
 pybind11_add_module(dataloaders ${PROJECT_SOURCE_DIR}/src/PyBridge.cxx )
+add_subdirectory(${PROJECT_SOURCE_DIR}/deps/yaml-cpp)
+
 
 ###   INCLUDES   #########################################################
 include_directories(${catkin_INCLUDE_DIRS})
@@ -103,6 +105,7 @@ include_directories(${CMAKE_SOURCE_DIR}/extern)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${EASYPBR_INCLUDE_DIR})
 include_directories(${TORCH_INCLUDE_DIRS})
+include_directories(${CMAKE_SOURCE_DIR}/deps/yaml-cpp/include )
 if(${catkin_FOUND})
     catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport tf2_ros tf2_eigen )
 endif()
@@ -196,7 +199,7 @@ endif()
 
 ###   LIBS   ###############################################
 message("easypbr lib is ", ${EASYPBR_LIBRARY})
-set(LIBS ${LIBS} igl::core  ${catkin_LIBRARIES} ${EASYPBR_LIBRARY} ${OpenCV_LIBS})
+set(LIBS ${LIBS} igl::core  ${catkin_LIBRARIES} ${EASYPBR_LIBRARY} ${OpenCV_LIBS}  yaml-cpp  )
 if(${TORCH_FOUND})
     set(LIBS ${LIBS} ${TORCH_LIBRARIES} )
     #torch 1.5.0 and above mess with pybind and we therefore need to link against libtorch_python.so also
