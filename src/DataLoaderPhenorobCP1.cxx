@@ -42,6 +42,26 @@ using namespace radu::utils;
 using namespace easy_pbr;
 
 
+
+// template <typename T>
+// T tryReadYamlNode( const YAML::Node & node, const std::string & key, const std::string & camName )
+// {
+//     try
+//     {
+//         return node[key].as<T>();
+//     }
+//     catch (...)
+//     {
+//         ROS_ERROR_STREAM( "Could not retrieve field \"" << key << "\" for camera " << camName );
+//     }
+//     return T();
+// }
+
+
+
+
+
+
 DataLoaderPhenorobCP1::DataLoaderPhenorobCP1(const std::string config_file):
     // m_is_running(false),
     m_idx_img_to_read(0),
@@ -125,7 +145,14 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                 if(radu::utils::contains( inside_blk.string(), "nikon" ) ){
                     Frame new_rgb_frame;
                     new_rgb_frame.rgb_path= (inside_blk/"img.jpeg").string();
-                    block->m_rgb_frames.push_back(new_rgb_frame);
+                    //get cam id 
+                    std::string filename=fs::path(new_rgb_frame.rgb_path).parent_path().filename().string();
+                    std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
+                    CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
+                    new_rgb_frame.cam_id= std::stoi(filename_tokens[1]);
+                    //push
+                    // block->m_rgb_frames.push_back(new_rgb_frame);
+                    block->m_rgb_frames[new_rgb_frame.cam_id]=new_rgb_frame;
                 }
                 if(radu::utils::contains( inside_blk.string(), "photoneo" ) ){
                     //mesh
@@ -168,11 +195,134 @@ void DataLoaderPhenorobCP1::init_poses(){
     //  std::string topic =  (std::string)cfg["cam0"]["rostopic"];
     // VLOG(1) << "topic is " << topic;
 
-
+    Eigen::Affine3d tf_camcur_cam0;
+    tf_camcur_cam0.setIdentity();
 
     YAML::Node config = YAML::LoadFile(rgb_pose_file);
-    const std::string topic = config["cam0"]["rostopic"].as<std::string>();
-    VLOG(1) << "topic is " << topic;
+    int nr_calibrated_cams=config.size();
+    //go through the chain of poses and get the poses of tf_cam_c0; 
+    // for(YAML::const_iterator it=config.begin();it != config.end();++it) {
+        // std::string cam_name = it->first.as<std::string>();       // <- key
+        // int cam_idx = std::stoi( radu::utils::erase_substring(cam_name, "cam")  );
+    for (size_t cam_idx = 0; cam_idx < m_blocks[0]->m_rgb_frames.size(); cam_idx++){
+        std::string cam_name= "cam"+std::to_string(cam_idx); 
+
+
+        //run through the chain of cameras to get the calibration for this one 
+
+        if(cam_idx!=0){
+            Eigen::Affine3d T_cn_cnm1 = Eigen::Affine3d::Identity();
+            VLOG(1) << "accessing T for camera " << cam_name;
+            std::vector<std::vector<double> > vT_cn_cnm1 =config[cam_name]["T_cn_cnm1"].as< std::vector<std::vector<double> > >();
+            // std::vector<std::vector<double> > vT_cn_cnm1 = tryReadYamlNode< std::vector<std::vector<double> > >( camConfig, "T_cn_cnm1", camName );
+            // VLOG(1) << "it worked";
+            for ( size_t j = 0; j < 3; ++j )            {
+                T_cn_cnm1.translation()(j) = vT_cn_cnm1[j][3];
+                for ( size_t k = 0; k < 3; ++k){
+                    T_cn_cnm1.linear()(j,k) = vT_cn_cnm1[j][k];
+                }
+            }
+            VLOG(1) << " T_cn_cnm1 is " << T_cn_cnm1.matrix();
+            VLOG(1) << " before tf_camcur_cam0 is " << tf_camcur_cam0.matrix();
+            // follow chain
+            tf_camcur_cam0=T_cn_cnm1*tf_camcur_cam0;
+            VLOG(1) << " ater tf_camcur_cam0 is " << tf_camcur_cam0.matrix();
+            VLOG(1) << "";
+        }
+        m_camidx2pose[cam_idx]=tf_camcur_cam0;
+
+    }
+    //get extrinsics 
+    // for (size_t kalibr_cam_idx = 0; kalibr_cam_idx < nr_calibrated_cams; kalibr_cam_idx++){
+
+        // std::string cam_name= "cam"+std::to_string(cam_idx); 
+
+
+            //run through the chain of cameras to get the calibration for this one 
+            // Eigen::Affine3d tf_camcur_cam0;
+            // tf_camcur_cam0.setIdentity();
+            // for (size_t kalibr_cam_idx = 1; kalibr_cam_idx <= cam_idx; kalibr_cam_idx++){
+            //     Eigen::Affine3d T_cn_cnm1 = Eigen::Affine3d::Identity();
+            //     // VLOG(1) << "accessing T for camera " << kalibr_cam_idx;
+            //     std::vector<std::vector<double> > vT_cn_cnm1 =config[cam_name]["T_cn_cnm1"].as< std::vector<std::vector<double> > >();
+            //     // std::vector<std::vector<double> > vT_cn_cnm1 = tryReadYamlNode< std::vector<std::vector<double> > >( camConfig, "T_cn_cnm1", camName );
+            //     // VLOG(1) << "it worked";
+            //     for ( size_t j = 0; j < 3; ++j )            {
+            //         T_cn_cnm1.translation()(j) = vT_cn_cnm1[j][3];
+            //         for ( size_t k = 0; k < 3; ++k){
+            //             T_cn_cnm1.linear()(j,k) = vT_cn_cnm1[j][k];
+            //         }
+            //     }
+            //     // follow chain
+            //     tf_camcur_cam0=T_cn_cnm1*tf_camcur_cam0;
+            // }
+            // frame.tf_cam_world=tf_camcur_cam0.cast<float>();
+    // }
+
+
+
+
+
+    //set the poses for every cam in every block
+    for (size_t blk_idx = 0; blk_idx < m_blocks.size(); blk_idx++){
+        // CHECK( nr_calirated_cams==m_blocks[blk_idx]->m_rgb_frames.size() ) << "We need calibration for each camera. We have nr calibrated cams " << nr_calibrated_cams << " but we have nr frames " << m_blocks[blk_idx]->m_rgb_frames.size();
+
+        for (size_t cam_idx = 0; cam_idx < m_blocks[blk_idx]->m_rgb_frames.size(); cam_idx++){
+            Frame &frame=m_blocks[blk_idx]->m_rgb_frames[cam_idx];
+
+            std::string cam_name= "cam"+std::to_string(cam_idx);
+
+            //get the intrinsics
+            std::vector<float> intrinsics_vec = config[cam_name]["intrinsics"].as<std::vector<float>>();
+            CHECK(intrinsics_vec.size()==4) << "Intrinsics_vec should be size of 4 but it is " << intrinsics_vec.size();
+            // VLOG(1) << "intrinsics vec is " << intrinsics_vec;
+            frame.K(0,0)=intrinsics_vec[0];
+            frame.K(1,1)=intrinsics_vec[1];
+            frame.K(0,2)=intrinsics_vec[2];
+            frame.K(1,2)=intrinsics_vec[3];
+            // VLOG(1) << "K is " << frame.K;
+            frame.rescale_K(1.0/m_subsample_factor);
+
+
+            //get extrinsics 
+            //run through the chain of cameras to get the calibration for this one 
+            // Eigen::Affine3d tf_camcur_cam0;
+            // tf_camcur_cam0.setIdentity();
+            // for (size_t kalibr_cam_idx = 1; kalibr_cam_idx <= cam_idx; kalibr_cam_idx++){
+            //     Eigen::Affine3d T_cn_cnm1 = Eigen::Affine3d::Identity();
+            //     // VLOG(1) << "accessing T for camera " << kalibr_cam_idx;
+            //     std::vector<std::vector<double> > vT_cn_cnm1 =config[cam_name]["T_cn_cnm1"].as< std::vector<std::vector<double> > >();
+            //     // std::vector<std::vector<double> > vT_cn_cnm1 = tryReadYamlNode< std::vector<std::vector<double> > >( camConfig, "T_cn_cnm1", camName );
+            //     // VLOG(1) << "it worked";
+            //     for ( size_t j = 0; j < 3; ++j )            {
+            //         T_cn_cnm1.translation()(j) = vT_cn_cnm1[j][3];
+            //         for ( size_t k = 0; k < 3; ++k){
+            //             T_cn_cnm1.linear()(j,k) = vT_cn_cnm1[j][k];
+            //         }
+            //     }
+            //     // follow chain
+            //     tf_camcur_cam0=T_cn_cnm1*tf_camcur_cam0;
+            // }
+            // frame.tf_cam_world=tf_camcur_cam0.cast<float>();
+            frame.tf_cam_world=m_camidx2pose[cam_idx].cast<float>();
+            VLOG(1) << "final tf for cam " << cam_idx << "is " << frame.tf_cam_world.matrix();
+
+
+            //get distorsion 
+
+
+
+
+        }
+    }
+    //check that the nr of cams in the kalibr yaml file is the same as rgb frames
+    // const std::string topic = config["cam0"]["rostopic"].as<std::string>();
+    // VLOG(1) << "topic is " << topic;
+    // VLOG(1) << "nr_cams " <<nr_cams;
+    // VLOG(1) << "nr_frames" <<m_blocks[0]->m_rgb_frames.size();
+    // for (size_t i = 0; i < nr_cams; i++){
+    // }
+
 
     // YAML::Node config;
 

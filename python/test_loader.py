@@ -545,17 +545,24 @@ def test_phenorob_cp1():
 
 
     #get frame
-    frame=loader.get_block_with_idx(0).get_rgb_frame_at_idx(0)
-    if frame.is_shell:
-        frame.load_images()
-    print("frame cam id is ", frame.cam_id)
+    for i in range(14):
+        frame=loader.get_block_with_idx(0).get_rgb_frame_at_idx(i)
+        cam_id=frame.cam_id
+        # if cam_id in[0,1,10]:
+        # if cam_id in[0,1,2]:
+        if True:
+            if frame.is_shell:
+                frame.load_images()
+            frustum_mesh=frame.create_frustum_mesh(0.05)
+            frustum_mesh.m_vis.m_line_width=1
+            Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
+
+            print("frame cam id is ", frame.cam_id)
+            print("frame tf_cam_world is ", frame.tf_cam_world.matrix())
 
     while True:
 
-        frustum_mesh=frame.create_frustum_mesh(0.05)
-        frustum_mesh.m_vis.m_line_width=1
-        # frustum_mesh.m_is_dirty=True
-        Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+
 
 
         view.update()
