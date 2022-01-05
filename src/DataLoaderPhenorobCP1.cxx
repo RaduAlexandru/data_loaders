@@ -102,6 +102,7 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     m_do_overfit=loader_config["do_overfit"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
+    m_rotation_alignment_degrees= loader_config["rotation_alignment_degrees"];
 
     m_dataset_path = (std::string)loader_config["dataset_path"];   
     m_scan_date = (std::string)loader_config["scan_date"];   
@@ -230,6 +231,10 @@ void DataLoaderPhenorobCP1::init_poses(){
             VLOG(1) << "";
         }
         m_camidx2pose[cam_idx]=tf_camcur_cam0;
+        Eigen::Vector2i res;
+        std::vector<int> res_vec=config[cam_name]["resolution"].as< std::vector<int> >();
+        res<< res_vec[0],res_vec[1];
+        m_camidx2resolution[cam_idx]=res;
 
     }
     //get extrinsics 
@@ -280,6 +285,9 @@ void DataLoaderPhenorobCP1::init_poses(){
             frame.K(1,1)=intrinsics_vec[1];
             frame.K(0,2)=intrinsics_vec[2];
             frame.K(1,2)=intrinsics_vec[3];
+            //the y principal point needs to be flipped because it actually measures the distance from the bottom but we measure the distance from the top
+            int height=m_camidx2resolution[cam_idx].y();
+            frame.K(1,2) = height - frame.K(1,2);
             // VLOG(1) << "K is " << frame.K;
             frame.rescale_K(1.0/m_subsample_factor);
 
@@ -304,7 +312,24 @@ void DataLoaderPhenorobCP1::init_poses(){
             //     tf_camcur_cam0=T_cn_cnm1*tf_camcur_cam0;
             // }
             // frame.tf_cam_world=tf_camcur_cam0.cast<float>();
-            frame.tf_cam_world=m_camidx2pose[cam_idx].cast<float>();
+            // frame.tf_cam_world=m_camidx2pose[cam_idx].cast<float>();
+
+            Eigen::Affine3f pre_rotate;
+            pre_rotate.setIdentity();
+            Eigen::Matrix3f r = (Eigen::AngleAxisf( radu::utils::degrees2radians(m_rotation_alignment_degrees), Eigen::Vector3f::UnitX()) ).toRotationMatrix();
+            pre_rotate.linear()=r;
+
+
+            Eigen::Affine3f tf_cam_world = m_camidx2pose[cam_idx].cast<float>()*pre_rotate;
+            Eigen::Affine3f tf_world_cam;
+            tf_world_cam= tf_cam_world.inverse();
+            //flip y locally
+            tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
+
+            
+            tf_cam_world = tf_world_cam.inverse();
+            frame.tf_cam_world=tf_cam_world;
+
             VLOG(1) << "final tf for cam " << cam_idx << "is " << frame.tf_cam_world.matrix();
 
 
