@@ -545,23 +545,24 @@ def test_phenorob_cp1():
 
 
     #get frame
-    for i in range(14):
-        frame=loader.get_block_with_idx(0).get_rgb_frame_at_idx(i)
-        cam_id=frame.cam_id
-        # if cam_id in[0,1,10]:
-        if cam_id in[0,1,2]:
-        # if True:
-            if frame.is_shell:
-                frame.load_images()
-            frustum_mesh=frame.create_frustum_mesh(0.05, True, 1024)
-            frustum_mesh.m_vis.m_line_width=1
-            Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
+    for s in range(1):
+        for i in range(14):
+            frame=loader.get_scan_with_idx(s).get_block_with_idx(0).get_rgb_frame_at_idx(i)
+            cam_id=frame.cam_id
+            # if cam_id in[0,1,10]:
+            if cam_id in[0,1,2]:
+            # if True:
+                if frame.is_shell:
+                    frame.load_images()
+                frustum_mesh=frame.create_frustum_mesh(0.05, True, 1024)
+                frustum_mesh.m_vis.m_line_width=1
+                Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
 
-            print("frame cam id is ", frame.cam_id)
-            print("frame tf_cam_world is ", frame.tf_cam_world.matrix())
+                print("frame cam id is ", frame.cam_id)
+                print("frame tf_cam_world is ", frame.tf_cam_world.matrix())
 
-    frame0=loader.get_block_with_idx(0).get_rgb_frame_at_idx(0)
-    frame1=loader.get_block_with_idx(0).get_rgb_frame_at_idx(1)
+    frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_at_idx(0)
+    frame1=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_at_idx(1)
     frame0.load_images()
     frame1.load_images()
     # line=f,rame0.line_through_pixel(256,256,1000)
@@ -577,6 +578,11 @@ def test_phenorob_cp1():
 
     epipolar_image=frame1.draw_projected_line(line_p0, line_p1, 1)
     Gui.show(epipolar_image, "epipolar_image")
+
+    #undistort
+    frame0_undistort=frame0.undistort()
+    Gui.show(frame0.rgb_32f, "original", frame0_undistort.rgb_32f, "undistorted")
+
 
 
 

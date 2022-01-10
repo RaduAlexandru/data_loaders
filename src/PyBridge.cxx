@@ -328,7 +328,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def(py::init<const std::string>())
     .def("start", &DataLoaderPhenorobCP1::start )
     .def("has_data", &DataLoaderPhenorobCP1::has_data )
-    .def("get_block_with_idx", &DataLoaderPhenorobCP1::get_block_with_idx )
+    .def("get_scan_with_idx", &DataLoaderPhenorobCP1::get_scan_with_idx )
     // .def("get_next_frame", &DataLoaderPhenorobCP1::get_next_frame )
     // .def("get_all_frames", &DataLoaderPhenorobCP1::get_all_frames )
     // .def("get_frame_at_idx", &DataLoaderPhenorobCP1::get_frame_at_idx )
@@ -338,13 +338,18 @@ PYBIND11_MODULE(dataloaders, m) {
     // .def("compute_frame_weights", &DataLoaderNerf::compute_frame_weights )
     .def("is_finished", &DataLoaderPhenorobCP1::is_finished )
     .def("reset", &DataLoaderPhenorobCP1::reset )
-    // .def("nr_samples", &DataLoaderPhenorobCP1::nr_samples )
+    .def("nr_scans", &DataLoaderPhenorobCP1::nr_scans )
     .def("set_mode_train", &DataLoaderPhenorobCP1::set_mode_train )
     .def("set_mode_test", &DataLoaderPhenorobCP1::set_mode_test )
     .def("set_mode_validation", &DataLoaderPhenorobCP1::set_mode_validation )
     .def("set_mode_all", &DataLoaderPhenorobCP1::set_mode_all )
     ;
+    py::class_<PRCP1Scan, std::shared_ptr<PRCP1Scan> > (m, "PRCP1Scan")
+    .def("nr_blocks", &PRCP1Scan::nr_blocks )
+    .def("get_block_with_idx", &PRCP1Scan::get_block_with_idx )
+    ;
     py::class_<PRCP1Block, std::shared_ptr<PRCP1Block> > (m, "PRCP1Block")
+    .def("nr_frames", &PRCP1Block::nr_frames )
     .def("get_rgb_frame_at_idx", &PRCP1Block::get_rgb_frame_at_idx )
     ;
 

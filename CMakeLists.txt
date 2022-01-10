@@ -80,9 +80,26 @@ if(${catkin_FOUND})
 	find_package(catkin REQUIRED COMPONENTS roscpp std_msgs cv_bridge pcl_ros image_transport tf2_ros tf2_eigen)
 endif()
 #try to compile with pytorch if you can
-set(PYTORCH_PATH "/opt/pytorch")
-set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ";${PYTORCH_PATH};")
-find_package(Torch)
+# set(PYTORCH_PATH "/opt/pytorch")
+# set(CMAKE_PREFIX_PATH ${CMAKE_PREFIX_PATH} ";${PYTORCH_PATH};")
+# get and append paths for finding dep
+execute_process( #do it like this https://github.com/facebookresearch/hanabi_SAD/blob/6e4ed590f5912fcb99633f4c224778a3ba78879b/rela/CMakeLists.txt#L10
+  COMMAND python -c "import torch; import os; print(os.path.dirname(torch.__file__), end='')"
+  OUTPUT_VARIABLE TorchPath
+)
+#sometimes we want to use libtorch because the pytorch one has a different abi
+# set(TorchPath "/home/rosu/work/ws/libtorch-cxx11-abi-shared-with-deps-1.9.0+cu111/libtorch")
+# set(TorchPath "/home/rosu/work/ws/libtorch-cxx11-abi-shared-with-deps-1.9.1+cu111/libtorch")
+# message("TORCH path-------------------", ${TorchPath})
+if(TorchPath STREQUAL "")
+    set(TORCH_FOUND False)
+else()
+    list(APPEND CMAKE_PREFIX_PATH ${TorchPath})
+    find_package(Torch)
+endif()
+# set(TORCH_FOUND False)
+
+
 
 
 
@@ -101,11 +118,13 @@ include_directories(${CMAKE_SOURCE_DIR}/deps)
 include_directories(${CMAKE_SOURCE_DIR}/deps/cnpy)
 include_directories(${CMAKE_SOURCE_DIR}/deps/libigl/include)
 include_directories(${CMAKE_SOURCE_DIR}/extern)
+include_directories(${CMAKE_SOURCE_DIR}/deps/yaml-cpp/include )
 # include_directories(${CMAKE_SOURCE_DIR}/deps/pybind11/include)
 include_directories(${EIGEN3_INCLUDE_DIR})
 include_directories(${EASYPBR_INCLUDE_DIR})
-include_directories(${TORCH_INCLUDE_DIRS})
-include_directories(${CMAKE_SOURCE_DIR}/deps/yaml-cpp/include )
+if(${TORCH_FOUND})
+    include_directories(${TORCH_INCLUDE_DIRS})
+endif()
 if(${catkin_FOUND})
     catkin_package( INCLUDE_DIRS include  CATKIN_DEPENDS roscpp std_msgs cv_bridge pcl_ros image_transport tf2_ros tf2_eigen )
 endif()
@@ -140,8 +159,12 @@ set(MY_SRC
     ${PROJECT_SOURCE_DIR}/src/DataLoaderLLFF.cxx
     #fb
     ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderBlenderFB.cxx
-    ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderUSCHair.cxx
 )
+if(${TORCH_FOUND})
+    set(MY_SRC ${MY_SRC}
+        ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderUSCHair.cxx
+    )
+endif()
 set(DEPS_SRC
     ${PROJECT_SOURCE_DIR}/deps/json11/json11.cpp
     ${PROJECT_SOURCE_DIR}/deps/cnpy/cnpy.cpp
