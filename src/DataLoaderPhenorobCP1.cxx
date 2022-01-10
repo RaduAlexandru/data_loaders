@@ -96,7 +96,8 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     Config loader_config=cfg["loader_phenorob_cp1"];
 
     m_autostart=loader_config["autostart"];
-    m_subsample_factor=loader_config["subsample_factor"];
+    m_rgb_subsample_factor=loader_config["rgb_subsample_factor"];
+    m_photoneo_subsample_factor=loader_config["photoneo_subsample_factor"];
     m_shuffle=loader_config["shuffle"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_do_overfit=loader_config["do_overfit"];
@@ -107,6 +108,7 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
 
     m_dataset_path = (std::string)loader_config["dataset_path"];   
     m_scan_date = (std::string)loader_config["scan_date"];   
+    m_dataset_type = (std::string)loader_config["dataset_type"];   
     // m_scan_idx = loader_config["scan_idx"];   
     // m_pose_file_path = (std::string)loader_config["pose_file_path"];    //get the path where all the off files are
 
@@ -143,10 +145,23 @@ void DataLoaderPhenorobCP1::init_data_reading(){
             continue;
         }
 
+        //get either the raw one or the processed version of this scan
+        if (m_dataset_type=="raw"){
+            if (  radu::utils::contains(scan_name, "processed") ){
+                continue; //skip all the scan that DO have the word processed
+            }
+        }else if(m_dataset_type=="processed"){
+            if ( ! radu::utils::contains(scan_name, "processed") ){
+                continue; //skip all the scan that don't have the word processed
+            }
+        }else{
+            LOG(FATAL) << "Unknown data type";
+        }
+
         //make a scan object
         VLOG(1) << "scan_name is " << scan_name;
         std::shared_ptr<PRCP1Scan> scan= std::make_shared<PRCP1Scan>();;
-        scan->scan_name=scan_name;
+        scan->m_name=scan_name;
 
 
         // fs::path scan_path= m_dataset_path/m_scan_date/ scan_name;
@@ -160,15 +175,27 @@ void DataLoaderPhenorobCP1::init_data_reading(){
             //load the paths for this block
             if (fs::is_directory(block_path) ){
                 //create a block 
-                std::shared_ptr<PRCP1Block> block= std::make_shared<PRCP1Block>();;
+                std::shared_ptr<PRCP1Block> block= std::make_shared<PRCP1Block>();
+                std::string block_name=block_path.filename().string();
+                // VLOG(1) << "block_name " << block_name;
+                block->m_name=block_name;
 
                 //iterate through the block and get the paths of the images and the photoneo
                 for (fs::directory_iterator itr_blk(block_path); itr_blk!=fs::directory_iterator(); ++itr_blk){
                     // VLOG(1) << "inside block" << itr_blk->path(); 
                     fs::path inside_blk=itr_blk->path();
                     if(radu::utils::contains( inside_blk.string(), "nikon" ) ){
+
+                        VLOG(1) << "inside_blk " << inside_blk;
+
+
                         Frame new_rgb_frame;
                         new_rgb_frame.rgb_path= (inside_blk/"img.jpeg").string();
+
+                        //get the name of this frame which will be something like nikon_x
+                        std::string frame_name=inside_blk.filename().string();
+                        new_rgb_frame.m_name=frame_name;
+
                         //get cam id 
                         std::string filename=fs::path(new_rgb_frame.rgb_path).parent_path().filename().string();
                         std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
@@ -186,7 +213,9 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                         //frame
                         Frame new_photoneo_frame;
                         new_photoneo_frame.rgb_path= (inside_blk/"texture.jpeg").string();
+                        new_photoneo_frame.add_extra_field("is_photoneo", true);
                         block->m_photoneo_frame=new_photoneo_frame;
+                        block->m_photoneo_cfg_file_path= (inside_blk/"info.cfg").string();
                     }
                 }
 
@@ -203,53 +232,6 @@ void DataLoaderPhenorobCP1::init_data_reading(){
     }
 
 
-
-    // //iterate through the scan and get all the blocks
-    // for (fs::directory_iterator itr(scan_path); itr!=fs::directory_iterator(); ++itr){
-    //     fs::path block_path= itr->path();
-    //     // VLOG(1) << "Block path " << block_path;
-
-    //     //load the paths for this block
-    //     if (fs::is_directory(block_path) ){
-    //         //create a block 
-    //         std::shared_ptr<PRCP1Block> block= std::make_shared<PRCP1Block>();;
-
-    //         //iterate through the block and get the paths of the images and the photoneo
-    //         for (fs::directory_iterator itr_blk(block_path); itr_blk!=fs::directory_iterator(); ++itr_blk){
-    //             // VLOG(1) << "inside block" << itr_blk->path(); 
-    //             fs::path inside_blk=itr_blk->path();
-    //             if(radu::utils::contains( inside_blk.string(), "nikon" ) ){
-    //                 Frame new_rgb_frame;
-    //                 new_rgb_frame.rgb_path= (inside_blk/"img.jpeg").string();
-    //                 //get cam id 
-    //                 std::string filename=fs::path(new_rgb_frame.rgb_path).parent_path().filename().string();
-    //                 std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
-    //                 CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
-    //                 new_rgb_frame.cam_id= std::stoi(filename_tokens[1]);
-    //                 //push
-    //                 // block->m_rgb_frames.push_back(new_rgb_frame);
-    //                 block->m_rgb_frames[new_rgb_frame.cam_id]=new_rgb_frame;
-    //             }
-    //             if(radu::utils::contains( inside_blk.string(), "photoneo" ) ){
-    //                 //mesh
-    //                 easy_pbr::MeshSharedPtr mesh= Mesh::create();
-    //                 mesh->m_disk_path=(inside_blk/"cloud.pcd").string();
-    //                 block->m_photoneo_mesh=mesh;
-    //                 //frame
-    //                 Frame new_photoneo_frame;
-    //                 new_photoneo_frame.rgb_path= (inside_blk/"texture.jpeg").string();
-    //                 block->m_photoneo_frame=new_photoneo_frame;
-    //             }
-    //         }
-
-    //         //finsihed block
-    //         m_blocks.push_back(block);
-
-
-
-
-    //     }
-    // }
 
 
 
@@ -320,7 +302,7 @@ void DataLoaderPhenorobCP1::init_poses(){
                     frame.K(1,2) = height - frame.K(1,2);
                 }
                 // VLOG(1) << "K is " << frame.K;
-                frame.rescale_K(1.0/m_subsample_factor);
+                frame.rescale_K(1.0/m_rgb_subsample_factor);
 
 
                 if (m_transform_to_easypbr_world){
@@ -354,6 +336,26 @@ void DataLoaderPhenorobCP1::init_poses(){
 
 
             }
+       
+
+            //load the intrinsics and extrinsics for the photoneo
+            auto block=m_scans[scan_idx]->m_blocks[blk_idx];
+
+            //intrinsics
+            Config photoneo_cfg = configuru::parse_file(block->m_photoneo_cfg_file_path, CFG);
+            std::vector<float> intrinsics_vec = (std::vector<float>)photoneo_cfg["intrinsics"];
+            CHECK(intrinsics_vec.size()==4) << "Intrinsics vec should have 4 elements";
+            block->m_photoneo_frame.K(0,0)=intrinsics_vec[0];
+            block->m_photoneo_frame.K(1,1)=intrinsics_vec[1];
+            block->m_photoneo_frame.K(0,2)=intrinsics_vec[2];
+            block->m_photoneo_frame.K(1,2)=intrinsics_vec[3];
+            block->m_photoneo_frame.rescale_K(1.0/m_photoneo_subsample_factor);
+
+            //extrinsics
+
+
+
+
         }
     }
   
@@ -384,7 +386,7 @@ void DataLoaderPhenorobCP1::read_data(){
 
                 //get cam_id 
                 std::string filename=fs::path(frame.rgb_path).parent_path().filename().string();
-                VLOG(1) << "filename: " << filename;
+                // VLOG(1) << "filename: " << filename;
                 std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
                 CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
                 frame.cam_id= std::stoi(filename_tokens[1]);
@@ -407,6 +409,15 @@ void DataLoaderPhenorobCP1::read_data(){
 
 
             //load the photoneo data
+            auto block=m_scans[scan_idx]->m_blocks[i];
+            Frame &photoneo_frame=block->m_photoneo_frame;
+            photoneo_frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
+            if (m_load_as_shell){   //set the function to load the images whenever it's neede
+                photoneo_frame.is_shell=true;
+            }else{
+                photoneo_frame.is_shell=false;
+                photoneo_frame.load_images(photoneo_frame);
+            }
 
         }
 
@@ -425,12 +436,16 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
 
     cv::Mat rgb_8u = cv::imread( frame.rgb_path );
     //resize the rgb8u mat and then convert to float because its faster
-    if(m_subsample_factor>1){
+    int subsample_factor=m_rgb_subsample_factor;
+    if ( frame.has_extra_field("is_photoneo") ){
+        subsample_factor=m_photoneo_subsample_factor;
+    }
+    if(subsample_factor>1){
         cv::Mat resized;
-        cv::resize(rgb_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+        cv::resize(rgb_8u, resized, cv::Size(), 1.0/subsample_factor, 1.0/subsample_factor, cv::INTER_AREA);
         rgb_8u=resized;
     }
-    // frame.rgb_8u=rgb_8u;
+    frame.rgb_8u=rgb_8u;
     rgb_8u.convertTo(rgb_32f, CV_32FC3, 1.0/255.0);
     // VLOG(1) << " type is  " << radu::utils::type2string(rgba_32f.type());
 
@@ -443,7 +458,7 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
 }
 
 //BLOCK functions------------------
-Frame PRCP1Block::get_rgb_frame_at_idx( const int idx){
+Frame PRCP1Block::get_rgb_frame_with_idx( const int idx){
     CHECK(idx<m_rgb_frames.size()) << "idx is out of bounds. It is " << idx << " while m_rgb_frames has size " << m_rgb_frames.size();
     Frame  frame= m_rgb_frames[idx];
     return frame;
@@ -470,6 +485,13 @@ std::shared_ptr<PRCP1Scan> DataLoaderPhenorobCP1::get_scan_with_idx(const int id
     return scan;
 }
 
+
+std::string DataLoaderPhenorobCP1::dataset_path(){
+    return m_dataset_path.string();
+}
+std::string DataLoaderPhenorobCP1::scan_date(){
+    return m_scan_date.string();
+}
 
 bool DataLoaderPhenorobCP1::is_finished(){
     // //check if this loader has returned all the images it has

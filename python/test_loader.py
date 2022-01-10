@@ -547,41 +547,47 @@ def test_phenorob_cp1():
     #get frame
     for s in range(1):
         for i in range(14):
-            frame=loader.get_scan_with_idx(s).get_block_with_idx(0).get_rgb_frame_at_idx(i)
+            frame=loader.get_scan_with_idx(s).get_block_with_idx(0).get_rgb_frame_with_idx(i)
             cam_id=frame.cam_id
             # if cam_id in[0,1,10]:
             if cam_id in[0,1,2]:
             # if True:
                 if frame.is_shell:
                     frame.load_images()
-                frustum_mesh=frame.create_frustum_mesh(0.05, True, 1024)
+                frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
                 frustum_mesh.m_vis.m_line_width=1
                 Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
 
                 print("frame cam id is ", frame.cam_id)
                 print("frame tf_cam_world is ", frame.tf_cam_world.matrix())
 
-    frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_at_idx(0)
-    frame1=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_at_idx(1)
+    frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
+    frame1=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(1)
     frame0.load_images()
     frame1.load_images()
-    # line=f,rame0.line_through_pixel(256,256,1000)
-    # epipolar_image=frame1.draw_projected_line(line)
 
-    line_p0=frame0.pos_in_world().astype(np.float64)
-    # line_p1=frame0.unproject(4132.291660151611, 2813.56775866408, 1) #4132.291660151611, 2813.56775866408
-    # line_p1=frame0.unproject(3083, frame0.height-986, 1.0) #4132.291660151611, 2813.56775866408
-    line_p1=frame0.unproject(3083, 986, 1.0) #4132.291660151611, 2813.56775866408
-    line=Mesh()
-    line.create_line_strip_from_points([line_p0, line_p1])
-    Scene.show(line, "line")
-
-    epipolar_image=frame1.draw_projected_line(line_p0, line_p1, 1)
-    Gui.show(epipolar_image, "epipolar_image")
+    # line_p0=frame0.pos_in_world().astype(np.float64)
+    # line_p1=frame0.unproject(3083, 986, 1.0) #4132.291660151611, 2813.56775866408
+    # line=Mesh()
+    # line.create_line_strip_from_points([line_p0, line_p1])
+    # Scene.show(line, "line")
+    # epipolar_image=frame1.draw_projected_line(line_p0, line_p1, 1)
+    # Gui.show(epipolar_image, "epipolar_image")
 
     #undistort
     frame0_undistort=frame0.undistort()
     Gui.show(frame0.rgb_32f, "original", frame0_undistort.rgb_32f, "undistorted")
+
+    #try to load the photoneo
+    block0=loader.get_scan_with_idx(0).get_block_with_idx(0)
+    photoneo_frame=block0.get_photoneo_frame()
+    photoneo_frame.load_images()
+    frustum_mesh=photoneo_frame.create_frustum_mesh(0.05, True, 256)
+    frustum_mesh.m_vis.m_line_width=1
+    Scene.show(frustum_mesh, "photoneo_frustum_"+str(frame.cam_id) )
+    print("photoneo frame", photoneo_frame.K)
+    print("photoneo frame", photoneo_frame.width, " ", photoneo_frame.height)
+    
 
 
 

@@ -336,6 +336,8 @@ PYBIND11_MODULE(dataloaders, m) {
     // .def("get_closest_frame", &DataLoaderPhenorobCP1::get_closest_frame )
     // .def("get_close_frames", &DataLoaderPhenorobCP1::get_close_frames )
     // .def("compute_frame_weights", &DataLoaderNerf::compute_frame_weights )
+    .def("dataset_path", &DataLoaderPhenorobCP1::dataset_path )
+    .def("scan_date", &DataLoaderPhenorobCP1::scan_date )
     .def("is_finished", &DataLoaderPhenorobCP1::is_finished )
     .def("reset", &DataLoaderPhenorobCP1::reset )
     .def("nr_scans", &DataLoaderPhenorobCP1::nr_scans )
@@ -347,10 +349,14 @@ PYBIND11_MODULE(dataloaders, m) {
     py::class_<PRCP1Scan, std::shared_ptr<PRCP1Scan> > (m, "PRCP1Scan")
     .def("nr_blocks", &PRCP1Scan::nr_blocks )
     .def("get_block_with_idx", &PRCP1Scan::get_block_with_idx )
+    .def("name", &PRCP1Scan::name )
     ;
     py::class_<PRCP1Block, std::shared_ptr<PRCP1Block> > (m, "PRCP1Block")
     .def("nr_frames", &PRCP1Block::nr_frames )
-    .def("get_rgb_frame_at_idx", &PRCP1Block::get_rgb_frame_at_idx )
+    .def("get_rgb_frame_with_idx", &PRCP1Block::get_rgb_frame_with_idx )
+    .def("get_photoneo_frame", &PRCP1Block::get_photoneo_frame )
+    .def("get_photoneo_mesh", &PRCP1Block::get_photoneo_mesh )
+    .def("name", &PRCP1Block::name )
     ;
 
 
