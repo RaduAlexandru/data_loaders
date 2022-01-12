@@ -186,7 +186,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                     fs::path inside_blk=itr_blk->path();
                     if(radu::utils::contains( inside_blk.string(), "nikon" ) ){
 
-                        VLOG(1) << "inside_blk " << inside_blk;
+                        // VLOG(1) << "inside_blk " << inside_blk;
 
 
                         Frame new_rgb_frame;
@@ -214,6 +214,11 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                         Frame new_photoneo_frame;
                         new_photoneo_frame.rgb_path= (inside_blk/"texture.jpeg").string();
                         new_photoneo_frame.add_extra_field("is_photoneo", true);
+                        //get the name of this frame which will be something like nikon_x
+                        std::string frame_name=inside_blk.filename().string();
+                        new_photoneo_frame.m_name=frame_name;
+                        new_photoneo_frame.cam_id=scan->m_blocks.size();
+                        //add it to the block
                         block->m_photoneo_frame=new_photoneo_frame;
                         block->m_photoneo_cfg_file_path= (inside_blk/"info.cfg").string();
                     }
@@ -240,12 +245,17 @@ void DataLoaderPhenorobCP1::init_data_reading(){
 void DataLoaderPhenorobCP1::init_poses(){
 
     // std::string rgb_pose_file="/media/rosu/Data/data/phenorob/days_on_field/2021_05_20_incomplete_just_9/rgb_calib/camchain-.img.yaml";
-    std::string rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
+    // m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
+    if (m_dataset_type=="raw"){
+        m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
+    }else if(m_dataset_type=="processed"){
+        m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib_processed/camchain-.img.yaml").string();
+    }
     
     Eigen::Affine3d tf_camcur_cam0;
     tf_camcur_cam0.setIdentity();
 
-    YAML::Node config = YAML::LoadFile(rgb_pose_file);
+    YAML::Node config = YAML::LoadFile(m_rgb_pose_file);
     int nr_calibrated_cams=config.size();
     for (size_t cam_idx = 0; cam_idx < m_scans[0]->m_blocks[0]->m_rgb_frames.size(); cam_idx++){
         std::string cam_name= "cam"+std::to_string(cam_idx); 
@@ -274,6 +284,12 @@ void DataLoaderPhenorobCP1::init_poses(){
         m_camidx2resolution[cam_idx]=res;
 
     }
+
+    //a prerotation so as to align it a bit better to our world frame
+    Eigen::Affine3f pre_rotate;
+    pre_rotate.setIdentity();
+    Eigen::Matrix3f r = (Eigen::AngleAxisf( radu::utils::degrees2radians(m_rotation_alignment_degrees), Eigen::Vector3f::UnitX()) ).toRotationMatrix();
+    pre_rotate.linear()=r;
    
 
 
@@ -296,8 +312,7 @@ void DataLoaderPhenorobCP1::init_poses(){
                 frame.K(1,1)=intrinsics_vec[1];
                 frame.K(0,2)=intrinsics_vec[2];
                 frame.K(1,2)=intrinsics_vec[3];
-                if (m_transform_to_easypbr_world){
-                    //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
+                if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
                     int height=m_camidx2resolution[cam_idx].y();
                     frame.K(1,2) = height - frame.K(1,2);
                 }
@@ -306,12 +321,6 @@ void DataLoaderPhenorobCP1::init_poses(){
 
 
                 if (m_transform_to_easypbr_world){
-                    Eigen::Affine3f pre_rotate;
-                    pre_rotate.setIdentity();
-                    Eigen::Matrix3f r = (Eigen::AngleAxisf( radu::utils::degrees2radians(m_rotation_alignment_degrees), Eigen::Vector3f::UnitX()) ).toRotationMatrix();
-                    pre_rotate.linear()=r;
-
-
                     Eigen::Affine3f tf_cam_world = m_camidx2pose[cam_idx].cast<float>()*pre_rotate;
                     Eigen::Affine3f tf_world_cam;
                     tf_world_cam= tf_cam_world.inverse();
@@ -349,9 +358,55 @@ void DataLoaderPhenorobCP1::init_poses(){
             block->m_photoneo_frame.K(1,1)=intrinsics_vec[1];
             block->m_photoneo_frame.K(0,2)=intrinsics_vec[2];
             block->m_photoneo_frame.K(1,2)=intrinsics_vec[3];
+            if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
+                //load the image just to get the height
+                cv::Mat photoneo_texture=cv::imread(block->m_photoneo_frame.rgb_path);
+                int height_photoneo=photoneo_texture.rows;
+                block->m_photoneo_frame.K(1,2) = height_photoneo - block->m_photoneo_frame.K(1,2);
+            }
             block->m_photoneo_frame.rescale_K(1.0/m_photoneo_subsample_factor);
 
             //extrinsics
+            if (m_dataset_type=="processed"){
+                std::string pose_file_path=(m_dataset_path/m_scan_date/"photoneo_extrinsics"/("pose_xyzquat_photoneo_world_"+std::to_string(blk_idx)+".txt")  ).string();
+                std::string pose_file_string=radu::utils::file_to_string(pose_file_path);
+                std::vector<std::string> pose_tokens=radu::utils::split(pose_file_string, " ");
+                CHECK(pose_tokens.size()==7) <<"Should have 7 tokens corresponding to xyz, qx, qy, qz, qw";
+                //make photoneo_world_matrix
+                Eigen::Affine3f tf_photoneo_world;
+                tf_photoneo_world.setIdentity();
+                tf_photoneo_world.translation() << std::stof(pose_tokens[0]), std::stof(pose_tokens[1]), std::stof(pose_tokens[2]);
+                Eigen::Quaternion<float> q;
+                q.coeffs()<< stof(pose_tokens[3]), std::stof(pose_tokens[4]), std::stof(pose_tokens[5]),  std::stof(pose_tokens[6]) ;
+                tf_photoneo_world.linear()=q.toRotationMatrix();
+                //set matrix
+                if (m_transform_to_easypbr_world){
+                    Eigen::Affine3f tf_cam_world =tf_photoneo_world.cast<float>()*pre_rotate;
+                    Eigen::Affine3f tf_world_cam;
+                    tf_world_cam= tf_cam_world.inverse();
+                    //flip y locally
+                    tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
+                    tf_cam_world = tf_world_cam.inverse();
+                    block->m_photoneo_frame.tf_cam_world=tf_cam_world;
+                }else{
+                    // frame.tf_cam_world= tf_photoneo_world;
+                    block->m_photoneo_frame.tf_cam_world=tf_photoneo_world;
+                }
+
+                //set also the extrinsics for the mesh
+                // block->m_photoneo_mesh->set_model_matrix( block->m_photoneo_frame.tf_cam_world.inverse().cast<double>() );
+
+                //attempt 2
+                Eigen::Affine3f tf_cam_world;
+                if (m_transform_to_easypbr_world){
+                    tf_cam_world =tf_photoneo_world.cast<float>()*pre_rotate;
+                }else{
+                    tf_cam_world =tf_photoneo_world.cast<float>();
+                }
+                block->m_photoneo_mesh->set_model_matrix( tf_cam_world.inverse().cast<double>() );
+
+
+            }
 
 
 
@@ -390,13 +445,6 @@ void DataLoaderPhenorobCP1::read_data(){
                 std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
                 CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
                 frame.cam_id= std::stoi(filename_tokens[1]);
-
-                //extrinsics
-
-                //intrinsics
-
-
-                //distorsion
 
 
                 //rescale things if necessary
@@ -491,6 +539,9 @@ std::string DataLoaderPhenorobCP1::dataset_path(){
 }
 std::string DataLoaderPhenorobCP1::scan_date(){
     return m_scan_date.string();
+}
+std::string DataLoaderPhenorobCP1::rgb_pose_file(){
+    return m_rgb_pose_file;
 }
 
 bool DataLoaderPhenorobCP1::is_finished(){

@@ -338,6 +338,7 @@ PYBIND11_MODULE(dataloaders, m) {
     // .def("compute_frame_weights", &DataLoaderNerf::compute_frame_weights )
     .def("dataset_path", &DataLoaderPhenorobCP1::dataset_path )
     .def("scan_date", &DataLoaderPhenorobCP1::scan_date )
+    .def("rgb_pose_file", &DataLoaderPhenorobCP1::rgb_pose_file )
     .def("is_finished", &DataLoaderPhenorobCP1::is_finished )
     .def("reset", &DataLoaderPhenorobCP1::reset )
     .def("nr_scans", &DataLoaderPhenorobCP1::nr_scans )
