@@ -213,6 +213,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                         //frame
                         Frame new_photoneo_frame;
                         new_photoneo_frame.rgb_path= (inside_blk/"texture.jpeg").string();
+                        new_photoneo_frame.depth_path= (inside_blk/"depth.exr").string();
                         new_photoneo_frame.add_extra_field("is_photoneo", true);
                         //get the name of this frame which will be something like nikon_x
                         std::string frame_name=inside_blk.filename().string();
@@ -502,6 +503,15 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
 
     frame.width=frame.rgb_32f.cols;
     frame.height=frame.rgb_32f.rows;
+
+
+    //if we have depth load also that one
+    if (!frame.depth_path.empty()){
+        frame.depth = cv::imread(frame.depth_path, cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH);
+        frame.depth*=1.0/1000;
+        CHECK(frame.height==frame.depth.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
+        CHECK(frame.width==frame.depth.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
+    }
 
 }
 
