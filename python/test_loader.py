@@ -554,9 +554,16 @@ def test_phenorob_cp1():
                     frame=block.get_rgb_frame_with_idx(f_idx)
                     if frame.is_shell:
                         frame.load_images()
+                    #create a frustum fro the RGB frames
                     frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
                     frustum_mesh.m_vis.m_line_width=1
                     Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
+
+                    #get the right stereo pair if it exists
+                    if ( frame.has_right_stereo_pair() ):
+                        frame_right=frame.right_stereo_pair();
+                        print("cam ", frame.cam_id, " has right pair ", frame_right.cam_id)
+
             #load the photoneo frame from this block
             photoneo_frame=block.get_photoneo_frame()
             photoneo_frame.load_images()

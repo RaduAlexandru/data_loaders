@@ -1,5 +1,6 @@
 #include "data_loaders/DataLoaderPhenorobCP1.h"
 
+#include <fstream>
 #include <limits>
 
 //loguru
@@ -118,6 +119,7 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
 void DataLoaderPhenorobCP1::start(){
     init_data_reading();
     init_poses();
+    init_stereo_pairs();
     read_data();
 }
 
@@ -252,7 +254,7 @@ void DataLoaderPhenorobCP1::init_poses(){
     }else if(m_dataset_type=="processed"){
         m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib_processed/camchain-.img.yaml").string();
     }
-    
+
     Eigen::Affine3d tf_camcur_cam0;
     tf_camcur_cam0.setIdentity();
 
@@ -415,6 +417,44 @@ void DataLoaderPhenorobCP1::init_poses(){
         }
     }
   
+
+}
+
+void DataLoaderPhenorobCP1::init_stereo_pairs(){
+    std::string pairs_file=(m_dataset_path/m_scan_date/"stereo_pairs.txt").string();
+
+    std::ifstream infile(pairs_file);
+    CHECK(infile.good()) << "Could not open file " << pairs_file;
+
+    std::string line;
+    while (std::getline(infile, line)){
+        std::istringstream iss(line);
+        int idx_left, idx_right;
+        if (!(iss >> idx_left >> idx_right)) { break; } // error
+
+        // process pair (a,b)
+        // VLOG(1) << idx_left << " " << idx_right;
+        m_stereo_pairs[idx_left] = idx_right;
+    }
+
+    //set the right frame 
+    for (size_t scan_idx = 0; scan_idx < m_scans.size(); scan_idx++){
+        for (size_t blk_idx = 0; blk_idx < m_scans[scan_idx]->m_blocks.size(); blk_idx++){
+            //load the rgb frame
+            for (size_t frame_idx = 0; frame_idx < m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size(); frame_idx++){
+                Frame &frame=m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[frame_idx];
+
+                int idx_right=m_stereo_pairs[frame_idx];
+                if(idx_right!=-1){
+                    
+                    frame.m_right_stereo_pair=std::make_shared<easy_pbr::Frame>( m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[idx_right] );
+
+                }
+
+            }
+        }
+    }
+
 
 }
 
