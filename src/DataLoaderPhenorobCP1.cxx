@@ -316,8 +316,8 @@ void DataLoaderPhenorobCP1::init_poses(){
                 frame->K(0,2)=intrinsics_vec[2];
                 frame->K(1,2)=intrinsics_vec[3];
                 if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
-                    int height=m_camidx2resolution[cam_idx].y();
-                    frame->K(1,2) = height - frame->K(1,2);
+                    // int height=m_camidx2resolution[cam_idx].y();
+                    // frame->K(1,2) = height - frame->K(1,2);
                 }
                 // VLOG(1) << "K is " << frame.K;
                 frame->rescale_K(1.0/m_rgb_subsample_factor);
@@ -325,13 +325,26 @@ void DataLoaderPhenorobCP1::init_poses(){
 
                 if (m_transform_to_easypbr_world){
                     Eigen::Affine3f tf_cam_world = m_camidx2pose[cam_idx].cast<float>()*pre_rotate;
-                    Eigen::Affine3f tf_world_cam;
-                    tf_world_cam= tf_cam_world.inverse();
+                    // Eigen::Affine3f tf_world_cam;
+                    // tf_world_cam= tf_cam_world.inverse();
                     //flip y locally
-                    tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
+                    // tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
+                    // tf_cam_world = tf_world_cam.inverse();
 
+                    // VLOG(1) << " tf_cam_world " << tf_cam_world.matrix(); 
+
+
+
+                    // //attempt 2
+                    // Eigen::Affine3f tf_cam_world = m_camidx2pose[cam_idx].cast<float>()*pre_rotate;
+                    // Eigen::Affine3f tf_world_cam;
+                    // tf_world_cam= tf_cam_world.inverse();
+                    // //flip z locally
+                    // tf_world_cam.matrix().col(2) = -tf_world_cam.matrix().col(2);
                     
-                    tf_cam_world = tf_world_cam.inverse();
+                    // tf_cam_world = tf_world_cam.inverse();
+                    // tf_cam_world.matrix().col(2) = -tf_cam_world.matrix().col(2);
+
                     frame->tf_cam_world=tf_cam_world;
                 }else{
                     frame->tf_cam_world= m_camidx2pose[cam_idx].cast<float>();
@@ -363,9 +376,9 @@ void DataLoaderPhenorobCP1::init_poses(){
             block->m_photoneo_frame.K(1,2)=intrinsics_vec[3];
             if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
                 //load the image just to get the height
-                cv::Mat photoneo_texture=cv::imread(block->m_photoneo_frame.rgb_path);
-                int height_photoneo=photoneo_texture.rows;
-                block->m_photoneo_frame.K(1,2) = height_photoneo - block->m_photoneo_frame.K(1,2);
+                // cv::Mat photoneo_texture=cv::imread(block->m_photoneo_frame.rgb_path);
+                // int height_photoneo=photoneo_texture.rows;
+                // block->m_photoneo_frame.K(1,2) = height_photoneo - block->m_photoneo_frame.K(1,2);
             }
             block->m_photoneo_frame.rescale_K(1.0/m_photoneo_subsample_factor);
 
@@ -385,11 +398,11 @@ void DataLoaderPhenorobCP1::init_poses(){
                 //set matrix
                 if (m_transform_to_easypbr_world){
                     Eigen::Affine3f tf_cam_world =tf_photoneo_world.cast<float>()*pre_rotate;
-                    Eigen::Affine3f tf_world_cam;
-                    tf_world_cam= tf_cam_world.inverse();
+                    // Eigen::Affine3f tf_world_cam;
+                    // tf_world_cam= tf_cam_world.inverse();
                     //flip y locally
-                    tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
-                    tf_cam_world = tf_world_cam.inverse();
+                    // tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
+                    // tf_cam_world = tf_world_cam.inverse();
                     block->m_photoneo_frame.tf_cam_world=tf_cam_world;
                 }else{
                     // frame.tf_cam_world= tf_photoneo_world;
