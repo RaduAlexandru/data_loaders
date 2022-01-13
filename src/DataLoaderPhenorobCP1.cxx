@@ -191,21 +191,21 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                         // VLOG(1) << "inside_blk " << inside_blk;
 
 
-                        Frame new_rgb_frame;
-                        new_rgb_frame.rgb_path= (inside_blk/"img.jpeg").string();
+                        std::shared_ptr<Frame> new_rgb_frame= std::make_shared<easy_pbr::Frame>();
+                        new_rgb_frame->rgb_path= (inside_blk/"img.jpeg").string();
 
                         //get the name of this frame which will be something like nikon_x
                         std::string frame_name=inside_blk.filename().string();
-                        new_rgb_frame.m_name=frame_name;
+                        new_rgb_frame->m_name=frame_name;
 
                         //get cam id 
-                        std::string filename=fs::path(new_rgb_frame.rgb_path).parent_path().filename().string();
+                        std::string filename=fs::path(new_rgb_frame->rgb_path).parent_path().filename().string();
                         std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
                         CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
-                        new_rgb_frame.cam_id= std::stoi(filename_tokens[1]);
+                        new_rgb_frame->cam_id= std::stoi(filename_tokens[1]);
                         //push
                         // block->m_rgb_frames.push_back(new_rgb_frame);
-                        block->m_rgb_frames[new_rgb_frame.cam_id]=new_rgb_frame;
+                        block->m_rgb_frames[new_rgb_frame->cam_id]=new_rgb_frame;
                     }
                     if(radu::utils::contains( inside_blk.string(), "photoneo" ) ){
                         //mesh
@@ -304,23 +304,23 @@ void DataLoaderPhenorobCP1::init_poses(){
             CHECK( nr_calibrated_cams==m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size() ) << "We need calibration for each camera. We have nr calibrated cams " << nr_calibrated_cams << " but we have nr frames " << m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size();
 
             for (size_t cam_idx = 0; cam_idx < m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size(); cam_idx++){
-                Frame &frame=m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[cam_idx];
+                std::shared_ptr<Frame> frame=m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[cam_idx];
 
                 std::string cam_name= "cam"+std::to_string(cam_idx);
 
                 //get the intrinsics
                 std::vector<float> intrinsics_vec = config[cam_name]["intrinsics"].as<std::vector<float>>();
                 CHECK(intrinsics_vec.size()==4) << "Intrinsics_vec should be size of 4 but it is " << intrinsics_vec.size();
-                frame.K(0,0)=intrinsics_vec[0];
-                frame.K(1,1)=intrinsics_vec[1];
-                frame.K(0,2)=intrinsics_vec[2];
-                frame.K(1,2)=intrinsics_vec[3];
+                frame->K(0,0)=intrinsics_vec[0];
+                frame->K(1,1)=intrinsics_vec[1];
+                frame->K(0,2)=intrinsics_vec[2];
+                frame->K(1,2)=intrinsics_vec[3];
                 if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
                     int height=m_camidx2resolution[cam_idx].y();
-                    frame.K(1,2) = height - frame.K(1,2);
+                    frame->K(1,2) = height - frame->K(1,2);
                 }
                 // VLOG(1) << "K is " << frame.K;
-                frame.rescale_K(1.0/m_rgb_subsample_factor);
+                frame->rescale_K(1.0/m_rgb_subsample_factor);
 
 
                 if (m_transform_to_easypbr_world){
@@ -332,19 +332,19 @@ void DataLoaderPhenorobCP1::init_poses(){
 
                     
                     tf_cam_world = tf_world_cam.inverse();
-                    frame.tf_cam_world=tf_cam_world;
+                    frame->tf_cam_world=tf_cam_world;
                 }else{
-                    frame.tf_cam_world= m_camidx2pose[cam_idx].cast<float>();
+                    frame->tf_cam_world= m_camidx2pose[cam_idx].cast<float>();
                 }
 
 
                 //get distorsion 
                 std::vector<float> distorsion_vec = config[cam_name]["distortion_coeffs"].as<std::vector<float>>();
                 CHECK(distorsion_vec.size()==4) << "distorsion_vec should be size of 4 but it is " << distorsion_vec.size();
-                frame.distort_coeffs(0)=distorsion_vec[0];
-                frame.distort_coeffs(1)=distorsion_vec[1];
-                frame.distort_coeffs(2)=distorsion_vec[2];
-                frame.distort_coeffs(3)=distorsion_vec[3];
+                frame->distort_coeffs(0)=distorsion_vec[0];
+                frame->distort_coeffs(1)=distorsion_vec[1];
+                frame->distort_coeffs(2)=distorsion_vec[2];
+                frame->distort_coeffs(3)=distorsion_vec[3];
 
 
             }
@@ -442,12 +442,13 @@ void DataLoaderPhenorobCP1::init_stereo_pairs(){
         for (size_t blk_idx = 0; blk_idx < m_scans[scan_idx]->m_blocks.size(); blk_idx++){
             //load the rgb frame
             for (size_t frame_idx = 0; frame_idx < m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size(); frame_idx++){
-                Frame &frame=m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[frame_idx];
+                std::shared_ptr<Frame> frame=m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[frame_idx];
 
                 int idx_right=m_stereo_pairs[frame_idx];
                 if(idx_right!=-1){
                     
-                    frame.m_right_stereo_pair=std::make_shared<easy_pbr::Frame>( m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[idx_right] );
+                    // frame->m_right_stereo_pair=std::make_shared<easy_pbr::Frame>( m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[idx_right] );
+                    frame->m_right_stereo_pair= m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[idx_right] ;
 
                 }
 
@@ -468,31 +469,31 @@ void DataLoaderPhenorobCP1::read_data(){
 
             //load the rgb frame
             for (size_t j = 0; j < m_scans[scan_idx]->m_blocks[i]->m_rgb_frames.size(); j++){
-                Frame &frame=m_scans[scan_idx]->m_blocks[i]->m_rgb_frames[j];
+                std::shared_ptr<Frame> frame=m_scans[scan_idx]->m_blocks[i]->m_rgb_frames[j];
 
                 //load the images if necessary or delay it for whne it's needed
-                frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
+                frame->load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
                 if (m_load_as_shell){   //set the function to load the images whenever it's neede
-                    frame.is_shell=true;
+                    frame->is_shell=true;
                 }else{
-                    frame.is_shell=false;
-                    frame.load_images(frame);
+                    frame->is_shell=false;
+                    frame->load_images(*frame);
                 }
 
 
                 //get cam_id 
-                std::string filename=fs::path(frame.rgb_path).parent_path().filename().string();
+                std::string filename=fs::path(frame->rgb_path).parent_path().filename().string();
                 // VLOG(1) << "filename: " << filename;
                 std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
                 CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
-                frame.cam_id= std::stoi(filename_tokens[1]);
+                frame->cam_id= std::stoi(filename_tokens[1]);
 
 
                 //rescale things if necessary
                 if(m_scene_scale_multiplier>0.0){
-                    Eigen::Affine3f tf_world_cam_rescaled = frame.tf_cam_world.inverse();
+                    Eigen::Affine3f tf_world_cam_rescaled = frame->tf_cam_world.inverse();
                     tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
-                    frame.tf_cam_world=tf_world_cam_rescaled.inverse();
+                    frame->tf_cam_world=tf_world_cam_rescaled.inverse();
                 }
             }
 
@@ -556,9 +557,9 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
 }
 
 //BLOCK functions------------------
-Frame PRCP1Block::get_rgb_frame_with_idx( const int idx){
+std::shared_ptr<Frame> PRCP1Block::get_rgb_frame_with_idx( const int idx){
     CHECK(idx<m_rgb_frames.size()) << "idx is out of bounds. It is " << idx << " while m_rgb_frames has size " << m_rgb_frames.size();
-    Frame  frame= m_rgb_frames[idx];
+    std::shared_ptr<Frame>  frame= m_rgb_frames[idx];
     return frame;
 }
 int PRCP1Block::nr_frames(){

@@ -563,6 +563,10 @@ def test_phenorob_cp1():
                     if ( frame.has_right_stereo_pair() ):
                         frame_right=frame.right_stereo_pair();
                         print("cam ", frame.cam_id, " has right pair ", frame_right.cam_id)
+                        if frame_right.is_shell:
+                            frame_right.load_images()
+                        Gui.show(frame.rgb_32f, str(frame.cam_id)+"_left", frame_right.rgb_32f, str(frame_right.cam_id)+"_right")
+
 
             #load the photoneo frame from this block
             photoneo_frame=block.get_photoneo_frame()
