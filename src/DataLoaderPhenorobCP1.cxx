@@ -172,7 +172,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
         // //iterate through the scan and get all the blocks
         for (fs::directory_iterator itr(scan_path); itr!=fs::directory_iterator(); ++itr){
             fs::path block_path= itr->path();
-            // VLOG(1) << "Block path " << block_path;
+            VLOG(1) << "Block path " << block_path;
 
             //load the paths for this block
             if (fs::is_directory(block_path) ){
@@ -221,6 +221,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                         std::string frame_name=inside_blk.filename().string();
                         new_photoneo_frame.m_name=frame_name;
                         new_photoneo_frame.cam_id=scan->m_blocks.size();
+                        VLOG(1) << "Loaded photoneo with cam_id" << new_photoneo_frame.cam_id << " with depth " << new_photoneo_frame.depth_path;
                         //add it to the block
                         block->m_photoneo_frame=new_photoneo_frame;
                         block->m_photoneo_cfg_file_path= (inside_blk/"info.cfg").string();

@@ -277,17 +277,39 @@ void DataLoaderLLFF::read_data(){
         Eigen::Affine3d tf_cam_world;
         tf_cam_world.linear()=q.toRotationMatrix();
         tf_cam_world.translation()=t;
-        //rotate it a bit
-        Eigen::Quaterniond q_rot = Eigen::Quaterniond( Eigen::AngleAxis<double>( -180 * M_PI / 180.0 ,  Eigen::Vector3d::UnitX() ) );
-        Eigen::Affine3d rot;
-        rot.setIdentity();
-        rot.linear()=q_rot.toRotationMatrix();
-        tf_cam_world=tf_cam_world*rot;
-        //flip the y axis because for some reason colmap stores the positive Y towards down but I want it towards up
+
+        // //rotate it a bit
+        // Eigen::Quaterniond q_rot = Eigen::Quaterniond( Eigen::AngleAxis<double>( -180 * M_PI / 180.0 ,  Eigen::Vector3d::UnitX() ) );
+        // Eigen::Affine3d rot;
+        // rot.setIdentity();
+        // rot.linear()=q_rot.toRotationMatrix();
+        // tf_cam_world=tf_cam_world*rot;
+        // //flip the y axis because for some reason colmap stores the positive Y towards down but I want it towards up
+        // Eigen::Affine3d tf_world_cam =tf_cam_world.inverse();
+        // tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
+        // tf_cam_world=tf_world_cam.inverse();
+
+        //attempt 2
         Eigen::Affine3d tf_world_cam =tf_cam_world.inverse();
-        tf_world_cam.matrix().col(1) = - tf_world_cam.matrix().col(1);
-        // tf_world_cam.translation()/=3.0;
+        //nerf uses a opengl system https://github.com/bmild/nerf#already-have-poses
+        //so the x is towards right, y up and z is backwards. 
+        //we need x is right y down and z towards the frame
+        tf_world_cam.linear().col(2)=-tf_world_cam.linear().col(2); //make it look in the correct direction (the z vector of the frame should point towards the image frame)
+        tf_world_cam.linear().col(1)=-tf_world_cam.linear().col(1);
         tf_cam_world=tf_world_cam.inverse();
+        //since we flip y we also need to change the cy intrinsic
+
+
+        // //rotate the world so that we have the top fo the dome in the y direction instead of z
+        // Eigen::Affine3d m_tf_worldGL_world;
+        // m_tf_worldGL_world.setIdentity();
+        // Eigen::Matrix3d worldGL_world_rot;
+        // worldGL_world_rot = Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX());
+        // m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
+        // tf_cam_world=tf_cam_world*m_tf_worldGL_world;
+
+        // tf_cam_world.linear().col(1) = -tf_cam_world.linear().col(1);
+
 
 
         frame.tf_cam_world=tf_cam_world.cast<float>();
@@ -364,28 +386,31 @@ void DataLoaderLLFF::read_data(){
 
       //get all the frames which have frame_idx to be camera_id and we set the params;
       for (size_t j = 0; j < m_frames.size(); j++) {
-        Frame& frame = m_frames[j];
-        if (frame.cam_id==camera_id){
-          //this correspond so we set it
-          double fx,fy,cx,cy;
-          fx=params[0];
-          fy=params[0];
-          cx=params[1];
-          cy=params[2];
+            Frame& frame = m_frames[j];
+            if (frame.cam_id==camera_id){
+                //this correspond so we set it
+                double fx,fy,cx,cy;
+                fx=params[0];
+                fy=params[0];
+                cx=params[1];
+                cy=params[2];
 
-          frame.K.setIdentity();
-          frame.K(0,0) = fx; //fx
-          frame.K(1,1) = fy; //fy
-          frame.K(0,2) = cx; //cx
-          frame.K(1,2) = cy; //cy
-          // frame.K = frame.K/m_subsample_factor;
-          // frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
-          frame.rescale_K(1.0/m_subsample_factor);
+                frame.K.setIdentity();
+                frame.K(0,0) = fx; //fx
+                frame.K(1,1) = fy; //fy
+                frame.K(0,2) = cx; //cx
+                frame.K(1,2) = cy; //cy
+                // frame.K = frame.K/m_subsample_factor;
+                // frame.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+                frame.rescale_K(1.0/m_subsample_factor);
 
-        //   VLOG(1) << "K is " << frame.K;
+                //since we flipped the pose y axis (from y pointing up like opengl to y pointing down like opencv), we need to also change cy
+                //the y principal point needs to be flipped because it actually measures the distance from the bottom but we measure the distance from the top
+                frame.K(1,2) = frame.height - frame.K(1,2);
 
-        }
+                //   VLOG(1) << "K is " << frame.K;
 
+            }
       }
 
 

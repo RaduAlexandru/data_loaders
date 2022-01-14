@@ -439,7 +439,7 @@ def test_llff():
             Gui.show(frame.rgb_32f, "rgb")
 
             # print("frame k is ", frame.K)
-            frustum_mesh=frame.create_frustum_mesh(0.02)
+            frustum_mesh=frame.create_frustum_mesh(0.001)
             frustum_mesh.m_vis.m_line_width=1
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
 
@@ -623,7 +623,14 @@ def test_phenorob_cp1():
                 frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
                 frame0.load_images()
                 photoneo_mesh=frame0.assign_color(photoneo_mesh)
-            Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
+            # Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
+            #backproject depth
+            photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
+            photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
+            Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
+
+            if photoneo_frame.cam_id==2:
+                print("photoneo_frame.tf_cam_world is ", photoneo_frame.tf_cam_world.matrix())
 
 
 
@@ -654,7 +661,7 @@ def test_phenorob_cp1():
 # test_scannet()
 # test_stanford3dscene()
 # test_shapenet_img()
-test_nerf()
+# test_nerf()
 # test_pheno4d()
 # test_colmap()
 # test_easypbr()
@@ -664,4 +671,4 @@ test_nerf()
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-# test_phenorob_cp1()
+test_phenorob_cp1()

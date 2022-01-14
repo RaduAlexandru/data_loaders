@@ -3,6 +3,8 @@
 This contains various data loaders for a series of datasets:
 
 - [DeepVoxels] : Synthetic images and depth of objects captured in a dome
+- [NeRF] : Synthetic images of objects captured in a dome
+- [LLFF] : Real images of objects captures in a front-facing manner around a semi-dome
 - [ScanNet] : Point clouds of rooms with annotations for 20 classes (bed, furnite, wall, etc.)
 - [SemanticKitti] : Point clouds from a car driving in urban scenario annotated with 19 classes.
 - [ShapeNetSem] : Point clouds of various objects (airplance, motorbike) with part-based annotations
@@ -36,6 +38,9 @@ $ make
 - Nerf :
     -  https://drive.google.com/uc?id=18JxhpWD-4ZmuFKLzKlAw-w5PpzZxXOcG
     - It was used in IBRNet and the link for the google drive is from  https://github.com/googleinterns/IBRNet/blob/master/data/download_eval_data.sh
+- LLFF : 
+    - https://drive.google.com/uc?id=16VnMcF1KJYxN9QId6TClMsZRahHNMW5g
+    - It was used in IBRNet and the link for the google drive is from  https://github.com/googleinterns/IBRNet/blob/master/data/download_eval_data.sh
 
 
 
@@ -47,10 +52,12 @@ $ make
 
 
 
+   [DeepVoxels]: <https://github.com/vsitzmann/deepvoxels>
+   [NeRF]: <https://github.com/bmild/nerf>
+   [LLFF]: <https://github.com/bmild/nerf>
    [ScanNet]: <http://www.scan-net.org/>
    [SemanticKitti]: <http://semantic-kitti.org/>
    [ShapeNetSem]: <https://www.shapenet.org/>
    [VolumetricRefinement]: <http://graphics.stanford.edu/projects/vsfs/>
    [EasyPBR]: <https://github.com/RaduAlexandru/easy_pbr>
    [Pheno4D]: <TODO>
-   [DeepVoxels]: <https://github.com/vsitzmann/deepvoxels>
