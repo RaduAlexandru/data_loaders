@@ -33,6 +33,11 @@ $ make
     - It was used in IBRNet and the link for the google drive is from  https://github.com/googleinterns/IBRNet/blob/master/data/download_eval_data.sh
 - VolumetricRefinement :
     - From the paper Shading-based Refinement on Volumetric Signed Distance Functions http://graphics.stanford.edu/projects/vsfs/#data
+- Nerf :
+    -  https://drive.google.com/uc?id=18JxhpWD-4ZmuFKLzKlAw-w5PpzZxXOcG
+    - It was used in IBRNet and the link for the google drive is from  https://github.com/googleinterns/IBRNet/blob/master/data/download_eval_data.sh
+
+
 
 
 ### Misc:

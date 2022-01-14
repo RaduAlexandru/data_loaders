@@ -646,7 +646,7 @@ def test_phenorob_cp1():
 
 
 
-test_volref()
+# test_volref()
 # test_img()
 # test_img_ros()
 # test_cloud_ros()
@@ -654,7 +654,7 @@ test_volref()
 # test_scannet()
 # test_stanford3dscene()
 # test_shapenet_img()
-# test_nerf()
+test_nerf()
 # test_pheno4d()
 # test_colmap()
 # test_easypbr()

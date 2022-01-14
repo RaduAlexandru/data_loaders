@@ -174,19 +174,27 @@ void DataLoaderNerf::init_poses(){
                 tf_world_cam.matrix()(r,c) =k["transform_matrix"][r][c].number_value();
             }
         }
-        tf_world_cam.linear().col(2)=-tf_world_cam.linear().col(2); //make it look in the correct direction
+        //nerf uses a opengl system https://github.com/bmild/nerf#already-have-poses
+        //so the x is towards right, y up and z is backwards. 
+        //we need x is right y down and z towards the frame
+        tf_world_cam.linear().col(2)=-tf_world_cam.linear().col(2); //make it look in the correct direction (the z vector of the frame should point towards the image frame)
+        tf_world_cam.linear().col(1)=-tf_world_cam.linear().col(1);
+        // no need to change the intrisnics due to this flips because it's synthetic data so the principal point is always in the middle of the image
 
-        //rotate from their world to our opengl world by rotating along the x axis
-        Eigen::Affine3d tf_worldGL_worldROS;
-        tf_worldGL_worldROS.setIdentity();
-        Eigen::Matrix3d worldGL_worldROS_rot;
-        worldGL_worldROS_rot = Eigen::AngleAxisd(-0.5*M_PI, Eigen::Vector3d::UnitX());
-        tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
-        // transform_vertices_cpu(tf_worldGL_worldROS);
-        tf_world_cam=tf_worldGL_worldROS*tf_world_cam;
+        
 
 
         Eigen::Affine3d tf_cam_world=tf_world_cam.inverse();
+
+
+        //rotate the world so that we have the top fo the dome in the y direction instead of z
+        Eigen::Affine3d m_tf_worldGL_world;
+        m_tf_worldGL_world.setIdentity();
+        Eigen::Matrix3d worldGL_world_rot;
+        worldGL_world_rot = Eigen::AngleAxisd(0.5*M_PI, Eigen::Vector3d::UnitX());
+        m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
+        tf_cam_world=tf_cam_world*m_tf_worldGL_world;
+
 
 
 
