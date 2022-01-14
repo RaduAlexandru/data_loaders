@@ -137,9 +137,20 @@ void DataLoaderPhenorobCP1::init_data_reading(){
     CHECK( fs::is_directory(day_path) ) << "Day path does not exist under " << day_path;
 
 
+    //get the scans from this day
+    std::vector<fs::path> scans_vec;
+    std::copy(fs::directory_iterator(day_path), fs::directory_iterator(), std::back_inserter(scans_vec));
+    std::sort(scans_vec.begin(), scans_vec.end());
+    // for(int i=0; i<scans_vec.size(); i++){
+    //     VLOG(1) << "scan is " << scans_vec[i];
+    // }
+
+
+
     //iterate through all the scans in that day
-    for (fs::directory_iterator itr_scan(day_path); itr_scan!=fs::directory_iterator(); ++itr_scan){
-        fs::path scan_path= itr_scan->path();
+    // for (fs::directory_iterator itr_scan(day_path); itr_scan!=fs::directory_iterator(); ++itr_scan){
+        // fs::path scan_path= itr_scan->path();
+    for (const fs::path & scan_path : scans_vec){
         std::string scan_name=scan_path.filename().string();
 
         //skip the calib things 
@@ -169,9 +180,19 @@ void DataLoaderPhenorobCP1::init_data_reading(){
         // fs::path scan_path= m_dataset_path/m_scan_date/ scan_name;
         // CHECK( fs::is_directory(scan_path) ) << "Scan path does not exist under " << scan_path;
 
+
+        //get the blocks
+        std::vector<fs::path> blocks_vec;
+        std::copy(fs::directory_iterator(scan_path), fs::directory_iterator(), std::back_inserter(blocks_vec));
+        std::sort(blocks_vec.begin(), blocks_vec.end());
+
+
+
+
         // //iterate through the scan and get all the blocks
-        for (fs::directory_iterator itr(scan_path); itr!=fs::directory_iterator(); ++itr){
-            fs::path block_path= itr->path();
+        // for (fs::directory_iterator itr(scan_path); itr!=fs::directory_iterator(); ++itr){
+            // fs::path block_path= itr->path();
+        for (const fs::path & block_path : blocks_vec){
             VLOG(1) << "Block path " << block_path;
 
             //load the paths for this block
@@ -182,10 +203,16 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                 // VLOG(1) << "block_name " << block_name;
                 block->m_name=block_name;
 
+
+                //get the cams
+                std::vector<fs::path> cams_vec;
+                std::copy(fs::directory_iterator(block_path), fs::directory_iterator(), std::back_inserter(cams_vec));
+                std::sort(cams_vec.begin(), cams_vec.end());
+
                 //iterate through the block and get the paths of the images and the photoneo
-                for (fs::directory_iterator itr_blk(block_path); itr_blk!=fs::directory_iterator(); ++itr_blk){
-                    // VLOG(1) << "inside block" << itr_blk->path(); 
-                    fs::path inside_blk=itr_blk->path();
+                // for (fs::directory_iterator itr_blk(block_path); itr_blk!=fs::directory_iterator(); ++itr_blk){
+                    // fs::path inside_blk=itr_blk->path();
+                for (const fs::path & inside_blk : cams_vec){
                     if(radu::utils::contains( inside_blk.string(), "nikon" ) ){
 
                         // VLOG(1) << "inside_blk " << inside_blk;
