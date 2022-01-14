@@ -409,7 +409,7 @@ def test_deep_voxels():
             Gui.show(frame.rgb_32f, "rgb")
 
 
-            frustum_mesh=frame.create_frustum_mesh(0.02)
+            frustum_mesh=frame.create_frustum_mesh(0.01)
             frustum_mesh.m_vis.m_line_width=1
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
 
@@ -569,20 +569,20 @@ def test_phenorob_cp1():
                         
                         #if this is the camera on the top fo robot, we need to rotate them to create a stereo pair, rotate the left frame 90 degrees and the right one 270
                         if frame.cam_id==13:
-                            print("rot")
+                            print("rotating top cameras")
                             frame=frame.rotate_clockwise_90()
                             frame_right=frame_right.rotate_clockwise_90()
                             frame_right=frame_right.rotate_clockwise_90()
                             frame_right=frame_right.rotate_clockwise_90()
                             frame.set_right_stereo_pair(frame_right)
-                            #TODO fix this
                             # #show the frames
-                            # frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
-                            # frustum_mesh.m_vis.m_line_width=1
-                            # Scene.show(frustum_mesh, "frustumleft" )
-                            # frustum_mesh=frame_right.create_frustum_mesh(0.05, True, 256)
-                            # frustum_mesh.m_vis.m_line_width=1
-                            # Scene.show(frustum_mesh, "frustumright" )
+                            frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
+                            frustum_mesh.m_vis.m_line_width=1
+                            Scene.show(frustum_mesh, "frustumleft" )
+                            frustum_mesh=frame_right.create_frustum_mesh(0.05, True, 256)
+                            frustum_mesh.m_vis.m_line_width=1
+                            Scene.show(frustum_mesh, "frustumright" )
+                            # TODO currently someone bumped their head into the top camera because the images don't look the same as when it was calibrated
 
 
                         #show the left and right camera images                           
@@ -593,15 +593,19 @@ def test_phenorob_cp1():
                         frame_left_rectified=pair[0]
                         frame_right_rectified=pair[1]
                         baseline=pair[2]
+                        Q=pair[3]
                         Gui.show(frame_left_rectified.rgb_32f, str(frame.cam_id)+"_rectleft", frame_right_rectified.rgb_32f, str(frame_right.cam_id)+"_rectright")
                         print("baseline is ", baseline)
+                        # print("Q is ",Q)
 
-                        #FOR MALTE-------------------------------------------------------------------------------------------------
-                        # tf_cam_world=frame_left_rectified.tf_cam_world.matrix() #its and numyp array so you can just dump it to np file is needed                        
-                        # K=frame_left_rectified.K
-                        # rgb_mat=frame_left_rectified.rgb_8u 
-                        # rgb_mat.to_file("./img.png")
-                        #for 
+
+                        # #Show the rectified frame for the top one
+                        # if frame.cam_id==13:
+                        #     frustum_mesh=frame_left_rectified.create_frustum_mesh(0.05, True, 256)
+                        #     Scene.show(frustum_mesh, "rect_fr_left" )
+                        #     frustum_mesh=frame_right_rectified.create_frustum_mesh(0.05, True, 256)
+                        #     Scene.show(frustum_mesh, "rect_fr_right" )
+
 
 
 
@@ -656,8 +660,8 @@ def test_phenorob_cp1():
 # test_easypbr()
 # test_srn()
 # test_dtu()
-# test_deep_voxels()
+test_deep_voxels()
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-test_phenorob_cp1()
+# test_phenorob_cp1()

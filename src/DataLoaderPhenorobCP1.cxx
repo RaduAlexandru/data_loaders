@@ -143,7 +143,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
         std::string scan_name=scan_path.filename().string();
 
         //skip the calib things 
-        if (radu::utils::contains(scan_name, "calib") ){
+        if (radu::utils::contains(scan_name, "calib") or radu::utils::contains(scan_name, "txt") or radu::utils::contains(scan_name, "extrinsics") ){
             continue;
         }
 

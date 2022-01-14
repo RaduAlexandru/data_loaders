@@ -178,10 +178,11 @@ void DataLoaderDeepVoxels::init_poses(){
 
         Eigen::Affine3d tf_cam_world=tf_world_cam.inverse();
 
-        //flip
+        //flip the world y
         Eigen::DiagonalMatrix<double, 4> diag;
         diag.diagonal() <<1, -1, 1, 1;
-        tf_cam_world.matrix()=diag*tf_cam_world.matrix()*diag;
+        // tf_cam_world.matrix()=diag*tf_cam_world.matrix()*diag;
+        tf_cam_world.matrix()=tf_cam_world.matrix()*diag;
 
         m_filename2pose[pose_basename]=tf_cam_world; //we want to store here the transrom from world to cam so the tf_cam_world
 
