@@ -297,7 +297,7 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
     // frame_depth.tf_cam_world=tf_world_cam.cast<float>();
 
     //for some reason the y is flipped so we unflip it
-    tf_world_cam.linear().col(1)=-tf_world_cam.linear().col(1);
+    // tf_world_cam.linear().col(1)=-tf_world_cam.linear().col(1);
 
     Eigen::Affine3d m_tf_worldGL_world;
     m_tf_worldGL_world.setIdentity();
@@ -307,11 +307,20 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
     frame_color.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam
     frame_depth.tf_cam_world= tf_world_cam.cast<float>().inverse() * m_tf_worldGL_world.cast<float>().inverse(); //from worldgl to world ros, from world ros to cam
 
+   
     //assign K matrix
-    frame_color.K=m_K_color.cast<float>()/m_rgb_subsample_factor;
-    frame_depth.K=m_K_depth.cast<float>()/m_depth_subsample_factor;
-    frame_color.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
-    frame_depth.K(2,2)=1.0;
+    // frame_color.K=m_K_color.cast<float>()/m_rgb_subsample_factor;
+    // frame_depth.K=m_K_depth.cast<float>()/m_depth_subsample_factor;
+    // frame_color.K(2,2)=1.0; //dividing by 2,4,8 etc depending on the subsample shouldn't affect the coordinate in the last row and last column which is always 1.0
+    // frame_depth.K(2,2)=1.0;
+    frame_color.K=m_K_color.cast<float>();
+    frame_depth.K=m_K_depth.cast<float>();
+    if(m_rgb_subsample_factor>1){
+        frame_color.rescale_K(1.0/m_rgb_subsample_factor);
+    }
+    if(m_depth_subsample_factor>1){
+        frame_depth.rescale_K(1.0/m_depth_subsample_factor);
+    }
 
     //if the depth and the rgb have the same size then we can use the depth to compute a mask for the rgb part
     if (frame_color.rgb_32f.size == frame_depth.depth.size){

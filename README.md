@@ -2,6 +2,7 @@
 
 This contains various data loaders for a series of datasets:
 
+- [DeepVoxels] : Synthetic images and depth of objects captured in a dome
 - [ScanNet] : Point clouds of rooms with annotations for 20 classes (bed, furnite, wall, etc.)
 - [SemanticKitti] : Point clouds from a car driving in urban scenario annotated with 19 classes.
 - [ShapeNetSem] : Point clouds of various objects (airplance, motorbike) with part-based annotations
@@ -18,13 +19,26 @@ $ git clone --recursive https://github.com/RaduAlexandru/data_loaders
 $ cd data_loaders
 $ make
 ```
-Optionally, if you have Robot Operating System (ROS), you can clone data_loaders in your catkin workspace and you will ahve access to dataloaders for ROS bags and ROS topics.
+Optionally, if you have Robot Operating System (ROS), you can clone data_loaders in your catkin workspace and you will have access to dataloaders for ROS bags and ROS topics.
 ```sh
 $ cd YOUR_ROS_WORKSPACE/src
 $ git clone --recursive https://github.com/RaduAlexandru/data_loaders
 $ cd data_loaders
 $ make
 ```
+
+### Links:
+- DeepVoxels : 
+    - https://drive.google.com/uc?id=1lUvJWB6oFtT8EQ_NzBrXnmi25BufxRfl 
+    - It was used in IBRNet and the link for the google drive is from  https://github.com/googleinterns/IBRNet/blob/master/data/download_eval_data.sh
+- VolumetricRefinement :
+    - From the paper Shading-based Refinement on Volumetric Signed Distance Functions http://graphics.stanford.edu/projects/vsfs/#data
+
+
+### Misc:
+    This code uses an "OpenCV" style camera coordinate system, where the Y-axis points downwards (the up-vector points in the negative Y-direction), the X-axis points right, and the Z-axis points into the image plane.
+ 
+
 
 
 
@@ -34,3 +48,4 @@ $ make
    [VolumetricRefinement]: <http://graphics.stanford.edu/projects/vsfs/>
    [EasyPBR]: <https://github.com/RaduAlexandru/easy_pbr>
    [Pheno4D]: <TODO>
+   [DeepVoxels]: <https://github.com/vsitzmann/deepvoxels>
