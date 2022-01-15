@@ -623,11 +623,11 @@ def test_phenorob_cp1():
                 frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
                 frame0.load_images()
                 photoneo_mesh=frame0.assign_color(photoneo_mesh)
-            # Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
+            Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
             #backproject depth
-            photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
-            photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
-            Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
+            # photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
+            # photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
+            # Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
 
             if photoneo_frame.cam_id==2:
                 print("photoneo_frame.tf_cam_world is ", photoneo_frame.tf_cam_world.matrix())
@@ -668,7 +668,7 @@ def test_phenorob_cp1():
 # test_srn()
 # test_dtu()
 # test_deep_voxels()
-# test_llff()
+test_llff()
 # test_blender_fb()
 # test_usc_hair()
-test_phenorob_cp1()
+# test_phenorob_cp1()

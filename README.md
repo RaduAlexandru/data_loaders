@@ -54,7 +54,7 @@ $ make
 
    [DeepVoxels]: <https://github.com/vsitzmann/deepvoxels>
    [NeRF]: <https://github.com/bmild/nerf>
-   [LLFF]: <https://github.com/bmild/nerf>
+   [LLFF]: <https://github.com/Fyusion/LLFF>
    [ScanNet]: <http://www.scan-net.org/>
    [SemanticKitti]: <http://semantic-kitti.org/>
    [ShapeNetSem]: <https://www.shapenet.org/>

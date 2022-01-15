@@ -295,7 +295,7 @@ void DataLoaderLLFF::read_data(){
         //so the x is towards right, y up and z is backwards. 
         //we need x is right y down and z towards the frame
         tf_world_cam.linear().col(2)=-tf_world_cam.linear().col(2); //make it look in the correct direction (the z vector of the frame should point towards the image frame)
-        tf_world_cam.linear().col(1)=-tf_world_cam.linear().col(1);
+        // tf_world_cam.linear().col(1)=-tf_world_cam.linear().col(1);
         tf_cam_world=tf_world_cam.inverse();
         //since we flip y we also need to change the cy intrinsic
 
@@ -308,7 +308,8 @@ void DataLoaderLLFF::read_data(){
         // m_tf_worldGL_world.matrix().block<3,3>(0,0)=worldGL_world_rot;
         // tf_cam_world=tf_cam_world*m_tf_worldGL_world;
 
-        // tf_cam_world.linear().col(1) = -tf_cam_world.linear().col(1);
+        //flip the world upside down
+        tf_cam_world.linear().col(1) = -tf_cam_world.linear().col(1);
 
 
 
@@ -406,7 +407,7 @@ void DataLoaderLLFF::read_data(){
 
                 //since we flipped the pose y axis (from y pointing up like opengl to y pointing down like opencv), we need to also change cy
                 //the y principal point needs to be flipped because it actually measures the distance from the bottom but we measure the distance from the top
-                frame.K(1,2) = frame.height - frame.K(1,2);
+                // frame.K(1,2) = frame.height - frame.K(1,2);
 
                 //   VLOG(1) << "K is " << frame.K;
 
