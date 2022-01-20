@@ -158,9 +158,9 @@ void DataLoaderVolRef::init_data_reading(){
     if(m_shuffle){
         unsigned seed = m_nr_resets;
         auto rng = std::default_random_engine(seed);
-        std::shuffle(std::begin(samples_filenames_all), std::end(samples_filenames_all), rng);
+        std::shuffle(std::begin(m_samples_filenames), std::end(m_samples_filenames), rng);
     }else{
-        std::sort(samples_filenames_all.begin(), samples_filenames_all.end());
+        std::sort(m_samples_filenames.begin(), m_samples_filenames.end());
     }
 
 

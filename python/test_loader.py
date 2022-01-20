@@ -653,7 +653,7 @@ def test_phenorob_cp1():
 
 
 
-# test_volref()
+test_volref()
 # test_img()
 # test_img_ros()
 # test_cloud_ros()
@@ -668,7 +668,7 @@ def test_phenorob_cp1():
 # test_srn()
 # test_dtu()
 # test_deep_voxels()
-test_llff()
+# test_llff()
 # test_blender_fb()
 # test_usc_hair()
 # test_phenorob_cp1()
