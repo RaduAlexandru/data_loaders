@@ -213,6 +213,7 @@ void DataLoaderNerf::read_data(){
 
         fs::path img_path=m_imgs_paths[i];
         // VLOG(1) << "reading " << img_path;
+        frame.rgb_path=img_path.string();
 
         //get the idx
         std::string filename=img_path.stem().string();
