@@ -433,7 +433,8 @@ def test_llff():
 
             # print("got frame")
             frame=loader.get_next_frame()
-            # print("loaded frame with width and height ", frame.width, " ", frame.height)
+            print("loaded frame with width and height ", frame.width, " ", frame.height)
+            print("frame k is ", frame.K)
 
 
             Gui.show(frame.rgb_32f, "rgb")
@@ -653,7 +654,7 @@ def test_phenorob_cp1():
 
 
 
-test_volref()
+# test_volref()
 # test_img()
 # test_img_ros()
 # test_cloud_ros()
@@ -668,7 +669,7 @@ test_volref()
 # test_srn()
 # test_dtu()
 # test_deep_voxels()
-# test_llff()
+test_llff()
 # test_blender_fb()
 # test_usc_hair()
 # test_phenorob_cp1()

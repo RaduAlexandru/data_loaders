@@ -31,6 +31,7 @@ public:
     easy_pbr::Frame get_color_frame();
     easy_pbr::Frame get_depth_frame();
     easy_pbr::Frame get_frame_at_idx( const int idx); //convenience function so that it has the same API as the other loaders. WARNING returns only the color frame
+    easy_pbr::Frame get_depth_frame_at_idx( const int idx); //convenience function so that it has the same API as the other loaders. WARNING returns only the color frame
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing

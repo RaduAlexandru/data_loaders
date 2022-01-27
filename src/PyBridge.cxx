@@ -90,6 +90,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def(py::init<const std::string>())
     .def("start", &DataLoaderVolRef::start )
     .def("get_frame_at_idx", &DataLoaderVolRef::get_frame_at_idx )
+    .def("get_depth_frame_at_idx", &DataLoaderVolRef::get_depth_frame_at_idx )
     .def("get_color_frame", &DataLoaderVolRef::get_color_frame )
     .def("get_depth_frame", &DataLoaderVolRef::get_depth_frame )
     .def("has_data", &DataLoaderVolRef::has_data )
