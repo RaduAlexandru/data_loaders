@@ -203,6 +203,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished", &DataLoaderNerf::is_finished )
     .def("reset", &DataLoaderNerf::reset )
     .def("nr_samples", &DataLoaderNerf::nr_samples )
+    .def("subsample_factor", &DataLoaderNerf::subsample_factor )
     .def("set_mode_train", &DataLoaderNerf::set_mode_train )
     .def("set_mode_test", &DataLoaderNerf::set_mode_test )
     .def("set_mode_validation", &DataLoaderNerf::set_mode_validation )

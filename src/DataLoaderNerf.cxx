@@ -522,6 +522,10 @@ int DataLoaderNerf::nr_samples(){
     return m_frames.size();
 }
 
+int DataLoaderNerf::subsample_factor(){
+    return m_subsample_factor;
+}
+
 bool DataLoaderNerf::has_data(){
     return true; //we always have data since the loader stores all the image in memory and keeps them there
 }

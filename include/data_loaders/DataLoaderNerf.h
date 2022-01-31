@@ -48,6 +48,7 @@ public:
     bool has_data(); //will reeturn always true because this dataloader preloads all the frames and keeps them in memory all the time. They are not so many
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
+    int subsample_factor();
     bool is_finished(); //check if we finished reading all the images from the scene
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
