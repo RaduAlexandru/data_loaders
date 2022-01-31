@@ -109,9 +109,14 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
 
     m_dataset_path = (std::string)loader_config["dataset_path"];   
     m_scan_date = (std::string)loader_config["scan_date"];   
-    m_dataset_type = (std::string)loader_config["dataset_type"];   
-    // m_scan_idx = loader_config["scan_idx"];   
-    // m_pose_file_path = (std::string)loader_config["pose_file_path"];    //get the path where all the off files are
+    std::string dataset_type = (std::string)loader_config["dataset_type"];   
+    if (dataset_type=="raw"){
+        m_dataset_type=PHCP1DatasetType::Raw;
+    }else if(dataset_type=="processed"){
+        m_dataset_type=PHCP1DatasetType::Processed;
+    }else{
+        LOG(FATAL) << "Dataset type not known " << dataset_type;
+    }
 
 
 }
@@ -159,11 +164,11 @@ void DataLoaderPhenorobCP1::init_data_reading(){
         }
 
         //get either the raw one or the processed version of this scan
-        if (m_dataset_type=="raw"){
+        if (m_dataset_type==+PHCP1DatasetType::Raw){
             if (  radu::utils::contains(scan_name, "processed") ){
                 continue; //skip all the scan that DO have the word processed
             }
-        }else if(m_dataset_type=="processed"){
+        }else if(m_dataset_type==+PHCP1DatasetType::Processed){
             if ( ! radu::utils::contains(scan_name, "processed") ){
                 continue; //skip all the scan that don't have the word processed
             }
@@ -277,9 +282,9 @@ void DataLoaderPhenorobCP1::init_poses(){
 
     // std::string rgb_pose_file="/media/rosu/Data/data/phenorob/days_on_field/2021_05_20_incomplete_just_9/rgb_calib/camchain-.img.yaml";
     // m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
-    if (m_dataset_type=="raw"){
+    if (m_dataset_type==+PHCP1DatasetType::Raw){
         m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
-    }else if(m_dataset_type=="processed"){
+    }else if(m_dataset_type==+PHCP1DatasetType::Processed){
         m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib_processed/camchain-.img.yaml").string();
     }
 
@@ -411,7 +416,7 @@ void DataLoaderPhenorobCP1::init_poses(){
             block->m_photoneo_frame.rescale_K(1.0/m_photoneo_subsample_factor);
 
             //extrinsics
-            if (m_dataset_type=="processed"){
+            if (m_dataset_type==+PHCP1DatasetType::Processed){
                 std::string pose_file_path=(m_dataset_path/m_scan_date/"photoneo_extrinsics"/("pose_xyzquat_photoneo_world_"+std::to_string(blk_idx)+".txt")  ).string();
                 std::string pose_file_string=radu::utils::file_to_string(pose_file_path);
                 std::vector<std::string> pose_tokens=radu::utils::split(pose_file_string, " ");

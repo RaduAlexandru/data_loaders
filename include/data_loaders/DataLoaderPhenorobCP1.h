@@ -20,6 +20,13 @@
 #include "easy_pbr/Frame.h"
 
 
+//better enums
+#include <enum.h>
+
+BETTER_ENUM(PHCP1DatasetType, int, Raw = 0, Processed )
+
+
+
 
 namespace radu { namespace utils{
     class RandGenerator;
@@ -122,7 +129,8 @@ private:
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     boost::filesystem::path m_dataset_path;  //get the path where all the the scans are
     boost::filesystem::path m_scan_date; //the date of the scan
-    std::string m_dataset_type;
+    // std::string m_dataset_type;
+    PHCP1DatasetType m_dataset_type=PHCP1DatasetType::Raw;
     // int m_scan_idx;  //the idx of the scan that was made on a certain date
     // std::thread m_loader_thread;
     int m_nr_resets;
