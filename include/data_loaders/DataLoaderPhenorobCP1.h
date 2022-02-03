@@ -54,6 +54,7 @@ class PRCP1Block : public std::enable_shared_from_this<PRCP1Block> {
         std::unordered_map<int, std::shared_ptr<easy_pbr::Frame> > m_rgb_frames; //the idx is the cam_id
         std::string m_photoneo_cfg_file_path; //is the path of the cfg file of the photoneo which contains the intrinsics and so one
         std::string m_name;
+        boost::filesystem::path m_path;
 } ;
 //class that contains a full scan of a plant, so all N blocks
 class PRCP1Scan : public std::enable_shared_from_this<PRCP1Scan> {
@@ -64,6 +65,7 @@ class PRCP1Scan : public std::enable_shared_from_this<PRCP1Scan> {
 
         std::vector<  std::shared_ptr<PRCP1Block>  > m_blocks;
         std::string m_name;
+        boost::filesystem::path m_path;
 };
 
 
@@ -103,7 +105,9 @@ private:
 
     void init_params(const std::string config_file);
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
-    void init_poses(); //rad the pose json file and fills m_filename2pose
+    void init_poses_kalibr(); //rad the pose json file for poses and sets the poses for the nikons and photoneos
+    void init_intrinsics_and_poses_krt(); //init poses and intrinsics from a krt format and set them for all the nikons
+    void init_intrinsics_kalibr(); //rad the pose json file and sets the intrinsics for the nikon 
     void init_stereo_pairs();
     void read_data(); //a scene (depending on the mode) and all the images contaned in it together with the poses and so on
     void load_images_in_frame(easy_pbr::Frame& frame);
@@ -131,6 +135,8 @@ private:
     boost::filesystem::path m_scan_date; //the date of the scan
     // std::string m_dataset_type;
     PHCP1DatasetType m_dataset_type=PHCP1DatasetType::Raw;
+    bool m_load_poses;
+    bool m_load_intrinsics;
     // int m_scan_idx;  //the idx of the scan that was made on a certain date
     // std::thread m_loader_thread;
     int m_nr_resets;

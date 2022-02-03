@@ -568,36 +568,35 @@ def test_phenorob_cp1():
                             frame_right.load_images()
 
                         
-                        #if this is the camera on the top fo robot, we need to rotate them to create a stereo pair, rotate the left frame 90 degrees and the right one 270
-                        if frame.cam_id==13:
-                            print("rotating top cameras")
-                            frame=frame.rotate_clockwise_90()
-                            frame_right=frame_right.rotate_clockwise_90()
-                            frame_right=frame_right.rotate_clockwise_90()
-                            frame_right=frame_right.rotate_clockwise_90()
-                            frame.set_right_stereo_pair(frame_right)
-                            # #show the frames
-                            frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
-                            frustum_mesh.m_vis.m_line_width=1
-                            Scene.show(frustum_mesh, "frustumleft" )
-                            frustum_mesh=frame_right.create_frustum_mesh(0.05, True, 256)
-                            frustum_mesh.m_vis.m_line_width=1
-                            Scene.show(frustum_mesh, "frustumright" )
-                            # TODO currently someone bumped their head into the top camera because the images don't look the same as when it was calibrated
+                        # #if this is the camera on the top fo robot, we need to rotate them to create a stereo pair, rotate the left frame 90 degrees and the right one 270
+                        # if frame.cam_id==13:
+                        #     print("rotating top cameras")
+                        #     frame=frame.rotate_clockwise_90()
+                        #     frame_right=frame_right.rotate_clockwise_90()
+                        #     frame_right=frame_right.rotate_clockwise_90()
+                        #     frame_right=frame_right.rotate_clockwise_90()
+                        #     frame.set_right_stereo_pair(frame_right)
+                        #     # #show the frames
+                        #     frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
+                        #     frustum_mesh.m_vis.m_line_width=1
+                        #     Scene.show(frustum_mesh, "frustumleft" )
+                        #     frustum_mesh=frame_right.create_frustum_mesh(0.05, True, 256)
+                        #     frustum_mesh.m_vis.m_line_width=1
+                        #     Scene.show(frustum_mesh, "frustumright" )
+                        #     # TODO currently someone bumped their head into the top camera because the images don't look the same as when it was calibrated
 
 
                         #show the left and right camera images                           
-                        Gui.show(frame.rgb_32f, str(frame.cam_id)+"_left", frame_right.rgb_32f, str(frame_right.cam_id)+"_right")
+                        # Gui.show(frame.rgb_32f, str(frame.cam_id)+"_left", frame_right.rgb_32f, str(frame_right.cam_id)+"_right")
                         
                         #rectify
-                        pair=frame.rectify_stereo_pair(0)
-                        frame_left_rectified=pair[0]
-                        frame_right_rectified=pair[1]
-                        baseline=pair[2]
-                        Q=pair[3]
-                        Gui.show(frame_left_rectified.rgb_32f, str(frame.cam_id)+"_rectleft", frame_right_rectified.rgb_32f, str(frame_right.cam_id)+"_rectright")
-                        print("baseline is ", baseline)
-                        # print("Q is ",Q)
+                        # pair=frame.rectify_stereo_pair(0)
+                        # frame_left_rectified=pair[0]
+                        # frame_right_rectified=pair[1]
+                        # baseline=pair[2]
+                        # Q=pair[3]
+                        # Gui.show(frame_left_rectified.rgb_32f, str(frame.cam_id)+"_rectleft", frame_right_rectified.rgb_32f, str(frame_right.cam_id)+"_rectright")
+                        # print("baseline is ", baseline)
 
 
                         # #Show the rectified frame for the top one
@@ -611,43 +610,32 @@ def test_phenorob_cp1():
 
 
             #load the photoneo frame from this block
-            photoneo_frame=block.get_photoneo_frame()
-            photoneo_frame.load_images()
-            frustum_mesh=photoneo_frame.create_frustum_mesh(0.05, True, 256)
-            frustum_mesh.m_vis.m_line_width=1
-            Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
-            #load photoneo cloud
-            photoneo_mesh=block.get_photoneo_mesh()
-            photoneo_mesh.load_from_file(photoneo_mesh.m_disk_path)
-            #color the first cloud
-            if b_idx==0:
-                frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
-                frame0.load_images()
-                photoneo_mesh=frame0.assign_color(photoneo_mesh)
-            Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
+            # photoneo_frame=block.get_photoneo_frame()
+            # photoneo_frame.load_images()
+            # frustum_mesh=photoneo_frame.create_frustum_mesh(0.05, True, 256)
+            # frustum_mesh.m_vis.m_line_width=1
+            # Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
+            # #load photoneo cloud
+            # photoneo_mesh=block.get_photoneo_mesh()
+            # photoneo_mesh.load_from_file(photoneo_mesh.m_disk_path)
+            # #color the first cloud
+            # if b_idx==0:
+            #     frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
+            #     frame0.load_images()
+            #     photoneo_mesh=frame0.assign_color(photoneo_mesh)
+            # Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
             #backproject depth
             # photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
             # photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
             # Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
 
-            if photoneo_frame.cam_id==2:
-                print("photoneo_frame.tf_cam_world is ", photoneo_frame.tf_cam_world.matrix())
 
 
 
-    # # line_p0=frame0.pos_in_world().astype(np.float64)
-    # # line_p1=frame0.unproject(3083, 986, 1.0) #4132.291660151611, 2813.56775866408
-    # # line=Mesh()
-    # # line.create_line_strip_from_points([line_p0, line_p1])
-    # # Scene.show(line, "line")
-    # # epipolar_image=frame1.draw_projected_line(line_p0, line_p1, 1)
-    # # Gui.show(epipolar_image, "epipolar_image")
 
 
     while True:
         # view.m_camera.from_frame(frame1, True)
-
-
 
         view.update()
 
@@ -662,7 +650,7 @@ def test_phenorob_cp1():
 # test_scannet()
 # test_stanford3dscene()
 # test_shapenet_img()
-test_nerf()
+# test_nerf()
 # test_pheno4d()
 # test_colmap()
 # test_easypbr()
@@ -672,4 +660,4 @@ test_nerf()
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-# test_phenorob_cp1()
+test_phenorob_cp1()

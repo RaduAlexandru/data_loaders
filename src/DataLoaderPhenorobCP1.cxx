@@ -117,13 +117,22 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     }else{
         LOG(FATAL) << "Dataset type not known " << dataset_type;
     }
+    m_load_poses=loader_config["load_poses"];   
+    m_load_intrinsics=loader_config["load_intrinsics"];   
 
 
 }
 
 void DataLoaderPhenorobCP1::start(){
     init_data_reading();
-    init_poses();
+    if (m_load_poses){
+        // init_poses();
+        init_intrinsics_and_poses_krt();
+    }
+    if (m_load_intrinsics){
+        // init_intrinsics();
+        init_intrinsics_and_poses_krt();
+    }
     init_stereo_pairs();
     read_data();
 }
@@ -153,8 +162,6 @@ void DataLoaderPhenorobCP1::init_data_reading(){
 
 
     //iterate through all the scans in that day
-    // for (fs::directory_iterator itr_scan(day_path); itr_scan!=fs::directory_iterator(); ++itr_scan){
-        // fs::path scan_path= itr_scan->path();
     for (const fs::path & scan_path : scans_vec){
         std::string scan_name=scan_path.filename().string();
 
@@ -180,10 +187,9 @@ void DataLoaderPhenorobCP1::init_data_reading(){
         VLOG(1) << "scan_name is " << scan_name;
         std::shared_ptr<PRCP1Scan> scan= std::make_shared<PRCP1Scan>();;
         scan->m_name=scan_name;
+        scan->m_path=scan_path;
 
 
-        // fs::path scan_path= m_dataset_path/m_scan_date/ scan_name;
-        // CHECK( fs::is_directory(scan_path) ) << "Scan path does not exist under " << scan_path;
 
 
         //get the blocks
@@ -195,8 +201,6 @@ void DataLoaderPhenorobCP1::init_data_reading(){
 
 
         // //iterate through the scan and get all the blocks
-        // for (fs::directory_iterator itr(scan_path); itr!=fs::directory_iterator(); ++itr){
-            // fs::path block_path= itr->path();
         for (const fs::path & block_path : blocks_vec){
             VLOG(1) << "Block path " << block_path;
 
@@ -205,59 +209,103 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                 //create a block 
                 std::shared_ptr<PRCP1Block> block= std::make_shared<PRCP1Block>();
                 std::string block_name=block_path.filename().string();
-                // VLOG(1) << "block_name " << block_name;
                 block->m_name=block_name;
+                block->m_path=block_path;
+
+                //get the block_nr
+                std::vector<std::string> block_tokens=radu::utils::split(block_name, "_");
+                CHECK(block_tokens.size()==2) <<"We should have 2 tokens for the blocks";
+                int block_nr=std::stoi(block_tokens[1]);
 
 
-                //get the cams
-                std::vector<fs::path> cams_vec;
-                std::copy(fs::directory_iterator(block_path), fs::directory_iterator(), std::back_inserter(cams_vec));
-                std::sort(cams_vec.begin(), cams_vec.end());
 
-                //iterate through the block and get the paths of the images and the photoneo
-                // for (fs::directory_iterator itr_blk(block_path); itr_blk!=fs::directory_iterator(); ++itr_blk){
-                    // fs::path inside_blk=itr_blk->path();
-                for (const fs::path & inside_blk : cams_vec){
-                    if(radu::utils::contains( inside_blk.string(), "nikon" ) ){
+                // //get the photoneo for this block
+                fs::path photoneo_path=block_path/("photoneo_"+std::to_string(block_nr));
+                if (fs::is_directory(photoneo_path) ){
+                    //mesh
+                    easy_pbr::MeshSharedPtr mesh= Mesh::create();
+                    mesh->m_disk_path=(photoneo_path/"cloud.pcd").string();
+                    block->m_photoneo_mesh=mesh;
+                    //frame
+                    Frame new_photoneo_frame;
+                    new_photoneo_frame.rgb_path= (photoneo_path/"texture.jpeg").string();
+                    new_photoneo_frame.depth_path= (photoneo_path/"depth.exr").string();
+                    new_photoneo_frame.add_extra_field("is_photoneo", true);
+                    //get the name of this frame which will be something like nikon_x
+                    std::string frame_name=photoneo_path.filename().string();
+                    new_photoneo_frame.m_name=frame_name;
+                    new_photoneo_frame.cam_id=block_nr;
+                    VLOG(1) << "Loaded photoneo with cam_id" << new_photoneo_frame.cam_id << " with depth " << new_photoneo_frame.depth_path;
+                    //add it to the block
+                    block->m_photoneo_frame=new_photoneo_frame;
+                    block->m_photoneo_cfg_file_path= (photoneo_path/"info.cfg").string();
+                }
 
-                        // VLOG(1) << "inside_blk " << inside_blk;
+
+                //get the nikon cameras. if we are loading from a RAW dataset, then the nikon are in block_x/nikon_y/ if we are loading from processed it is in block_x/nikons_subsample_y
+                if (m_dataset_type==+PHCP1DatasetType::Raw){
+
+                    //get the raw nikon cams
+                    std::vector<fs::path> cams_vec;
+                    std::copy(fs::directory_iterator(block_path), fs::directory_iterator(), std::back_inserter(cams_vec));
+                    std::sort(cams_vec.begin(), cams_vec.end());
+
+                    //iterate through the block and get the paths of the images and the photoneo
+                    for (const fs::path & rgb_cam_path : cams_vec){
+                        if(radu::utils::contains( rgb_cam_path.filename().string(), "nikon" ) ){
+
+                            std::shared_ptr<Frame> new_rgb_frame= std::make_shared<easy_pbr::Frame>();
+                            new_rgb_frame->rgb_path= (rgb_cam_path/"img.jpeg").string();
+
+                            //get the name of this frame which will be something like nikon_x
+                            std::string frame_name=rgb_cam_path.filename().string();
+                            new_rgb_frame->m_name=frame_name;
+
+                            //get cam id 
+                            std::string filename=fs::path(new_rgb_frame->rgb_path).parent_path().filename().string();
+                            std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
+                            CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
+                            new_rgb_frame->cam_id= std::stoi(filename_tokens[1]);
+                            //push
+                            block->m_rgb_frames[new_rgb_frame->cam_id]=new_rgb_frame;
+                        }
+                    }
+
+                }else if(m_dataset_type==+PHCP1DatasetType::Processed){
+                    //choose nikon_folder depending on the subsample
+                    fs::path rgb_cam_path;
+                    if (m_rgb_subsample_factor==1){
+                        rgb_cam_path=block_path/"nikons";
+                    }else{
+                        rgb_cam_path=block_path/("nikons_subsample_"+std::to_string( (int)m_rgb_subsample_factor ) );
+                    }
+
+                    CHECK(fs::is_directory(rgb_cam_path)) << "Path for the rgb cams does nto exist, check if the subsample is not too large " << rgb_cam_path; 
 
 
+                    //get the processed nikon cams
+                    std::vector<fs::path> imgs_vec;
+                    std::copy(fs::directory_iterator(rgb_cam_path), fs::directory_iterator(), std::back_inserter(imgs_vec));
+                    std::sort(imgs_vec.begin(), imgs_vec.end());
+
+                    for (const fs::path & rgb_img_path : imgs_vec){
                         std::shared_ptr<Frame> new_rgb_frame= std::make_shared<easy_pbr::Frame>();
-                        new_rgb_frame->rgb_path= (inside_blk/"img.jpeg").string();
+                        new_rgb_frame->rgb_path= rgb_img_path.string();
 
                         //get the name of this frame which will be something like nikon_x
-                        std::string frame_name=inside_blk.filename().string();
+                        std::string frame_name=rgb_img_path.filename().string();
                         new_rgb_frame->m_name=frame_name;
 
                         //get cam id 
-                        std::string filename=fs::path(new_rgb_frame->rgb_path).parent_path().filename().string();
-                        std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
-                        CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
-                        new_rgb_frame->cam_id= std::stoi(filename_tokens[1]);
+                        std::string filename=rgb_img_path.filename().string();
+                        std::vector<std::string> filename_tokens=radu::utils::split(filename, ".");
+                        CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example 0.jpeg but the filename is " << filename;
+                        new_rgb_frame->cam_id= std::stoi(filename_tokens[0]);
                         //push
-                        // block->m_rgb_frames.push_back(new_rgb_frame);
                         block->m_rgb_frames[new_rgb_frame->cam_id]=new_rgb_frame;
                     }
-                    if(radu::utils::contains( inside_blk.string(), "photoneo" ) ){
-                        //mesh
-                        easy_pbr::MeshSharedPtr mesh= Mesh::create();
-                        mesh->m_disk_path=(inside_blk/"cloud.pcd").string();
-                        block->m_photoneo_mesh=mesh;
-                        //frame
-                        Frame new_photoneo_frame;
-                        new_photoneo_frame.rgb_path= (inside_blk/"texture.jpeg").string();
-                        new_photoneo_frame.depth_path= (inside_blk/"depth.exr").string();
-                        new_photoneo_frame.add_extra_field("is_photoneo", true);
-                        //get the name of this frame which will be something like nikon_x
-                        std::string frame_name=inside_blk.filename().string();
-                        new_photoneo_frame.m_name=frame_name;
-                        new_photoneo_frame.cam_id=scan->m_blocks.size();
-                        VLOG(1) << "Loaded photoneo with cam_id" << new_photoneo_frame.cam_id << " with depth " << new_photoneo_frame.depth_path;
-                        //add it to the block
-                        block->m_photoneo_frame=new_photoneo_frame;
-                        block->m_photoneo_cfg_file_path= (inside_blk/"info.cfg").string();
-                    }
+                    
+
                 }
 
                 //finsihed block
@@ -278,7 +326,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
 
 }
 
-void DataLoaderPhenorobCP1::init_poses(){
+void DataLoaderPhenorobCP1::init_poses_kalibr(){
 
     // std::string rgb_pose_file="/media/rosu/Data/data/phenorob/days_on_field/2021_05_20_incomplete_just_9/rgb_calib/camchain-.img.yaml";
     // m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
@@ -341,57 +389,39 @@ void DataLoaderPhenorobCP1::init_poses(){
 
                 std::string cam_name= "cam"+std::to_string(cam_idx);
 
-                //get the intrinsics
-                std::vector<float> intrinsics_vec = config[cam_name]["intrinsics"].as<std::vector<float>>();
-                CHECK(intrinsics_vec.size()==4) << "Intrinsics_vec should be size of 4 but it is " << intrinsics_vec.size();
-                frame->K(0,0)=intrinsics_vec[0];
-                frame->K(1,1)=intrinsics_vec[1];
-                frame->K(0,2)=intrinsics_vec[2];
-                frame->K(1,2)=intrinsics_vec[3];
-                if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
-                    // int height=m_camidx2resolution[cam_idx].y();
-                    // frame->K(1,2) = height - frame->K(1,2);
-                }
-                // VLOG(1) << "K is " << frame.K;
-                frame->rescale_K(1.0/m_rgb_subsample_factor);
+                // //get the intrinsics
+                // std::vector<float> intrinsics_vec = config[cam_name]["intrinsics"].as<std::vector<float>>();
+                // CHECK(intrinsics_vec.size()==4) << "Intrinsics_vec should be size of 4 but it is " << intrinsics_vec.size();
+                // frame->K(0,0)=intrinsics_vec[0];
+                // frame->K(1,1)=intrinsics_vec[1];
+                // frame->K(0,2)=intrinsics_vec[2];
+                // frame->K(1,2)=intrinsics_vec[3];
+                // if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
+                //     // int height=m_camidx2resolution[cam_idx].y();
+                //     // frame->K(1,2) = height - frame->K(1,2);
+                // }
+                // // VLOG(1) << "K is " << frame.K;
+                // frame->rescale_K(1.0/m_rgb_subsample_factor);
+
+
+                // //get distorsion 
+                // std::vector<float> distorsion_vec = config[cam_name]["distortion_coeffs"].as<std::vector<float>>();
+                // CHECK(distorsion_vec.size()==4) << "distorsion_vec should be size of 4 but it is " << distorsion_vec.size();
+                // frame->distort_coeffs(0)=distorsion_vec[0];
+                // frame->distort_coeffs(1)=distorsion_vec[1];
+                // frame->distort_coeffs(2)=distorsion_vec[2];
+                // frame->distort_coeffs(3)=distorsion_vec[3];
+
 
 
                 if (m_transform_to_easypbr_world){
                     Eigen::Affine3f tf_cam_world = m_camidx2pose[cam_idx].cast<float>()*pre_rotate;
-                    // Eigen::Affine3f tf_world_cam;
-                    // tf_world_cam= tf_cam_world.inverse();
-                    //flip y locally
-                    // tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
-                    // tf_cam_world = tf_world_cam.inverse();
-
-                    // VLOG(1) << " tf_cam_world " << tf_cam_world.matrix(); 
-
-
-
-                    // //attempt 2
-                    // Eigen::Affine3f tf_cam_world = m_camidx2pose[cam_idx].cast<float>()*pre_rotate;
-                    // Eigen::Affine3f tf_world_cam;
-                    // tf_world_cam= tf_cam_world.inverse();
-                    // //flip z locally
-                    // tf_world_cam.matrix().col(2) = -tf_world_cam.matrix().col(2);
-                    
-                    // tf_cam_world = tf_world_cam.inverse();
-                    // tf_cam_world.matrix().col(2) = -tf_cam_world.matrix().col(2);
-
                     frame->tf_cam_world=tf_cam_world;
                 }else{
                     frame->tf_cam_world= m_camidx2pose[cam_idx].cast<float>();
                 }
 
-
-                //get distorsion 
-                std::vector<float> distorsion_vec = config[cam_name]["distortion_coeffs"].as<std::vector<float>>();
-                CHECK(distorsion_vec.size()==4) << "distorsion_vec should be size of 4 but it is " << distorsion_vec.size();
-                frame->distort_coeffs(0)=distorsion_vec[0];
-                frame->distort_coeffs(1)=distorsion_vec[1];
-                frame->distort_coeffs(2)=distorsion_vec[2];
-                frame->distort_coeffs(3)=distorsion_vec[3];
-
+               
 
             }
        
@@ -466,6 +496,171 @@ void DataLoaderPhenorobCP1::init_poses(){
 
 }
 
+void DataLoaderPhenorobCP1::init_intrinsics_kalibr(){
+    if (m_dataset_type==+PHCP1DatasetType::Raw){
+        m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
+    }else if(m_dataset_type==+PHCP1DatasetType::Processed){
+        m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib_processed/camchain-.img.yaml").string();
+    }
+
+    YAML::Node config = YAML::LoadFile(m_rgb_pose_file);
+    int nr_calibrated_cams=config.size();
+
+
+    //set the poses for every cam in even scan
+    for (size_t scan_idx = 0; scan_idx < m_scans.size(); scan_idx++){
+
+        //set the poses for every cam in every block
+        for (size_t blk_idx = 0; blk_idx < m_scans[scan_idx]->m_blocks.size(); blk_idx++){
+            CHECK( nr_calibrated_cams==m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size() ) << "We need calibration for each camera. We have nr calibrated cams " << nr_calibrated_cams << " but we have nr frames " << m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size();
+
+            for (size_t cam_idx = 0; cam_idx < m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size(); cam_idx++){
+                std::shared_ptr<Frame> frame=m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[cam_idx];
+
+                std::string cam_name= "cam"+std::to_string(cam_idx);
+
+                //get the intrinsics
+                std::vector<float> intrinsics_vec = config[cam_name]["intrinsics"].as<std::vector<float>>();
+                CHECK(intrinsics_vec.size()==4) << "Intrinsics_vec should be size of 4 but it is " << intrinsics_vec.size();
+                frame->K(0,0)=intrinsics_vec[0];
+                frame->K(1,1)=intrinsics_vec[1];
+                frame->K(0,2)=intrinsics_vec[2];
+                frame->K(1,2)=intrinsics_vec[3];
+                if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
+                    // int height=m_camidx2resolution[cam_idx].y();
+                    // frame->K(1,2) = height - frame->K(1,2);
+                }
+                // VLOG(1) << "K is " << frame.K;
+                frame->rescale_K(1.0/m_rgb_subsample_factor);
+
+
+                //get distorsion 
+                std::vector<float> distorsion_vec = config[cam_name]["distortion_coeffs"].as<std::vector<float>>();
+                CHECK(distorsion_vec.size()==4) << "distorsion_vec should be size of 4 but it is " << distorsion_vec.size();
+                frame->distort_coeffs(0)=distorsion_vec[0];
+                frame->distort_coeffs(1)=distorsion_vec[1];
+                frame->distort_coeffs(2)=distorsion_vec[2];
+                frame->distort_coeffs(3)=distorsion_vec[3];
+            }
+
+        }
+
+    }
+
+}
+
+void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
+    //read KRT2_maya file which has format:
+    // camera_idx (width height)
+    // intrinsics [3x3]
+    // lens distortion [1x5]
+    // extrinsics [3x4]
+
+
+    //a prerotation so as to align it a bit better to our world frame
+    Eigen::Affine3f pre_rotate;
+    pre_rotate.setIdentity();
+    Eigen::Matrix3f r = (Eigen::AngleAxisf( radu::utils::degrees2radians(m_rotation_alignment_degrees), Eigen::Vector3f::UnitX()) ).toRotationMatrix();
+    pre_rotate.linear()=r;
+
+    for (size_t scan_idx = 0; scan_idx < m_scans.size(); scan_idx++){
+        auto scan=m_scans[scan_idx];
+        for (size_t blk_idx = 0; blk_idx < scan->m_blocks.size(); blk_idx++){
+            auto block=scan->m_blocks[blk_idx];
+
+            std::unordered_map<int, Eigen::Affine3d> camidx2pose; //maps from the cam_idx of the image to the corresponding pose
+            std::unordered_map<int, Eigen::Matrix3d> camidx2intrinsics; //maps from the cam_idx of the image to the corresponding K
+
+            //for this block read the krt file
+            fs::path krt_path=block->m_path/"KRT";
+            CHECK(fs::is_regular_file(krt_path));
+
+            std::ifstream infile( krt_path.string() );
+            std::string line;
+            std::vector<std::string> tokens;
+
+            while (std::getline(infile, line)){
+
+                //skip lines which start with #
+                if (line.at(0)=='#'){
+                    continue;
+                }
+
+                tokens=split(line," ");
+                int cam_idx=std::stoi(tokens[0]);
+                int width=std::stoi(tokens[1]);
+                int height=std::stoi(tokens[2]);
+
+                //3 lines for intrinsics
+                std::string intrinsics_string_full;
+                std::getline(infile, line);  intrinsics_string_full+=line+" ";
+                std::getline(infile, line);  intrinsics_string_full+=line+" ";
+                std::getline(infile, line);  intrinsics_string_full+=line+" ";
+                tokens=split(intrinsics_string_full," ");
+                Eigen::Matrix3d K;
+                K.setIdentity();
+                radu::utils::tokens2matrix(tokens,K);
+
+
+                //distorsion
+                std::getline(infile, line);
+                tokens=split(line," ");
+                Eigen::VectorXd distorsion;
+                distorsion.resize(5);
+                radu::utils::tokens2matrix(tokens,distorsion);
+
+
+                //pose
+                std::string pose_string_full;
+                std::getline(infile, line);  pose_string_full+=line+" ";
+                std::getline(infile, line);  pose_string_full+=line+" ";
+                std::getline(infile, line);  pose_string_full+=line+" ";
+                tokens=split(pose_string_full," ");
+                Eigen::Matrix<double,3,4>  pose3x4;
+                radu::utils::tokens2matrix(tokens, pose3x4 );
+                // VLOG(1) << "pose3x4 is " << pose3x4;
+                //convert to4x4
+                Eigen::Matrix4d pose4x4;
+                pose4x4.setIdentity();
+                pose4x4.block<3,4>(0,0) = pose3x4;
+                Eigen::Affine3d pose_affine;
+                pose_affine.matrix()=pose4x4;
+                // VLOG(1) << "poseaffine is " << pose_affine.matrix();
+
+
+                //empty line
+                std::getline(infile, line);
+
+
+                //push things
+                camidx2pose[cam_idx]=pose_affine;
+                camidx2intrinsics[cam_idx]=K;
+            }
+
+
+
+            for (size_t cam_idx = 0; cam_idx < block->m_rgb_frames.size(); cam_idx++){
+                std::shared_ptr<Frame> frame=block->m_rgb_frames[cam_idx];
+                frame->K=camidx2intrinsics[cam_idx].cast<float>();
+                frame->rescale_K(1.0/m_rgb_subsample_factor);
+                if (m_transform_to_easypbr_world){
+                    Eigen::Affine3f tf_cam_world = camidx2pose[cam_idx].cast<float>()*pre_rotate;
+                    frame->tf_cam_world=tf_cam_world;
+                }else{
+                    frame->tf_cam_world= camidx2pose[cam_idx].cast<float>();
+                }
+            }
+        }
+    }
+
+
+
+
+
+    
+
+}
+
 void DataLoaderPhenorobCP1::init_stereo_pairs(){
     std::string pairs_file=(m_dataset_path/m_scan_date/"stereo_pairs.txt").string();
 
@@ -527,13 +722,6 @@ void DataLoaderPhenorobCP1::read_data(){
                 }
 
 
-                //get cam_id 
-                std::string filename=fs::path(frame->rgb_path).parent_path().filename().string();
-                // VLOG(1) << "filename: " << filename;
-                std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
-                CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
-                frame->cam_id= std::stoi(filename_tokens[1]);
-
 
                 //rescale things if necessary
                 if(m_scene_scale_multiplier>0.0){
@@ -576,7 +764,8 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
     if ( frame.has_extra_field("is_photoneo") ){
         subsample_factor=m_photoneo_subsample_factor;
     }
-    if(subsample_factor>1){
+    //if it's a processed frame then it's already subsampled
+    if(subsample_factor>1 && m_dataset_type==+PHCP1DatasetType::Raw){
         cv::Mat resized;
         cv::resize(rgb_8u, resized, cv::Size(), 1.0/subsample_factor, 1.0/subsample_factor, cv::INTER_AREA);
         rgb_8u=resized;
