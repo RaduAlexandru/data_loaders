@@ -359,6 +359,8 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("get_rgb_frame_with_idx", &PRCP1Block::get_rgb_frame_with_idx )
     .def("get_photoneo_frame", &PRCP1Block::get_photoneo_frame )
     .def("get_photoneo_mesh", &PRCP1Block::get_photoneo_mesh )
+    .def("get_dense_cloud", &PRCP1Block::get_dense_cloud )
+    .def("get_sparse_cloud", &PRCP1Block::get_sparse_cloud )
     .def("name", &PRCP1Block::name )
     ;
 

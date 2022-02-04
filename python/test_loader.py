@@ -630,6 +630,12 @@ def test_phenorob_cp1():
             # Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
 
 
+            #load the dense cloud for this block
+            dense_cloud=block.get_dense_cloud()
+            dense_cloud.load_from_file(dense_cloud.m_disk_path)
+            Scene.show(dense_cloud, "dense_cloud_"+str(b_idx))
+
+
 
 
 

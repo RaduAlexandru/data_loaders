@@ -46,6 +46,8 @@ class PRCP1Block : public std::enable_shared_from_this<PRCP1Block> {
         std::shared_ptr<easy_pbr::Frame> get_rgb_frame_with_idx( const int idx);
         easy_pbr::Frame get_photoneo_frame(){ return m_photoneo_frame; };
         std::shared_ptr<easy_pbr::Mesh> get_photoneo_mesh(){ return m_photoneo_mesh; };
+        std::shared_ptr<easy_pbr::Mesh> get_dense_cloud(){ return m_dense_cloud; };
+        std::shared_ptr<easy_pbr::Mesh> get_sparse_cloud(){ return m_sparse_cloud; };
         std::string name(){ return m_name;};
 
         easy_pbr::Frame m_photoneo_frame; 
@@ -53,6 +55,10 @@ class PRCP1Block : public std::enable_shared_from_this<PRCP1Block> {
         // std::vector<easy_pbr::Frame> m_rgb_frames; 
         std::unordered_map<int, std::shared_ptr<easy_pbr::Frame> > m_rgb_frames; //the idx is the cam_id
         std::string m_photoneo_cfg_file_path; //is the path of the cfg file of the photoneo which contains the intrinsics and so one
+
+        std::shared_ptr<easy_pbr::Mesh> m_dense_cloud;
+        std::shared_ptr<easy_pbr::Mesh> m_sparse_cloud;
+
         std::string m_name;
         boost::filesystem::path m_path;
 } ;
@@ -92,6 +98,8 @@ public:
     std::string dataset_path();
     std::string scan_date();
     std::string rgb_pose_file();
+    std::shared_ptr<easy_pbr::Mesh> dense_cloud();
+    std::shared_ptr<easy_pbr::Mesh> sparse_cloud();
     bool is_finished(); //check if we finished reading all the images from the scene
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
@@ -137,6 +145,8 @@ private:
     PHCP1DatasetType m_dataset_type=PHCP1DatasetType::Raw;
     bool m_load_poses;
     bool m_load_intrinsics;
+    bool m_load_dense_cloud;
+    bool m_load_sparse_cloud;
     // int m_scan_idx;  //the idx of the scan that was made on a certain date
     // std::thread m_loader_thread;
     int m_nr_resets;

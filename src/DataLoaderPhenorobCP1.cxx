@@ -119,6 +119,8 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     }
     m_load_poses=loader_config["load_poses"];   
     m_load_intrinsics=loader_config["load_intrinsics"];   
+    m_load_dense_cloud=loader_config["load_dense_cloud"]; 
+    m_load_sparse_cloud=loader_config["load_sparse_cloud"]; 
 
 
 }
@@ -127,12 +129,14 @@ void DataLoaderPhenorobCP1::start(){
     init_data_reading();
     if (m_load_poses){
         // init_poses();
-        init_intrinsics_and_poses_krt();
     }
     if (m_load_intrinsics){
         // init_intrinsics();
+    }
+    if (m_load_poses && m_load_intrinsics){
         init_intrinsics_and_poses_krt();
     }
+
     init_stereo_pairs();
     read_data();
 }
@@ -240,6 +244,19 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                     block->m_photoneo_frame=new_photoneo_frame;
                     block->m_photoneo_cfg_file_path= (photoneo_path/"info.cfg").string();
                 }
+
+
+                //get the dense and sparse cloud
+                if (m_load_dense_cloud){
+                    block->m_dense_cloud=easy_pbr::Mesh::create();
+                    block->m_dense_cloud->m_disk_path=(block_path/"colmap_data/cloud_dense.ply").string();
+                }
+                if (m_load_sparse_cloud){
+                    block->m_sparse_cloud=easy_pbr::Mesh::create();
+                    block->m_sparse_cloud->m_disk_path=(block_path/"colmap_data/cloud_sparse.ply").string();
+                }
+
+
 
 
                 //get the nikon cameras. if we are loading from a RAW dataset, then the nikon are in block_x/nikon_y/ if we are loading from processed it is in block_x/nikons_subsample_y
@@ -638,7 +655,7 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
             }
 
 
-
+            //set intrinsics and extrisnics of all nikons
             for (size_t cam_idx = 0; cam_idx < block->m_rgb_frames.size(); cam_idx++){
                 std::shared_ptr<Frame> frame=block->m_rgb_frames[cam_idx];
                 frame->K=camidx2intrinsics[cam_idx].cast<float>();
@@ -649,6 +666,22 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
                 }else{
                     frame->tf_cam_world= camidx2pose[cam_idx].cast<float>();
                 }
+            }
+
+
+            //set the pose for the clouds
+            if(m_load_dense_cloud && m_transform_to_easypbr_world){
+                Eigen::Affine3d tf_world_obj =  block->m_dense_cloud->model_matrix();
+                Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
+                tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                // VLOG(1) << "rotating dense cloud from " << block->m_path;
+                block->m_dense_cloud->set_model_matrix( tf_obj_world.inverse() );
+            }
+            if(m_load_sparse_cloud){
+                Eigen::Affine3d tf_world_obj =  block->m_sparse_cloud->model_matrix();
+                Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
+                tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                block->m_sparse_cloud->set_model_matrix( tf_obj_world.inverse() );
             }
         }
     }
@@ -746,6 +779,9 @@ void DataLoaderPhenorobCP1::read_data(){
         }
 
     }
+
+
+    
 
 
 }
