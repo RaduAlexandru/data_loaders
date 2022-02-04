@@ -121,6 +121,7 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     m_load_intrinsics=loader_config["load_intrinsics"];   
     m_load_dense_cloud=loader_config["load_dense_cloud"]; 
     m_load_sparse_cloud=loader_config["load_sparse_cloud"]; 
+    m_load_visible_points=loader_config["load_visible_points"]; 
 
 
 }
@@ -307,17 +308,29 @@ void DataLoaderPhenorobCP1::init_data_reading(){
 
                     for (const fs::path & rgb_img_path : imgs_vec){
                         std::shared_ptr<Frame> new_rgb_frame= std::make_shared<easy_pbr::Frame>();
-                        new_rgb_frame->rgb_path= rgb_img_path.string();
-
-                        //get the name of this frame which will be something like nikon_x
-                        std::string frame_name=rgb_img_path.filename().string();
-                        new_rgb_frame->m_name=frame_name;
 
                         //get cam id 
                         std::string filename=rgb_img_path.filename().string();
                         std::vector<std::string> filename_tokens=radu::utils::split(filename, ".");
                         CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example 0.jpeg but the filename is " << filename;
-                        new_rgb_frame->cam_id= std::stoi(filename_tokens[0]);
+                        int cam_id=std::stoi(filename_tokens[0]);
+                        new_rgb_frame->cam_id= cam_id;
+
+
+                        new_rgb_frame->rgb_path= rgb_img_path.string();
+                        new_rgb_frame->depth_path =  (block_path/"colmap_data/depth_maps"/(std::to_string(cam_id)+"_geometric.exr")).string();
+
+                        //get the name of this frame which will be something like nikon_x
+                        std::string frame_name=rgb_img_path.filename().string();
+                        new_rgb_frame->m_name=frame_name;
+
+                        //make also a mesh for the visible points
+                        if(m_load_visible_points){
+                            auto mesh=easy_pbr::Mesh::create();
+                            mesh->m_disk_path=  (block_path/"colmap_data/visible_clouds"/(std::to_string(cam_id)+".ply")).string();
+                            new_rgb_frame->add_extra_field("visible_points", mesh);
+                        }
+
                         //push
                         block->m_rgb_frames[new_rgb_frame->cam_id]=new_rgb_frame;
                     }
@@ -663,6 +676,16 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
                 if (m_transform_to_easypbr_world){
                     Eigen::Affine3f tf_cam_world = camidx2pose[cam_idx].cast<float>()*pre_rotate;
                     frame->tf_cam_world=tf_cam_world;
+
+                    //transform also the visible clouds
+                    if(m_load_visible_points){
+                        auto mesh=frame->get_extra_field<std::shared_ptr<easy_pbr::Mesh> >("visible_points");
+                        Eigen::Affine3d tf_world_obj = mesh->model_matrix();
+                        Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
+                        tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                        mesh->set_model_matrix( tf_obj_world.inverse() );
+                    }
+
                 }else{
                     frame->tf_cam_world= camidx2pose[cam_idx].cast<float>();
                 }
@@ -674,7 +697,6 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
                 Eigen::Affine3d tf_world_obj =  block->m_dense_cloud->model_matrix();
                 Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
                 tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
-                // VLOG(1) << "rotating dense cloud from " << block->m_path;
                 block->m_dense_cloud->set_model_matrix( tf_obj_world.inverse() );
             }
             if(m_load_sparse_cloud){
@@ -820,7 +842,18 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
     //if we have depth load also that one
     if (!frame.depth_path.empty()){
         frame.depth = cv::imread(frame.depth_path, cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH);
-        frame.depth*=1.0/1000;
+        //resize to match the rgb frame if needed
+        if(frame.depth.rows!=frame.height || frame.depth.cols!=frame.width){
+            cv::Mat resized;
+            cv::resize(frame.depth, resized, cv::Size(frame.width, frame.height), cv::INTER_NEAREST);
+            frame.depth=resized;
+        }
+
+
+
+        if ( frame.has_extra_field("is_photoneo") ){
+            frame.depth*=1.0/1000;
+        }
         CHECK(frame.height==frame.depth.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
         CHECK(frame.width==frame.depth.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
     }

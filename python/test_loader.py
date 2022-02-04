@@ -544,6 +544,12 @@ def test_phenorob_cp1():
     loader.start()
 
 
+    def map_range_tensor( input_val, input_start, input_end,  output_start,  output_end):
+        # input_clamped=torch.clamp(input_val, input_start, input_end)
+        # input_clamped=max(input_start, min(input_end, input_val))
+        input_clamped=torch.clamp(input_val, input_start, input_end)
+        return output_start + ((output_end - output_start) / (input_end - input_start)) * (input_clamped - input_start)
+
 
     for s_idx in range(loader.nr_scans()):
         scan=loader.get_scan_with_idx(s_idx)
@@ -556,9 +562,32 @@ def test_phenorob_cp1():
                     if frame.is_shell:
                         frame.load_images()
                     #create a frustum fro the RGB frames
-                    frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
+                    frustum_mesh=frame.create_frustum_mesh(0.2, True, 256)
                     frustum_mesh.m_vis.m_line_width=1
                     Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
+
+                    # # backproject the depth
+                    # if f_idx==3 and not frame.depth.empty():
+                    #     sfm_depth_backproj=frame.depth2world_xyz_mesh()
+                    #     sfm_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
+                    #     Scene.show(sfm_depth_backproj, "sfm_depth_backproj_"+str(f_idx))
+                    #     depth_tensor=mat2tensor(frame.depth, False)
+                    #     depth_tensor_original=depth_tensor
+                    #     depth_tensor=map_range_tensor(depth_tensor, 8.0, 16.0, 0.0, 1.0)
+                    #     depth_tensor=depth_tensor.repeat(1,3,1,1)
+                    #     Gui.show(tensor2mat(depth_tensor), "depth")
+                    #     depth_tensor_small=(   torch.logical_and(depth_tensor_original<5.0, depth_tensor_original!=0  )  )*1.0
+                    #     Gui.show(tensor2mat(depth_tensor_small), "depth_tensor_small")
+                    #     Gui.show(tensor2mat(depth_tensor_original), "depth", tensor2mat(depth_tensor_small), "depth_tensor_small")
+
+                    #show the visible points
+                    if f_idx==0 and frame.has_extra_field("visible_points"):
+                        visible_points=frame.get_extra_field_mesh("visible_points")
+                        visible_points.load_from_file(visible_points.m_disk_path)
+                        visible_points.apply_model_matrix_to_cpu(True)
+                        visible_points.recalculate_min_max_height()
+                        Scene.show(visible_points, "visible_points_"+str(f_idx))
+
 
                     #get the right stereo pair if it exists
                     if ( frame.has_right_stereo_pair() ):
@@ -633,7 +662,10 @@ def test_phenorob_cp1():
             #load the dense cloud for this block
             dense_cloud=block.get_dense_cloud()
             dense_cloud.load_from_file(dense_cloud.m_disk_path)
+            dense_cloud.apply_model_matrix_to_cpu(True)
+            dense_cloud.recalculate_min_max_height()
             Scene.show(dense_cloud, "dense_cloud_"+str(b_idx))
+
 
 
 

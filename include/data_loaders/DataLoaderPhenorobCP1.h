@@ -147,6 +147,7 @@ private:
     bool m_load_intrinsics;
     bool m_load_dense_cloud;
     bool m_load_sparse_cloud;
+    bool m_load_visible_points;
     // int m_scan_idx;  //the idx of the scan that was made on a certain date
     // std::thread m_loader_thread;
     int m_nr_resets;
