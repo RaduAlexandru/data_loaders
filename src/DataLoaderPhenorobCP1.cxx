@@ -112,8 +112,10 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     std::string dataset_type = (std::string)loader_config["dataset_type"];   
     if (dataset_type=="raw"){
         m_dataset_type=PHCP1DatasetType::Raw;
-    }else if(dataset_type=="processed"){
-        m_dataset_type=PHCP1DatasetType::Processed;
+    }else if(dataset_type=="processed_kalibr"){
+        m_dataset_type=PHCP1DatasetType::ProcessedKalibr;
+    }else if(dataset_type=="processed_colmap"){
+        m_dataset_type=PHCP1DatasetType::ProcessedColmap;
     }else{
         LOG(FATAL) << "Dataset type not known " << dataset_type;
     }
@@ -128,13 +130,19 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
 
 void DataLoaderPhenorobCP1::start(){
     init_data_reading();
-    if (m_load_poses){
-        // init_poses();
+
+    if (m_dataset_type==+PHCP1DatasetType::Raw || m_dataset_type==+PHCP1DatasetType::ProcessedKalibr){
+        if (m_load_poses){
+            init_poses_kalibr();
+        }
+        if (m_load_intrinsics){
+            init_intrinsics_kalibr();
+        }
     }
-    if (m_load_intrinsics){
-        // init_intrinsics();
-    }
-    if (m_load_poses && m_load_intrinsics){
+
+
+
+    if (m_dataset_type==+PHCP1DatasetType::ProcessedColmap && m_load_poses && m_load_intrinsics){
         init_intrinsics_and_poses_krt();
     }
 
@@ -180,8 +188,12 @@ void DataLoaderPhenorobCP1::init_data_reading(){
             if (  radu::utils::contains(scan_name, "processed") ){
                 continue; //skip all the scan that DO have the word processed
             }
-        }else if(m_dataset_type==+PHCP1DatasetType::Processed){
-            if ( ! radu::utils::contains(scan_name, "processed") ){
+        }else if(m_dataset_type==+PHCP1DatasetType::ProcessedKalibr){
+            if ( ! radu::utils::contains(scan_name, "processed_kalibr") ){
+                continue; //skip all the scan that don't have the word processed
+            }
+        }else if(m_dataset_type==+PHCP1DatasetType::ProcessedColmap){
+            if ( ! radu::utils::contains(scan_name, "processed_colmap") ){
                 continue; //skip all the scan that don't have the word processed
             }
         }else{
@@ -289,7 +301,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                         }
                     }
 
-                }else if(m_dataset_type==+PHCP1DatasetType::Processed){
+                }else if(m_dataset_type==+PHCP1DatasetType::ProcessedColmap){
                     //choose nikon_folder depending on the subsample
                     fs::path rgb_cam_path;
                     if (m_rgb_subsample_factor==1){
@@ -362,7 +374,7 @@ void DataLoaderPhenorobCP1::init_poses_kalibr(){
     // m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
     if (m_dataset_type==+PHCP1DatasetType::Raw){
         m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
-    }else if(m_dataset_type==+PHCP1DatasetType::Processed){
+    }else if(m_dataset_type==+PHCP1DatasetType::ProcessedKalibr){
         m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib_processed/camchain-.img.yaml").string();
     }
 
@@ -476,7 +488,7 @@ void DataLoaderPhenorobCP1::init_poses_kalibr(){
             block->m_photoneo_frame.rescale_K(1.0/m_photoneo_subsample_factor);
 
             //extrinsics
-            if (m_dataset_type==+PHCP1DatasetType::Processed){
+            if (m_dataset_type==+PHCP1DatasetType::ProcessedKalibr){
                 std::string pose_file_path=(m_dataset_path/m_scan_date/"photoneo_extrinsics"/("pose_xyzquat_photoneo_world_"+std::to_string(blk_idx)+".txt")  ).string();
                 std::string pose_file_string=radu::utils::file_to_string(pose_file_path);
                 std::vector<std::string> pose_tokens=radu::utils::split(pose_file_string, " ");
@@ -529,7 +541,7 @@ void DataLoaderPhenorobCP1::init_poses_kalibr(){
 void DataLoaderPhenorobCP1::init_intrinsics_kalibr(){
     if (m_dataset_type==+PHCP1DatasetType::Raw){
         m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib/camchain-.img.yaml").string();
-    }else if(m_dataset_type==+PHCP1DatasetType::Processed){
+    }else if(m_dataset_type==+PHCP1DatasetType::ProcessedKalibr){
         m_rgb_pose_file=(m_dataset_path/m_scan_date/"rgb_calib_processed/camchain-.img.yaml").string();
     }
 

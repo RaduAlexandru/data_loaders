@@ -587,6 +587,36 @@ def test_phenorob_cp1():
                         visible_points.apply_model_matrix_to_cpu(True)
                         visible_points.recalculate_min_max_height()
                         Scene.show(visible_points, "visible_points_"+str(f_idx))
+                        #show the frame0 together with the depth of the visible points
+                        Gui.show(frame.rgb_32f, "rgb_"+str(f_idx))
+                        #get the visible points in cam coordinates, compute the depth, and then splat it
+                        visible_points_cam=visible_points.clone()
+                        visible_points_cam.transform_model_matrix( frame.tf_cam_world.to_double() )
+                        visible_points_cam.apply_model_matrix_to_cpu(True)
+                        visible_points_cam_t=torch.from_numpy(visible_points_cam.V).float()
+                        visible_points_depth=visible_points_cam_t.norm(dim=1,keepdim=True)
+                        print("visible_points_depth", visible_points_depth.shape)
+                        visible_points_depth_np=visible_points_depth.cpu().float().numpy()
+                        # frame.naive_splat(visible_points, visible_points_depth_np)
+
+                    #show the depth if it exists
+                    if f_idx==0 and not frame.depth.empty():
+                        sfm_depth_backproj=frame.depth2world_xyz_mesh()
+                        sfm_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
+                        Scene.show(sfm_depth_backproj, "sfm_depth_backproj_"+str(f_idx))
+                        depth_tensor=mat2tensor(frame.depth, False)
+                        depth_tensor_original=depth_tensor
+                        depth_tensor=map_range_tensor(depth_tensor, 8.0, 16.0, 0.0, 1.0)
+                        depth_tensor=depth_tensor.repeat(1,3,1,1)
+                        Gui.show(tensor2mat(depth_tensor), "depth", frame.rgb_32f, "rgb")
+                        depth_tensor_small=(   torch.logical_and(depth_tensor_original<5.0, depth_tensor_original!=0  )  )*1.0
+                        Gui.show(tensor2mat(depth_tensor_small), "depth_tensor_small")
+                        Gui.show(tensor2mat(depth_tensor_original), "depth", tensor2mat(depth_tensor_small), "depth_tensor_small")
+
+
+                    
+
+
 
 
                     #get the right stereo pair if it exists

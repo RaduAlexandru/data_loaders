@@ -23,7 +23,7 @@
 //better enums
 #include <enum.h>
 
-BETTER_ENUM(PHCP1DatasetType, int, Raw = 0, Processed )
+BETTER_ENUM(PHCP1DatasetType, int, Raw = 0, ProcessedKalibr, ProcessedColmap )
 
 
 
