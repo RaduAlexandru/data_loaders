@@ -275,6 +275,10 @@ def test_easypbr():
     # loader.set_mode_test()
     loader.start()
 
+    if loader.loaded_scene_mesh():
+        mesh=loader.get_scene_mesh()
+        Scene.show(mesh,"mesh")
+
     while True:
         if(loader.has_data() ):
 
@@ -286,8 +290,8 @@ def test_easypbr():
             Gui.show(frame.rgb_32f, "rgb")
 
 
-            # frustum_mesh=frame.create_frustum_mesh(0.02)
-            frustum_mesh=frame.create_frustum_mesh(0.2)
+            frustum_mesh=frame.create_frustum_mesh(0.02)
+            # frustum_mesh=frame.create_frustum_mesh(0.2)
             frustum_mesh.m_vis.m_line_width=1
             if frame.frame_idx==20:
                 frustum_mesh.m_vis.m_line_color=[0.0, 1.0, 0.0]
@@ -718,11 +722,11 @@ def test_phenorob_cp1():
 # test_nerf()
 # test_pheno4d()
 # test_colmap()
-# test_easypbr()
+test_easypbr()
 # test_srn()
 # test_dtu()
 # test_deep_voxels()
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-test_phenorob_cp1()
+# test_phenorob_cp1()

@@ -221,6 +221,8 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("get_closest_frame", &DataLoaderEasyPBR::get_closest_frame )
     .def("get_close_frames", &DataLoaderEasyPBR::get_close_frames )
     // .def("compute_frame_weights", &DataLoaderNerf::compute_frame_weights )
+    .def("loaded_scene_mesh", &DataLoaderEasyPBR::loaded_scene_mesh )
+    .def("get_scene_mesh", &DataLoaderEasyPBR::get_scene_mesh )
     .def("is_finished", &DataLoaderEasyPBR::is_finished )
     .def("reset", &DataLoaderEasyPBR::reset )
     .def("nr_samples", &DataLoaderEasyPBR::nr_samples )

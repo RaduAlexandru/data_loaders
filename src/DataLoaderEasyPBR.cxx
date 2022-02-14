@@ -23,6 +23,7 @@ using namespace configuru;
 #include "eigen_utils.h"
 #include "RandGenerator.h"
 #include "easy_pbr/LabelMngr.h"
+#include "easy_pbr/Mesh.h"
 // #include "easy_gl/UtilsGL.h"
 
 //json
@@ -52,7 +53,9 @@ DataLoaderEasyPBR::DataLoaderEasyPBR(const std::string config_file):
     // m_is_running(false),
     m_idx_img_to_read(0),
     m_nr_resets(0),
-    m_rand_gen(new RandGenerator)
+    m_rand_gen(new RandGenerator),
+    m_scene_mesh(new easy_pbr::Mesh),
+    m_loaded_scene_mesh(false)
 {
     init_params(config_file);
 
@@ -224,6 +227,16 @@ void DataLoaderEasyPBR::init_poses(){
 
 void DataLoaderEasyPBR::read_data(){
 
+
+    //load scene cloud if it exists
+    std::string scene_file_path=(m_dataset_path/m_object_name/"scene/scene.ply").string();
+    if(fs::exists(scene_file_path) ){
+        m_scene_mesh->load_from_file(scene_file_path);
+        m_scene_mesh->scale_mesh(m_scene_scale_multiplier);
+        m_loaded_scene_mesh=true;
+    }
+
+
     for (size_t i = 0; i < m_imgs_paths.size(); i++){
 
         Frame frame;
@@ -266,13 +279,13 @@ void DataLoaderEasyPBR::read_data(){
 
         frame.tf_cam_world=m_filename2pose[key].cast<float>().inverse();
 
-        //flip z axis
-        Eigen::Affine3f tf_world_cam=frame.tf_cam_world.inverse();
-        Eigen::Matrix3f cam_axes;
-        cam_axes=tf_world_cam.linear();
-        cam_axes.col(2)=-cam_axes.col(2);
-        tf_world_cam.linear()= cam_axes;
-        frame.tf_cam_world=tf_world_cam.inverse();
+        // //flip z axis
+        // Eigen::Affine3f tf_world_cam=frame.tf_cam_world.inverse();
+        // Eigen::Matrix3f cam_axes;
+        // cam_axes=tf_world_cam.linear();
+        // cam_axes.col(2)=-cam_axes.col(2);
+        // tf_world_cam.linear()= cam_axes;
+        // frame.tf_cam_world=tf_world_cam.inverse();
 
 
         //intrinsics

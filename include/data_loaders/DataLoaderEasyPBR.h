@@ -25,9 +25,9 @@ namespace radu { namespace utils{
     class RandGenerator;
 }}
 
-// namespace easy_pbr{
-//     class Frame;
-// }
+namespace easy_pbr{
+    class Mesh;
+}
 // class DataTransformer;
 
 
@@ -45,6 +45,8 @@ public:
     std::vector<easy_pbr::Frame> get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx ); //return a certain number of frames ordered by proximity,
     // std::vector<float> compute_frame_weights( const easy_pbr::Frame& frame, std::vector<easy_pbr::Frame>& close_frames);
     easy_pbr::Frame get_random_frame();
+    bool loaded_scene_mesh(){ return m_loaded_scene_mesh;  };
+    std::shared_ptr<easy_pbr::Mesh> get_scene_mesh(){ return m_scene_mesh;   };
     bool has_data(); //will reeturn always true because this dataloader preloads all the frames and keeps them in memory all the time. They are not so many
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
@@ -67,7 +69,8 @@ private:
 
     //objects
     std::shared_ptr<radu::utils::RandGenerator> m_rand_gen;
-    // std::shared_ptr<DataTransformer> m_transformer;
+    std::shared_ptr<easy_pbr::Mesh> m_scene_mesh;
+
 
     //params
     bool m_autostart;
@@ -91,5 +94,6 @@ private:
     std::vector<boost::filesystem::path> m_imgs_paths; //contains all the filenames that of the images we want to read
     std::vector< easy_pbr::Frame > m_frames;
     float m_camera_angle_x;
+    float m_loaded_scene_mesh;
 
 };

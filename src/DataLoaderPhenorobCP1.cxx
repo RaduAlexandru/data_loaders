@@ -332,6 +332,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
 
                         new_rgb_frame->rgb_path= rgb_img_path.string();
                         new_rgb_frame->depth_path =  (block_path/"colmap_data/depth_maps"/(std::to_string(cam_id)+"_geometric.exr")).string();
+                        // new_rgb_frame->depth_path =  (block_path/"colmap_data/depth_maps"/(std::to_string(cam_id)+"_photometric.exr")).string();
 
                         //get the name of this frame which will be something like nikon_x
                         std::string frame_name=rgb_img_path.filename().string();
