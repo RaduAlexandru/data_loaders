@@ -344,6 +344,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished", &DataLoaderPhenorobCP1::is_finished )
     .def("reset", &DataLoaderPhenorobCP1::reset )
     .def("nr_scans", &DataLoaderPhenorobCP1::nr_scans )
+    .def("loaded_dense_cloud", &DataLoaderPhenorobCP1::loaded_dense_cloud )
     .def("set_mode_train", &DataLoaderPhenorobCP1::set_mode_train )
     .def("set_mode_test", &DataLoaderPhenorobCP1::set_mode_test )
     .def("set_mode_validation", &DataLoaderPhenorobCP1::set_mode_validation )

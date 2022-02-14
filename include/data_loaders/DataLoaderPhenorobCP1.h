@@ -98,6 +98,7 @@ public:
     std::string dataset_path();
     std::string scan_date();
     std::string rgb_pose_file();
+    bool loaded_dense_cloud(){ return m_load_dense_cloud; }; 
     std::shared_ptr<easy_pbr::Mesh> dense_cloud();
     std::shared_ptr<easy_pbr::Mesh> sparse_cloud();
     bool is_finished(); //check if we finished reading all the images from the scene

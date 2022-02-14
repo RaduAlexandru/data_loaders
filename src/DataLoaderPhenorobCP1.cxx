@@ -247,6 +247,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                     Frame new_photoneo_frame;
                     new_photoneo_frame.rgb_path= (photoneo_path/"texture.jpeg").string();
                     new_photoneo_frame.depth_path= (photoneo_path/"depth.exr").string();
+                    new_photoneo_frame.confidence_path= (photoneo_path/"confidence.exr").string();
                     new_photoneo_frame.add_extra_field("is_photoneo", true);
                     //get the name of this frame which will be something like nikon_x
                     std::string frame_name=photoneo_path.filename().string();
@@ -273,7 +274,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
 
 
                 //get the nikon cameras. if we are loading from a RAW dataset, then the nikon are in block_x/nikon_y/ if we are loading from processed it is in block_x/nikons_subsample_y
-                if (m_dataset_type==+PHCP1DatasetType::Raw){
+                if (m_dataset_type==+PHCP1DatasetType::Raw || m_dataset_type==+PHCP1DatasetType::ProcessedKalibr){
 
                     //get the raw nikon cams
                     std::vector<fs::path> cams_vec;
@@ -862,12 +863,25 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
         }
 
 
-
         if ( frame.has_extra_field("is_photoneo") ){
             frame.depth*=1.0/1000;
         }
         CHECK(frame.height==frame.depth.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
         CHECK(frame.width==frame.depth.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
+    }
+
+
+    //if we have depth load also that one
+    if (!frame.confidence_path.empty()){
+        frame.confidence = cv::imread(frame.confidence_path, cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH);
+        //resize to match the rgb frame if needed
+        if(frame.confidence.rows!=frame.height || frame.confidence.cols!=frame.width){
+            cv::Mat resized;
+            cv::resize(frame.confidence, resized, cv::Size(frame.width, frame.height), cv::INTER_LINEAR);
+            frame.confidence=resized;
+        }
+        CHECK(frame.height==frame.confidence.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
+        CHECK(frame.width==frame.confidence.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
     }
 
 }
