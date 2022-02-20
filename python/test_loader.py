@@ -272,7 +272,6 @@ def test_colmap():
 def test_easypbr():
     loader=DataLoaderEasyPBR(config_path)
     loader.set_mode_train()
-    # loader.set_mode_test()
     loader.start()
 
     if loader.loaded_scene_mesh():
@@ -547,7 +546,8 @@ def test_phenorob_cp1():
     loader.set_mode_all()
     loader.start()
 
-    show_photoneo=True
+    show_photoneo=False
+    show_backprojected_depth=False
 
     def map_range_tensor( input_val, input_start, input_end,  output_start,  output_end):
         # input_clamped=torch.clamp(input_val, input_start, input_end)
@@ -576,7 +576,7 @@ def test_phenorob_cp1():
                     #show the visible points
                     if f_idx==0 and frame.has_extra_field("visible_points"):
                         visible_points=frame.get_extra_field_mesh("visible_points")
-                        visible_points.load_from_file(visible_points.m_disk_path)
+                        loader.load_mesh(visible_points)
                         visible_points.apply_model_matrix_to_cpu(True)
                         visible_points.recalculate_min_max_height()
                         Scene.show(visible_points, "visible_points_"+str(f_idx))
@@ -593,7 +593,7 @@ def test_phenorob_cp1():
                         # frame.naive_splat(visible_points, visible_points_depth_np)
 
                     #show the depth if it exists
-                    if f_idx==0 and not frame.depth.empty():
+                    if f_idx==0 and not frame.depth.empty() and show_backprojected_depth:
                         sfm_depth_backproj=frame.depth2world_xyz_mesh()
                         sfm_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
                         Scene.show(sfm_depth_backproj, "sfm_depth_backproj_"+str(f_idx))
@@ -670,7 +670,7 @@ def test_phenorob_cp1():
                 Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
                 #load photoneo cloud
                 photoneo_mesh=block.get_photoneo_mesh()
-                photoneo_mesh.load_from_file(photoneo_mesh.m_disk_path)
+                loader.load_mesh(photoneo_mesh)
                 #show the confidence 
                 # Gui.show(photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
                 #show depth
@@ -692,7 +692,8 @@ def test_phenorob_cp1():
             #load the dense cloud for this block
             if loader.loaded_dense_cloud():
                 dense_cloud=block.get_dense_cloud()
-                dense_cloud.load_from_file(dense_cloud.m_disk_path)
+                loader.load_mesh(dense_cloud)
+                print("dense_cloud", dense_cloud.model_matrix.matrix() )
                 dense_cloud.apply_model_matrix_to_cpu(True)
                 dense_cloud.recalculate_min_max_height()
                 Scene.show(dense_cloud, "dense_cloud_"+str(b_idx))
@@ -722,11 +723,11 @@ def test_phenorob_cp1():
 # test_nerf()
 # test_pheno4d()
 # test_colmap()
-test_easypbr()
+# test_easypbr()
 # test_srn()
 # test_dtu()
 # test_deep_voxels()
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-# test_phenorob_cp1()
+test_phenorob_cp1()

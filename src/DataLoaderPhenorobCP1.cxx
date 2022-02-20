@@ -102,6 +102,7 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     m_shuffle=loader_config["shuffle"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_do_overfit=loader_config["do_overfit"];
+    m_scene_translation=loader_config["scene_translation"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
     m_rotation_alignment_degrees= loader_config["rotation_alignment_degrees"];
@@ -793,11 +794,22 @@ void DataLoaderPhenorobCP1::read_data(){
 
 
                 //rescale things if necessary
-                if(m_scene_scale_multiplier>0.0){
+                // if(m_scene_scale_multiplier>0.0){
+                //     Eigen::Affine3f tf_world_cam_rescaled = frame->tf_cam_world.inverse();
+                //     tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+                //     frame->tf_cam_world=tf_world_cam_rescaled.inverse();
+                // }
+
+                //rescale things if necessary
+                if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
                     Eigen::Affine3f tf_world_cam_rescaled = frame->tf_cam_world.inverse();
+                    tf_world_cam_rescaled.translation()+=m_scene_translation;
                     tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
                     frame->tf_cam_world=tf_world_cam_rescaled.inverse();
                 }
+                
+
+
             }
 
 
@@ -867,6 +879,12 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
         if ( frame.has_extra_field("is_photoneo") ){
             frame.depth*=1.0/1000;
         }
+
+        //if the scene is rescaled the depth map also needs to be
+        if(m_scene_scale_multiplier>0.0 ){
+            frame.depth*= m_scene_scale_multiplier;
+        }
+
         CHECK(frame.height==frame.depth.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
         CHECK(frame.width==frame.depth.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
     }
@@ -883,6 +901,26 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
         }
         CHECK(frame.height==frame.confidence.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
         CHECK(frame.width==frame.confidence.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
+    }
+
+}
+
+void DataLoaderPhenorobCP1::load_mesh(std::shared_ptr<easy_pbr::Mesh> mesh){
+    mesh->load_from_file(mesh->m_disk_path);
+
+    if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
+        // VLOG(1) <<" wtf----------------------------------";
+        Eigen::Affine3f tf_world_obj_rescaled = mesh->model_matrix().cast<float>();
+        VLOG(1) << tf_world_obj_rescaled.matrix();
+        tf_world_obj_rescaled.translation()+=m_scene_translation;
+        // tf_world_obj_rescaled.translation()*=m_scene_scale_multiplier;
+        VLOG(1) << tf_world_obj_rescaled.matrix();
+        mesh->set_model_matrix( tf_world_obj_rescaled.cast<double>() );
+        mesh->apply_model_matrix_to_cpu(true);
+
+        //scale the vertices
+        mesh->scale_mesh(m_scene_scale_multiplier);
+        mesh->apply_model_matrix_to_cpu(true);
     }
 
 }

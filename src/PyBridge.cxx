@@ -333,6 +333,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("start", &DataLoaderPhenorobCP1::start )
     .def("has_data", &DataLoaderPhenorobCP1::has_data )
     .def("get_scan_with_idx", &DataLoaderPhenorobCP1::get_scan_with_idx )
+    .def("load_mesh", &DataLoaderPhenorobCP1::load_mesh )
     // .def("get_next_frame", &DataLoaderPhenorobCP1::get_next_frame )
     // .def("get_all_frames", &DataLoaderPhenorobCP1::get_all_frames )
     // .def("get_frame_at_idx", &DataLoaderPhenorobCP1::get_frame_at_idx )

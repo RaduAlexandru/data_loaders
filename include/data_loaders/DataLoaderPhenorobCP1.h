@@ -101,6 +101,7 @@ public:
     bool loaded_dense_cloud(){ return m_load_dense_cloud; }; 
     std::shared_ptr<easy_pbr::Mesh> dense_cloud();
     std::shared_ptr<easy_pbr::Mesh> sparse_cloud();
+    void load_mesh(std::shared_ptr<easy_pbr::Mesh> mesh); //loads the mesh and also scales and translates it
     bool is_finished(); //check if we finished reading all the images from the scene
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
@@ -139,6 +140,7 @@ private:
     bool m_shuffle;
     bool m_load_as_shell;
     bool m_do_overfit; // return all the time just the first image
+    Eigen::Vector3f m_scene_translation; //moves the scene so that we have it at the origin more or less
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     boost::filesystem::path m_dataset_path;  //get the path where all the the scans are
     boost::filesystem::path m_scan_date; //the date of the scan
