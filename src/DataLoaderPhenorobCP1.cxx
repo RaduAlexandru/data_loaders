@@ -971,6 +971,17 @@ std::string DataLoaderPhenorobCP1::scan_date(){
 std::string DataLoaderPhenorobCP1::rgb_pose_file(){
     return m_rgb_pose_file;
 }
+std::string DataLoaderPhenorobCP1::dataset_type(){
+    if(m_dataset_type==+PHCP1DatasetType::Raw){
+        return "raw";
+    }else if(m_dataset_type==+PHCP1DatasetType::ProcessedKalibr){
+        return "kalibr";
+    }else if(m_dataset_type==+PHCP1DatasetType::ProcessedColmap){
+        return "colmap";
+    }else{
+        LOG(FATAL) <<"Unknown dataset type";
+    }
+}
 
 bool DataLoaderPhenorobCP1::is_finished(){
     // //check if this loader has returned all the images it has

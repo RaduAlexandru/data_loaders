@@ -96,6 +96,7 @@ public:
     void reset(); //starts reading from the beggining
     int nr_scans(); //returns the number of scenes for the object that we selected
     std::string dataset_path();
+    std::string dataset_type();
     std::string scan_date();
     std::string rgb_pose_file();
     bool loaded_dense_cloud(){ return m_load_dense_cloud; }; 

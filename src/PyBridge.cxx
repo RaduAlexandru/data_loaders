@@ -341,6 +341,7 @@ PYBIND11_MODULE(dataloaders, m) {
     // .def("get_closest_frame", &DataLoaderPhenorobCP1::get_closest_frame )
     // .def("get_close_frames", &DataLoaderPhenorobCP1::get_close_frames )
     // .def("compute_frame_weights", &DataLoaderNerf::compute_frame_weights )
+    .def("dataset_type", &DataLoaderPhenorobCP1::dataset_type )
     .def("dataset_path", &DataLoaderPhenorobCP1::dataset_path )
     .def("scan_date", &DataLoaderPhenorobCP1::scan_date )
     .def("rgb_pose_file", &DataLoaderPhenorobCP1::rgb_pose_file )
