@@ -824,6 +824,14 @@ void DataLoaderPhenorobCP1::read_data(){
                 photoneo_frame.load_images(photoneo_frame);
             }
 
+            //rescale things if necessary
+            if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
+                Eigen::Affine3f tf_world_cam_rescaled = photoneo_frame.tf_cam_world.inverse();
+                tf_world_cam_rescaled.translation()+=m_scene_translation;
+                tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+                photoneo_frame.tf_cam_world=tf_world_cam_rescaled.inverse();
+            }
+
         }
 
     }
@@ -848,8 +856,8 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
     if ( frame.has_extra_field("is_photoneo") ){
         subsample_factor=m_photoneo_subsample_factor;
     }
-    //if it's a processed frame then it's already subsampled
-    if(subsample_factor>1 && m_dataset_type==+PHCP1DatasetType::Raw){
+    //if it's a processed by colmap frame then it's already subsampled
+    if(subsample_factor>1 && (m_dataset_type==+PHCP1DatasetType::Raw || m_dataset_type==+PHCP1DatasetType::ProcessedKalibr) ){
         cv::Mat resized;
         cv::resize(rgb_8u, resized, cv::Size(), 1.0/subsample_factor, 1.0/subsample_factor, cv::INTER_AREA);
         rgb_8u=resized;

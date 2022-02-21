@@ -546,7 +546,6 @@ def test_phenorob_cp1():
     loader.set_mode_all()
     loader.start()
 
-    show_photoneo=False
     show_backprojected_depth=False
 
     def map_range_tensor( input_val, input_start, input_end,  output_start,  output_end):
@@ -662,31 +661,33 @@ def test_phenorob_cp1():
 
 
             # load the photoneo frame from this block
-            if show_photoneo:
-                photoneo_frame=block.get_photoneo_frame()
-                photoneo_frame.load_images()
-                frustum_mesh=photoneo_frame.create_frustum_mesh(0.05, True, 256)
-                frustum_mesh.m_vis.m_line_width=1
-                Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
-                #load photoneo cloud
-                photoneo_mesh=block.get_photoneo_mesh()
-                loader.load_mesh(photoneo_mesh)
-                #show the confidence 
-                # Gui.show(photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
-                #show depth
-                # Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id))
-                #show both depth and confidence
-                Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id), photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
-                #color the first cloud
-                if b_idx==0:
-                    frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
-                    frame0.load_images()
-                    photoneo_mesh=frame0.assign_color(photoneo_mesh)
-                Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
-                # backproject depth
-                # photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
-                # photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
-                # Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
+            photoneo_frame=block.get_photoneo_frame()
+            photoneo_frame.load_images()
+            frustum_mesh=photoneo_frame.create_frustum_mesh(0.05, True, 256)
+            frustum_mesh.m_vis.m_line_width=1
+            Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
+            #load photoneo cloud
+            photoneo_mesh=block.get_photoneo_mesh()
+            loader.load_mesh(photoneo_mesh)
+            # photoneo_mesh.load_from_file(photoneo_mesh.m_disk_path)
+            #show the confidence 
+            # Gui.show(photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
+            #show depth
+            # Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id))
+            #show both depth and confidence
+            Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id), photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
+            #color the first cloud
+            if b_idx==0:
+                frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
+                frame0.load_images()
+                photoneo_mesh=frame0.assign_color(photoneo_mesh)
+                print("frame 0 K is ", frame0.K)
+                print("width", frame0.width)
+            Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
+            # backproject depth
+            # photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
+            # photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
+            # Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
 
 
             #load the dense cloud for this block
