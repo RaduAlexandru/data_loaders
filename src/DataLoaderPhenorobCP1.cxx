@@ -67,7 +67,8 @@ DataLoaderPhenorobCP1::DataLoaderPhenorobCP1(const std::string config_file):
     // m_is_running(false),
     m_idx_img_to_read(0),
     m_nr_resets(0),
-    m_rand_gen(new RandGenerator)
+    m_rand_gen(new RandGenerator),
+    m_frame_nr_for_alignment(-1)
 {
     init_params(config_file);
 
@@ -105,8 +106,9 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     m_scene_translation=loader_config["scene_translation"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
+    m_frame_nr_for_alignment = loader_config["frame_nr_for_alignment"];
     m_rotation_alignment_degrees= loader_config["rotation_alignment_degrees"];
-    m_transform_to_easypbr_world =  loader_config["transform_to_easypbr_world"];
+    // m_transform_to_easypbr_world =  loader_config["transform_to_easypbr_world"];
 
     m_dataset_path = (std::string)loader_config["dataset_path"];   
     m_scan_date = (std::string)loader_config["scan_date"];   
@@ -414,11 +416,25 @@ void DataLoaderPhenorobCP1::init_poses_kalibr(){
 
     }
 
+
+
     //a prerotation so as to align it a bit better to our world frame
     Eigen::Affine3f pre_rotate;
     pre_rotate.setIdentity();
     Eigen::Matrix3f r = (Eigen::AngleAxisf( radu::utils::degrees2radians(m_rotation_alignment_degrees), Eigen::Vector3f::UnitX()) ).toRotationMatrix();
     pre_rotate.linear()=r;
+
+
+
+    //an alignment matrix that brings a certain frame to identity and everything else with it
+    Eigen::Affine3f tf_cam_fixed_world; //transforms from world to the camera fixed that we selected. We want to use this to make the cam_fixed as the origin
+    tf_cam_fixed_world.setIdentity();
+    if (m_frame_nr_for_alignment!=-1){
+        CHECK( m_camidx2pose.find(m_frame_nr_for_alignment) != m_camidx2pose.end() ) <<"Could not find in map the frame " << m_frame_nr_for_alignment;
+        tf_cam_fixed_world=m_camidx2pose[m_frame_nr_for_alignment].cast<float>();
+    }
+    Eigen::Affine3f tf_world_cam_fixed=tf_cam_fixed_world.inverse();
+
    
 
 
@@ -434,39 +450,8 @@ void DataLoaderPhenorobCP1::init_poses_kalibr(){
 
                 std::string cam_name= "cam"+std::to_string(cam_idx);
 
-                // //get the intrinsics
-                // std::vector<float> intrinsics_vec = config[cam_name]["intrinsics"].as<std::vector<float>>();
-                // CHECK(intrinsics_vec.size()==4) << "Intrinsics_vec should be size of 4 but it is " << intrinsics_vec.size();
-                // frame->K(0,0)=intrinsics_vec[0];
-                // frame->K(1,1)=intrinsics_vec[1];
-                // frame->K(0,2)=intrinsics_vec[2];
-                // frame->K(1,2)=intrinsics_vec[3];
-                // if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
-                //     // int height=m_camidx2resolution[cam_idx].y();
-                //     // frame->K(1,2) = height - frame->K(1,2);
-                // }
-                // // VLOG(1) << "K is " << frame.K;
-                // frame->rescale_K(1.0/m_rgb_subsample_factor);
-
-
-                // //get distorsion 
-                // std::vector<float> distorsion_vec = config[cam_name]["distortion_coeffs"].as<std::vector<float>>();
-                // CHECK(distorsion_vec.size()==4) << "distorsion_vec should be size of 4 but it is " << distorsion_vec.size();
-                // frame->distort_coeffs(0)=distorsion_vec[0];
-                // frame->distort_coeffs(1)=distorsion_vec[1];
-                // frame->distort_coeffs(2)=distorsion_vec[2];
-                // frame->distort_coeffs(3)=distorsion_vec[3];
-
-
-
-                if (m_transform_to_easypbr_world){
-                    Eigen::Affine3f tf_cam_world = m_camidx2pose[cam_idx].cast<float>()*pre_rotate;
-                    frame->tf_cam_world=tf_cam_world;
-                }else{
-                    frame->tf_cam_world= m_camidx2pose[cam_idx].cast<float>();
-                }
-
-               
+                Eigen::Affine3f tf_cam_world = m_camidx2pose[cam_idx].cast<float>() * tf_world_cam_fixed * pre_rotate;
+                frame->tf_cam_world=tf_cam_world;
 
             }
        
@@ -482,12 +467,6 @@ void DataLoaderPhenorobCP1::init_poses_kalibr(){
             block->m_photoneo_frame.K(1,1)=intrinsics_vec[1];
             block->m_photoneo_frame.K(0,2)=intrinsics_vec[2];
             block->m_photoneo_frame.K(1,2)=intrinsics_vec[3];
-            if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
-                //load the image just to get the height
-                // cv::Mat photoneo_texture=cv::imread(block->m_photoneo_frame.rgb_path);
-                // int height_photoneo=photoneo_texture.rows;
-                // block->m_photoneo_frame.K(1,2) = height_photoneo - block->m_photoneo_frame.K(1,2);
-            }
             block->m_photoneo_frame.rescale_K(1.0/m_photoneo_subsample_factor);
 
             //extrinsics
@@ -503,31 +482,15 @@ void DataLoaderPhenorobCP1::init_poses_kalibr(){
                 Eigen::Quaternion<float> q;
                 q.coeffs()<< stof(pose_tokens[3]), std::stof(pose_tokens[4]), std::stof(pose_tokens[5]),  std::stof(pose_tokens[6]) ;
                 tf_photoneo_world.linear()=q.toRotationMatrix();
-                //set matrix
-                if (m_transform_to_easypbr_world){
-                    Eigen::Affine3f tf_cam_world =tf_photoneo_world.cast<float>()*pre_rotate;
-                    // Eigen::Affine3f tf_world_cam;
-                    // tf_world_cam= tf_cam_world.inverse();
-                    //flip y locally
-                    // tf_world_cam.matrix().col(1) = -tf_world_cam.matrix().col(1);
-                    // tf_cam_world = tf_world_cam.inverse();
-                    block->m_photoneo_frame.tf_cam_world=tf_cam_world;
-                }else{
-                    // frame.tf_cam_world= tf_photoneo_world;
-                    block->m_photoneo_frame.tf_cam_world=tf_photoneo_world;
-                }
+                //set photoneo frame extrinsics
+                Eigen::Affine3f tf_cam_world_frame =tf_photoneo_world.cast<float>()*tf_world_cam_fixed * pre_rotate;
+                    block->m_photoneo_frame.tf_cam_world=tf_cam_world_frame;
+                
 
                 //set also the extrinsics for the mesh
-                // block->m_photoneo_mesh->set_model_matrix( block->m_photoneo_frame.tf_cam_world.inverse().cast<double>() );
-
-                //attempt 2
-                Eigen::Affine3f tf_cam_world;
-                if (m_transform_to_easypbr_world){
-                    tf_cam_world =tf_photoneo_world.cast<float>()*pre_rotate;
-                }else{
-                    tf_cam_world =tf_photoneo_world.cast<float>();
-                }
-                block->m_photoneo_mesh->set_model_matrix( tf_cam_world.inverse().cast<double>() );
+                Eigen::Affine3f tf_cam_world_mesh;
+                tf_cam_world_mesh =tf_photoneo_world.cast<float>() * tf_world_cam_fixed * pre_rotate;
+                block->m_photoneo_mesh->set_model_matrix( tf_cam_world_mesh.inverse().cast<double>() );
 
 
             }
@@ -571,10 +534,10 @@ void DataLoaderPhenorobCP1::init_intrinsics_kalibr(){
                 frame->K(1,1)=intrinsics_vec[1];
                 frame->K(0,2)=intrinsics_vec[2];
                 frame->K(1,2)=intrinsics_vec[3];
-                if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
+                // if (m_transform_to_easypbr_world){ //the y principal point needs to be flipped because we flip the y locally so we need to also flip y here
                     // int height=m_camidx2resolution[cam_idx].y();
                     // frame->K(1,2) = height - frame->K(1,2);
-                }
+                // }
                 // VLOG(1) << "K is " << frame.K;
                 frame->rescale_K(1.0/m_rgb_subsample_factor);
 
@@ -607,6 +570,10 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
     pre_rotate.setIdentity();
     Eigen::Matrix3f r = (Eigen::AngleAxisf( radu::utils::degrees2radians(m_rotation_alignment_degrees), Eigen::Vector3f::UnitX()) ).toRotationMatrix();
     pre_rotate.linear()=r;
+
+
+
+
 
     for (size_t scan_idx = 0; scan_idx < m_scans.size(); scan_idx++){
         auto scan=m_scans[scan_idx];
@@ -683,41 +650,52 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
             }
 
 
+            //an alignment matrix that brings a certain frame to identity and everything else with it
+            Eigen::Affine3f tf_cam_fixed_world; //transforms from world to the camera fixed that we selected. We want to use this to make the cam_fixed as the origin
+            tf_cam_fixed_world.setIdentity();
+            if (m_frame_nr_for_alignment!=-1){
+                CHECK( camidx2pose.find(m_frame_nr_for_alignment) != camidx2pose.end() ) <<"Could not find in map the frame " << m_frame_nr_for_alignment;
+                tf_cam_fixed_world=camidx2pose[m_frame_nr_for_alignment].cast<float>();
+            }
+            Eigen::Affine3f tf_world_cam_fixed=tf_cam_fixed_world.inverse();
+
+
+
             //set intrinsics and extrisnics of all nikons
             for (size_t cam_idx = 0; cam_idx < block->m_rgb_frames.size(); cam_idx++){
                 std::shared_ptr<Frame> frame=block->m_rgb_frames[cam_idx];
                 frame->K=camidx2intrinsics[cam_idx].cast<float>();
                 frame->rescale_K(1.0/m_rgb_subsample_factor);
-                if (m_transform_to_easypbr_world){
-                    Eigen::Affine3f tf_cam_world = camidx2pose[cam_idx].cast<float>()*pre_rotate;
-                    frame->tf_cam_world=tf_cam_world;
 
-                    //transform also the visible clouds
-                    if(m_load_visible_points){
-                        auto mesh=frame->get_extra_field<std::shared_ptr<easy_pbr::Mesh> >("visible_points");
-                        Eigen::Affine3d tf_world_obj = mesh->model_matrix();
-                        Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
-                        tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
-                        mesh->set_model_matrix( tf_obj_world.inverse() );
-                    }
+                //set extrinsics for the frame
+                Eigen::Affine3f tf_cam_world = camidx2pose[cam_idx].cast<float>()*tf_world_cam_fixed*pre_rotate;
+                frame->tf_cam_world=tf_cam_world;
 
-                }else{
-                    frame->tf_cam_world= camidx2pose[cam_idx].cast<float>();
+                //transform also the visible clouds
+                if(m_load_visible_points){
+                    auto mesh=frame->get_extra_field<std::shared_ptr<easy_pbr::Mesh> >("visible_points");
+                    Eigen::Affine3d tf_world_obj = mesh->model_matrix();
+                    Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
+                    // tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                    mesh->set_model_matrix( tf_obj_world.inverse() );
                 }
+
             }
 
 
             //set the pose for the clouds
-            if(m_load_dense_cloud && m_transform_to_easypbr_world){
+            if(m_load_dense_cloud ){
                 Eigen::Affine3d tf_world_obj =  block->m_dense_cloud->model_matrix();
                 Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
-                tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                // tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                tf_obj_world=tf_obj_world*tf_world_cam_fixed.cast<double>()*pre_rotate.cast<double>();
                 block->m_dense_cloud->set_model_matrix( tf_obj_world.inverse() );
             }
             if(m_load_sparse_cloud){
                 Eigen::Affine3d tf_world_obj =  block->m_sparse_cloud->model_matrix();
                 Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
-                tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                // tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                tf_obj_world=tf_obj_world*tf_world_cam_fixed.cast<double>()*pre_rotate.cast<double>();
                 block->m_sparse_cloud->set_model_matrix( tf_obj_world.inverse() );
             }
         }

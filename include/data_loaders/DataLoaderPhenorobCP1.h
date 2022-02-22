@@ -135,7 +135,8 @@ private:
     int m_photoneo_subsample_factor;
     // float m_exposure_change;
     // bool m_load_as_float;
-    bool m_transform_to_easypbr_world; //if true then the extrinsics will be transformed to the easypbr origin
+    int m_frame_nr_for_alignment;
+    // bool m_transform_to_easypbr_world; //if true then the extrinsics will be transformed to the easypbr origin
     float m_rotation_alignment_degrees; //rotate by this in order to align with wour world coordinate
     std::string m_mode; // train or test or val
     bool m_shuffle;
