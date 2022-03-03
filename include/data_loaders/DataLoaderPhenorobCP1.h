@@ -87,7 +87,8 @@ public:
     void start(); //starts reading the data from disk. This gets called automatically if we have autostart=true
     std::shared_ptr<PRCP1Scan> get_scan_with_idx(const int idx);
     // std::vector<easy_pbr::Frame> get_all_frames();
-    // easy_pbr::Frame get_frame_at_idx( const int idx);
+    std::shared_ptr<easy_pbr::Frame> get_frame_at_idx( const int idx); //convenience function that gives the frame from the first block only
+    int nr_samples(); //convenience function that gives the nr of rgb frames from the first block only
     // easy_pbr::Frame get_closest_frame( const easy_pbr::Frame& frame); //return the one closest frame
     // std::vector<easy_pbr::Frame> get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx ); //return a certain number of frames ordered by proximity,
     // std::vector<float> compute_frame_weights( const easy_pbr::Frame& frame, std::vector<easy_pbr::Frame>& close_frames);
@@ -99,6 +100,7 @@ public:
     std::string dataset_type();
     std::string scan_date();
     std::string rgb_pose_file();
+    int rgb_subsample_factor(){ return m_rgb_subsample_factor;  };
     bool loaded_dense_cloud(){ return m_load_dense_cloud; }; 
     std::shared_ptr<easy_pbr::Mesh> dense_cloud();
     std::shared_ptr<easy_pbr::Mesh> sparse_cloud();

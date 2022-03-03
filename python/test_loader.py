@@ -566,8 +566,8 @@ def test_phenorob_cp1():
                     if frame.is_shell:
                         frame.load_images()
                     #create a frustum fro the RGB frames
-                    # frustum_mesh=frame.create_frustum_mesh(0.2, True, 256)
-                    frustum_mesh=frame.create_frustum_mesh(0.01, True, 256)
+                    frustum_mesh=frame.create_frustum_mesh(0.2, True, 256)
+                    # frustum_mesh=frame.create_frustum_mesh(0.01, True, 256)
                     frustum_mesh.m_vis.m_line_width=1
                     Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
 
@@ -695,6 +695,7 @@ def test_phenorob_cp1():
             if loader.loaded_dense_cloud():
                 dense_cloud=block.get_dense_cloud()
                 loader.load_mesh(dense_cloud)
+                # dense_cloud.load_from_file(dense_cloud.m_disk_path)
                 print("dense_cloud", dense_cloud.model_matrix.matrix() )
                 dense_cloud.apply_model_matrix_to_cpu(True)
                 dense_cloud.recalculate_min_max_height()
@@ -725,11 +726,11 @@ def test_phenorob_cp1():
 # test_nerf()
 # test_pheno4d()
 # test_colmap()
-# test_easypbr()
+test_easypbr()
 # test_srn()
 # test_dtu()
 # test_deep_voxels()
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-test_phenorob_cp1()
+# test_phenorob_cp1()

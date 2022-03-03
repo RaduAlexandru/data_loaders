@@ -791,7 +791,7 @@ void DataLoaderPhenorobCP1::read_data(){
             }
 
 
-            //load the photoneo data
+            //load the photoneo frame
             auto block=m_scans[scan_idx]->m_blocks[i];
             Frame &photoneo_frame=block->m_photoneo_frame;
             photoneo_frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
@@ -960,6 +960,16 @@ std::string DataLoaderPhenorobCP1::dataset_type(){
         LOG(FATAL) <<"Unknown dataset type";
     }
 }
+
+std::shared_ptr<easy_pbr::Frame> DataLoaderPhenorobCP1::get_frame_at_idx( const int idx){
+    return get_scan_with_idx(0)->get_block_with_idx(0)->get_rgb_frame_with_idx(idx);
+}
+
+int DataLoaderPhenorobCP1::nr_samples(){
+    return get_scan_with_idx(0)->get_block_with_idx(0)->nr_frames();
+}
+
+
 
 bool DataLoaderPhenorobCP1::is_finished(){
     // //check if this loader has returned all the images it has

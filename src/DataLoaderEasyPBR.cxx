@@ -87,6 +87,7 @@ void DataLoaderEasyPBR::init_params(const std::string config_file){
     m_autostart=loader_config["autostart"];
     m_subsample_factor=loader_config["subsample_factor"];
     m_shuffle=loader_config["shuffle"];
+    m_limit_to_nr_imgs=loader_config["limit_to_nr_imgs"];
     m_do_overfit=loader_config["do_overfit"];
     m_mode=(std::string)loader_config["mode"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
@@ -145,6 +146,19 @@ void DataLoaderEasyPBR::init_data_reading(){
         unsigned seed = m_nr_resets;
         auto rng_0 = std::default_random_engine(seed);
         std::shuffle(std::begin(m_imgs_paths), std::end(m_imgs_paths), rng_0);
+    }
+
+    //take only x nr of imgs
+    if(m_limit_to_nr_imgs>0){
+        std::vector<boost::filesystem::path> new_img_paths;
+        std::sample(
+            m_imgs_paths.begin(),
+            m_imgs_paths.end(),
+            std::back_inserter(new_img_paths),
+            m_limit_to_nr_imgs,
+            std::mt19937{std::random_device{}()}
+        );
+        m_imgs_paths= new_img_paths;
     }
 
 

@@ -78,6 +78,7 @@ private:
     int m_subsample_factor;
     std::string m_mode; // train or test or val
     bool m_shuffle;
+    int m_limit_to_nr_imgs;
     bool m_do_overfit; // return all the time just the first image
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     // std::string m_restrict_to_object;  //makes it load clouds only from a specific object
