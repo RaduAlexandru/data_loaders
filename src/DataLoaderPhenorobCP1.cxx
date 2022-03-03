@@ -677,6 +677,7 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
                     Eigen::Affine3d tf_world_obj = mesh->model_matrix();
                     Eigen::Affine3d tf_obj_world = tf_world_obj.inverse();
                     // tf_obj_world=tf_obj_world*pre_rotate.cast<double>();
+                    tf_obj_world=tf_obj_world*tf_world_cam_fixed.cast<double>()*pre_rotate.cast<double>();
                     mesh->set_model_matrix( tf_obj_world.inverse() );
                 }
 
