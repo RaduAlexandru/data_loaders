@@ -611,8 +611,8 @@ def test_phenorob_cp1():
                         Gui.show(tensor2mat(depth_tensor_original), "depth", tensor2mat(depth_tensor_small), "depth_tensor_small")
 
                     #show the distance_along_ray if it exists
-                    if f_idx==0 and frame.has_extra_field("depth_along_ray_mat") and show_backprojected_depth_along_ray:
-                        depth_along_ray_mat=frame.get_extra_field_mat("depth_along_ray_mat")
+                    if f_idx==0 and not frame.depth_along_ray.empty() and show_backprojected_depth_along_ray:
+                        depth_along_ray_mat=frame.depth_along_ray
                         Gui.show(depth_along_ray_mat, "depth_along_ray_mat" )
 
 
