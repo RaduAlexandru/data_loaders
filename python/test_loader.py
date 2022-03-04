@@ -5,6 +5,8 @@ import numpy as np
 import sys
 try:
   import torch
+  import torch.nn.functional as F
+  torch.set_default_tensor_type(torch.cuda.FloatTensor)
 except ImportError:
     pass
 from easypbr  import *
@@ -614,6 +616,45 @@ def test_phenorob_cp1():
                     if f_idx==0 and not frame.depth_along_ray.empty() and show_backprojected_depth_along_ray:
                         depth_along_ray_mat=frame.depth_along_ray
                         Gui.show(depth_along_ray_mat, "depth_along_ray_mat" )
+                        #BACKPROJECT also this depth to check if its correct
+                        ######################create rays and dirs
+                        x_coord= torch.arange(frame.width).view(-1, 1, 1).repeat(1,frame.height, 1)+0.5 #width x height x 1
+                        y_coord= torch.arange(frame.height).view(1, -1, 1).repeat(frame.width, 1, 1)+0.5 #width x height x 1
+                        ones=torch.ones(frame.width, frame.height).view(frame.width, frame.height, 1)
+                        points_2D=torch.cat([x_coord, y_coord, ones],2).transpose(0,1).reshape(-1,3).cuda()
+                        K_inv=torch.from_numpy( np.linalg.inv(frame.K) ).to("cuda").float()
+                        #get from screen to cam coords
+                        pixels_selected_screen_coords_t=points_2D.transpose(0,1) #3xN
+                        pixels_selected_cam_coords=torch.matmul(K_inv,pixels_selected_screen_coords_t).transpose(0,1)
+                        #multiply at various depths
+                        nr_rays=pixels_selected_cam_coords.shape[0]
+                        pixels_selected_cam_coords=pixels_selected_cam_coords.view(nr_rays, 3)
+                        #get from cam_coords to world_coords
+                        tf_world_cam=frame.tf_cam_world.inverse()
+                        R=torch.from_numpy( tf_world_cam.linear() ).to("cuda").float()
+                        t=torch.from_numpy( tf_world_cam.translation() ).to("cuda").view(1,3).float()
+                        pixels_selected_world_coords=torch.matmul(R, pixels_selected_cam_coords.transpose(0,1).contiguous() ).transpose(0,1).contiguous()  + t
+                        #get direction
+                        ray_dirs = pixels_selected_world_coords-t
+                        ray_dirs=F.normalize(ray_dirs, p=2, dim=1)
+                        #ray_origins
+                        ray_origins=t.repeat(nr_rays,1)
+                        #################get the depth for each pixel
+                        # tex=img2tex(img) #hwc
+                        depth_along_ray_tensor=mat2tensor(depth_along_ray_mat,False).cuda()
+                        tex=depth_along_ray_tensor.permute(0,2,3,1).squeeze(0) #hwc
+                        tex_channels=tex.shape[2]
+                        tex_flattened=tex.view(-1,tex_channels)        
+                        gt_depth_along_ray_full=tex_flattened
+                        gt_ray_end_full = ray_origins + ray_dirs * gt_depth_along_ray_full.view(-1,1)
+                        ################show points
+                        pred_points_cpu=gt_ray_end_full.contiguous().view(-1,3).detach().double().cpu().numpy()
+                        pred_strands_mesh=Mesh()
+                        pred_strands_mesh.V=pred_points_cpu
+                        pred_strands_mesh.m_vis.m_show_points=True
+                        Scene.show(pred_strands_mesh, "points_depth_along_ray")
+                                                
+
 
 
                     

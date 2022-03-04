@@ -920,7 +920,7 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
         cv::Mat distance_along_ray_visible_points_mat=frame.naive_splat(visible_points, points_distance_along_ray.cast<float>());
 
         frame.depth=depth_visible_points_mat;
-        frame.depth_along_ray=depth_visible_points_mat;
+        frame.depth_along_ray=distance_along_ray_visible_points_mat;
 
         // if ( frame.has_extra_field("is_photoneo") ){
             // frame.depth*=1.0/1000;
