@@ -104,7 +104,7 @@ public:
     bool loaded_dense_cloud(){ return m_load_dense_cloud; }; 
     std::shared_ptr<easy_pbr::Mesh> dense_cloud();
     std::shared_ptr<easy_pbr::Mesh> sparse_cloud();
-    void load_mesh(std::shared_ptr<easy_pbr::Mesh> mesh); //loads the mesh and also scales and translates it
+    std::shared_ptr<easy_pbr::Mesh> load_mesh(const std::shared_ptr<easy_pbr::Mesh> mesh); //loads the mesh and also scales and translates it
     bool is_finished(); //check if we finished reading all the images from the scene
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
@@ -154,7 +154,9 @@ private:
     bool m_load_intrinsics;
     bool m_load_dense_cloud;
     bool m_load_sparse_cloud;
+    bool m_load_depth_map;
     bool m_load_visible_points;
+    bool m_load_depth_map_from_visible_points;
     // int m_scan_idx;  //the idx of the scan that was made on a certain date
     // std::thread m_loader_thread;
     int m_nr_resets;

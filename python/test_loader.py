@@ -546,7 +546,8 @@ def test_phenorob_cp1():
     loader.set_mode_all()
     loader.start()
 
-    show_backprojected_depth=False
+    show_backprojected_depth=True
+    show_backprojected_depth_along_ray=True
 
     def map_range_tensor( input_val, input_start, input_end,  output_start,  output_end):
         # input_clamped=torch.clamp(input_val, input_start, input_end)
@@ -557,10 +558,12 @@ def test_phenorob_cp1():
 
     for s_idx in range(loader.nr_scans()):
         scan=loader.get_scan_with_idx(s_idx)
+        print("loading scan with idx", s_idx)
         for b_idx in range(scan.nr_blocks()):
             block=scan.get_block_with_idx(b_idx)
             #show all the images from the first block only
             if b_idx==0:
+                print("loading block with idx", b_idx)
                 for f_idx in range(block.nr_frames()):
                     frame=block.get_rgb_frame_with_idx(f_idx)
                     if frame.is_shell:
@@ -575,7 +578,7 @@ def test_phenorob_cp1():
                     #show the visible points
                     if f_idx==0 and frame.has_extra_field("visible_points"):
                         visible_points=frame.get_extra_field_mesh("visible_points")
-                        loader.load_mesh(visible_points)
+                        visible_points=loader.load_mesh(visible_points)
                         visible_points.apply_model_matrix_to_cpu(True)
                         visible_points.recalculate_min_max_height()
                         Scene.show(visible_points, "visible_points_"+str(f_idx))
@@ -589,7 +592,9 @@ def test_phenorob_cp1():
                         visible_points_depth=visible_points_cam_t.norm(dim=1,keepdim=True)
                         print("visible_points_depth", visible_points_depth.shape)
                         visible_points_depth_np=visible_points_depth.cpu().float().numpy()
-                        # frame.naive_splat(visible_points, visible_points_depth_np)
+                        depth_visible_points_mat=frame.naive_splat(visible_points, visible_points_depth_np)
+                        Gui.show(depth_visible_points_mat, "depth_visible_points_mat")
+                    
 
                     #show the depth if it exists
                     if f_idx==0 and not frame.depth.empty() and show_backprojected_depth:
@@ -604,6 +609,11 @@ def test_phenorob_cp1():
                         depth_tensor_small=(   torch.logical_and(depth_tensor_original<5.0, depth_tensor_original!=0  )  )*1.0
                         Gui.show(tensor2mat(depth_tensor_small), "depth_tensor_small")
                         Gui.show(tensor2mat(depth_tensor_original), "depth", tensor2mat(depth_tensor_small), "depth_tensor_small")
+
+                    #show the distance_along_ray if it exists
+                    if f_idx==0 and frame.has_extra_field("depth_along_ray_mat") and show_backprojected_depth_along_ray:
+                        depth_along_ray_mat=frame.get_extra_field_mat("depth_along_ray_mat")
+                        Gui.show(depth_along_ray_mat, "depth_along_ray_mat" )
 
 
                     
@@ -669,7 +679,7 @@ def test_phenorob_cp1():
                 Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
                 #load photoneo cloud
                 photoneo_mesh=block.get_photoneo_mesh()
-                loader.load_mesh(photoneo_mesh)
+                photoneo_mesh=loader.load_mesh(photoneo_mesh)
                 # photoneo_mesh.load_from_file(photoneo_mesh.m_disk_path)
                 #show the confidence 
                 # Gui.show(photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
@@ -694,7 +704,7 @@ def test_phenorob_cp1():
             #load the dense cloud for this block
             if loader.loaded_dense_cloud():
                 dense_cloud=block.get_dense_cloud()
-                loader.load_mesh(dense_cloud)
+                dense_cloud=loader.load_mesh(dense_cloud)
                 # dense_cloud.load_from_file(dense_cloud.m_disk_path)
                 print("dense_cloud", dense_cloud.model_matrix.matrix() )
                 dense_cloud.apply_model_matrix_to_cpu(True)

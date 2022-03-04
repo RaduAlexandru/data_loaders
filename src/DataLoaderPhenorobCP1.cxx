@@ -126,7 +126,9 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     m_load_intrinsics=loader_config["load_intrinsics"];   
     m_load_dense_cloud=loader_config["load_dense_cloud"]; 
     m_load_sparse_cloud=loader_config["load_sparse_cloud"]; 
+    m_load_depth_map=loader_config["load_depth_map"]; 
     m_load_visible_points=loader_config["load_visible_points"]; 
+    m_load_depth_map_from_visible_points=loader_config["load_depth_map_from_visible_points"]; 
 
 
 }
@@ -761,6 +763,15 @@ void DataLoaderPhenorobCP1::read_data(){
             for (size_t j = 0; j < m_scans[scan_idx]->m_blocks[i]->m_rgb_frames.size(); j++){
                 std::shared_ptr<Frame> frame=m_scans[scan_idx]->m_blocks[i]->m_rgb_frames[j];
 
+
+                //rescale things if necessary
+                if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
+                    Eigen::Affine3f tf_world_cam_rescaled = frame->tf_cam_world.inverse();
+                    tf_world_cam_rescaled.translation()+=m_scene_translation;
+                    tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+                    frame->tf_cam_world=tf_world_cam_rescaled.inverse();
+                }
+
                 //load the images if necessary or delay it for whne it's needed
                 frame->load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
                 if (m_load_as_shell){   //set the function to load the images whenever it's neede
@@ -779,13 +790,7 @@ void DataLoaderPhenorobCP1::read_data(){
                 //     frame->tf_cam_world=tf_world_cam_rescaled.inverse();
                 // }
 
-                //rescale things if necessary
-                if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
-                    Eigen::Affine3f tf_world_cam_rescaled = frame->tf_cam_world.inverse();
-                    tf_world_cam_rescaled.translation()+=m_scene_translation;
-                    tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
-                    frame->tf_cam_world=tf_world_cam_rescaled.inverse();
-                }
+                
                 
 
 
@@ -795,13 +800,6 @@ void DataLoaderPhenorobCP1::read_data(){
             //load the photoneo frame
             auto block=m_scans[scan_idx]->m_blocks[i];
             Frame &photoneo_frame=block->m_photoneo_frame;
-            photoneo_frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
-            if (m_load_as_shell){   //set the function to load the images whenever it's neede
-                photoneo_frame.is_shell=true;
-            }else{
-                photoneo_frame.is_shell=false;
-                photoneo_frame.load_images(photoneo_frame);
-            }
 
             //rescale things if necessary
             if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
@@ -810,6 +808,17 @@ void DataLoaderPhenorobCP1::read_data(){
                 tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
                 photoneo_frame.tf_cam_world=tf_world_cam_rescaled.inverse();
             }
+
+
+            photoneo_frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
+            if (m_load_as_shell){   //set the function to load the images whenever it's neede
+                photoneo_frame.is_shell=true;
+            }else{
+                photoneo_frame.is_shell=false;
+                photoneo_frame.load_images(photoneo_frame);
+            }
+
+            
 
         }
 
@@ -853,7 +862,8 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
 
 
     //if we have depth load also that one
-    if (!frame.depth_path.empty()){
+    bool should_load_depth=frame.has_extra_field("is_photoneo") || m_load_depth_map; //if we are photoneo we load the depth, if we are rgb frame, when only if the flag is true
+    if (!frame.depth_path.empty() && should_load_depth){
         frame.depth = cv::imread(frame.depth_path, cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH);
         //resize to match the rgb frame if needed
         if(frame.depth.rows!=frame.height || frame.depth.cols!=frame.width){
@@ -890,25 +900,65 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
         CHECK(frame.width==frame.confidence.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
     }
 
+
+    if(m_load_depth_map_from_visible_points){
+        CHECK(m_load_depth_map==false) <<"Loading of the raw depth map should be set to false because we are overwriding the depth";
+        CHECK(m_load_visible_points) <<"We should be also loading the visible points.";
+
+        easy_pbr::MeshSharedPtr visible_points=frame.get_extra_field< std::shared_ptr<easy_pbr::Mesh> >("visible_points");
+        visible_points=load_mesh(visible_points);
+        visible_points->apply_model_matrix_to_cpu(true);
+        //get the depth of the visible points towards this frame
+        easy_pbr::MeshSharedPtr visible_points_cam= std::make_shared<easy_pbr::Mesh>( visible_points->clone() );
+        visible_points_cam->transform_model_matrix( frame.tf_cam_world.cast<double>() );
+        visible_points_cam->apply_model_matrix_to_cpu(true);
+        //splat the depth
+        Eigen::MatrixXd points_depth = visible_points_cam->V.col(2);
+        cv::Mat depth_visible_points_mat=frame.naive_splat(visible_points, points_depth.cast<float>());
+        //splat the distance along ray
+        Eigen::MatrixXd points_distance_along_ray = visible_points_cam->V.rowwise().norm();
+        cv::Mat distance_along_ray_visible_points_mat=frame.naive_splat(visible_points, points_distance_along_ray.cast<float>());
+
+        frame.depth=depth_visible_points_mat;
+        frame.add_extra_field("depth_along_ray_mat", distance_along_ray_visible_points_mat);
+
+        // if ( frame.has_extra_field("is_photoneo") ){
+            // frame.depth*=1.0/1000;
+        // }
+
+        //if the scene is rescaled the depth map also needs to be
+        // if(m_scene_scale_multiplier>0.0 ){
+            // frame.depth*= m_scene_scale_multiplier;
+        // }
+
+        CHECK(frame.height==frame.depth.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
+        CHECK(frame.width==frame.depth.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
+
+    }
+
 }
 
-void DataLoaderPhenorobCP1::load_mesh(std::shared_ptr<easy_pbr::Mesh> mesh){
-    mesh->load_from_file(mesh->m_disk_path);
+std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorobCP1::load_mesh(const std::shared_ptr<easy_pbr::Mesh> mesh){
+    std::shared_ptr<easy_pbr::Mesh> new_mesh= std::make_shared<easy_pbr::Mesh>( mesh->clone() ); //we create a new mesh because we will be applying modifications in-place like setting model matrix to identity at some point when applying it to the cpu
+
+    new_mesh->load_from_file(mesh->m_disk_path);
 
     if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
         // VLOG(1) <<" wtf----------------------------------";
-        Eigen::Affine3f tf_world_obj_rescaled = mesh->model_matrix().cast<float>();
-        VLOG(1) << tf_world_obj_rescaled.matrix();
+        Eigen::Affine3f tf_world_obj_rescaled = new_mesh->model_matrix().cast<float>();
+        // VLOG(1) << tf_world_obj_rescaled.matrix();
         tf_world_obj_rescaled.translation()+=m_scene_translation;
         // tf_world_obj_rescaled.translation()*=m_scene_scale_multiplier;
-        VLOG(1) << tf_world_obj_rescaled.matrix();
-        mesh->set_model_matrix( tf_world_obj_rescaled.cast<double>() );
-        mesh->apply_model_matrix_to_cpu(true);
+        // VLOG(1) << tf_world_obj_rescaled.matrix();
+        new_mesh->set_model_matrix( tf_world_obj_rescaled.cast<double>() );
+        new_mesh->apply_model_matrix_to_cpu(true);
 
         //scale the vertices
-        mesh->scale_mesh(m_scene_scale_multiplier);
-        mesh->apply_model_matrix_to_cpu(true);
+        new_mesh->scale_mesh(m_scene_scale_multiplier);
+        new_mesh->apply_model_matrix_to_cpu(true);
     }
+
+    return new_mesh;
 
 }
 
