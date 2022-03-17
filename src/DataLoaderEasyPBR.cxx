@@ -156,7 +156,8 @@ void DataLoaderEasyPBR::init_data_reading(){
             m_imgs_paths.end(),
             std::back_inserter(new_img_paths),
             m_limit_to_nr_imgs,
-            std::mt19937{std::random_device{}()}
+            // std::mt19937{std::random_device{}()}
+            std::mt19937{0}
         );
         m_imgs_paths= new_img_paths;
     }

@@ -614,6 +614,7 @@ def test_phenorob_cp1():
 
                     #show the distance_along_ray if it exists
                     if f_idx==0 and not frame.depth_along_ray.empty() and show_backprojected_depth_along_ray:
+                    # if not frame.depth_along_ray.empty() and show_backprojected_depth_along_ray:
                         depth_along_ray_mat=frame.depth_along_ray
                         Gui.show(depth_along_ray_mat, "depth_along_ray_mat" )
                         #BACKPROJECT also this depth to check if its correct
@@ -652,7 +653,7 @@ def test_phenorob_cp1():
                         pred_strands_mesh=Mesh()
                         pred_strands_mesh.V=pred_points_cpu
                         pred_strands_mesh.m_vis.m_show_points=True
-                        Scene.show(pred_strands_mesh, "points_depth_along_ray")
+                        Scene.show(pred_strands_mesh, "points_depth_along_ray"+str(f_idx))
                                                 
 
 
