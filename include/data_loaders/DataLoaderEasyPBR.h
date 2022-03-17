@@ -65,6 +65,7 @@ private:
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
     void init_poses(); //rad the pose json file and fills m_filename2pose
     void read_data(); //a scene (depending on the mode) and all the images contaned in it together with the poses and so on
+    std::vector< easy_pbr::Frame > furthest_frame_sampler( std::vector<easy_pbr::Frame>& frames, const int nr_frames_to_pick );
 
 
     //objects
@@ -79,6 +80,7 @@ private:
     std::string m_mode; // train or test or val
     bool m_shuffle;
     int m_limit_to_nr_imgs;
+    std::string m_img_selector; // "random" or "furthest" 
     bool m_do_overfit; // return all the time just the first image
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     // std::string m_restrict_to_object;  //makes it load clouds only from a specific object
@@ -92,7 +94,7 @@ private:
     //internal
     std::unordered_map<std::string, Eigen::Affine3d> m_filename2pose; //maps from the filename of the image to the corresponding pose in tf_world_cam
     std::unordered_map<std::string, Eigen::Matrix3d> m_filename2intrinsics; //maps from the filename of the image to the corresponding intrinsics
-    std::vector<boost::filesystem::path> m_imgs_paths; //contains all the filenames that of the images we want to read
+    // std::vector<boost::filesystem::path> m_imgs_paths; //contains all the filenames that of the images we want to read
     std::vector< easy_pbr::Frame > m_frames;
     float m_camera_angle_x;
     float m_loaded_scene_mesh;

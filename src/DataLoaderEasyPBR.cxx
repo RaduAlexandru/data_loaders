@@ -88,6 +88,7 @@ void DataLoaderEasyPBR::init_params(const std::string config_file){
     m_subsample_factor=loader_config["subsample_factor"];
     m_shuffle=loader_config["shuffle"];
     m_limit_to_nr_imgs=loader_config["limit_to_nr_imgs"];
+    m_img_selector=(std::string)loader_config["img_selector"];
     m_do_overfit=loader_config["do_overfit"];
     m_mode=(std::string)loader_config["mode"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
@@ -112,11 +113,13 @@ void DataLoaderEasyPBR::init_params(const std::string config_file){
     // Config transformer_config=loader_config["transformer"];
     // m_transformer=std::make_shared<DataTransformer>(transformer_config);
 
+    CHECK(m_img_selector=="random" || m_img_selector=="furthest") <<"img_select can only be random or furthest but it is "<<m_img_selector;
+
 }
 
 void DataLoaderEasyPBR::start(){
-    init_data_reading();
     init_poses();
+    init_data_reading();
     read_data();
 }
 
@@ -127,39 +130,100 @@ void DataLoaderEasyPBR::init_data_reading(){
         LOG(FATAL) << "No directory " << m_dataset_path;
     }
 
+    std::vector<boost::filesystem::path> imgs_paths; //contains all the filenames that of the images we want to read
+
     //go to the folder of train val or test depending on the mode in which we are one
     for (fs::directory_iterator itr(m_dataset_path/m_object_name/("imgs_"+m_mode) ); itr!=fs::directory_iterator(); ++itr){
         fs::path img_path= itr->path();
         //we disregard the images that contain depth and normals, we load only the rgb
         if (fs::is_regular_file(img_path) &&
         img_path.filename().string().find("png") != std::string::npos){
-            m_imgs_paths.push_back(img_path);
+            imgs_paths.push_back(img_path);
         }
     }
-    CHECK( !m_imgs_paths.empty() ) << "Could not find any images in path " << m_dataset_path/m_object_name;
+    CHECK( !imgs_paths.empty() ) << "Could not find any images in path " << m_dataset_path/m_object_name;
 
-    std::sort(m_imgs_paths.begin(), m_imgs_paths.end(), FileComparatorFunc);
+    std::sort(imgs_paths.begin(), imgs_paths.end(), FileComparatorFunc);
+
+
+    // shuffle the data if neccsary
+    // if(m_shuffle && m_mode=="train"){
+    //     unsigned seed = m_nr_resets;
+    //     auto rng_0 = std::default_random_engine(seed);
+    //     std::shuffle(std::begin(m_imgs_paths), std::end(m_imgs_paths), rng_0);
+    // }
+
+
+
+    //make the frames as shells
+    for (size_t i = 0; i < imgs_paths.size(); i++){
+
+        Frame frame;
+        frame.is_shell=true;
+
+        fs::path img_path=imgs_paths[i];
+        frame.rgb_path=img_path.string();
+
+        //get the idx
+        std::string filename=img_path.stem().string();
+        frame.frame_idx=std::stoi(filename);
+
+        //extrinsics
+        std::string key=img_path.filename().string();
+        CHECK( m_filename2pose.find(key) != m_filename2pose.end() ) <<"Could not find the key " << key << " in the pose hashmap";
+        CHECK( m_filename2intrinsics.find(key) != m_filename2intrinsics.end() ) <<"Could not find the key " << key << " in the intrinsics hashmap";
+        frame.tf_cam_world=m_filename2pose[key].cast<float>().inverse();
+
+        //intrinsics
+        frame.K=m_filename2intrinsics[key].cast<float>();
+        if(m_subsample_factor>1){
+            frame.rescale_K(1.0/m_subsample_factor);
+        }
+
+        //rescale things if necessary
+        if(m_scene_scale_multiplier>0.0){
+            Eigen::Affine3f tf_world_cam_rescaled = frame.tf_cam_world.inverse();
+            tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+            frame.tf_cam_world=tf_world_cam_rescaled.inverse();
+        }
+
+        m_frames.push_back(frame);
+
+    }
+
+
+
+
+
 
 
     // shuffle the data if neccsary
     if(m_shuffle && m_mode=="train"){
         unsigned seed = m_nr_resets;
         auto rng_0 = std::default_random_engine(seed);
-        std::shuffle(std::begin(m_imgs_paths), std::end(m_imgs_paths), rng_0);
+        std::shuffle(std::begin(m_frames), std::end(m_frames), rng_0);
     }
 
-    //take only x nr of imgs
+
+    // //take only x nr of imgs
     if(m_limit_to_nr_imgs>0){
-        std::vector<boost::filesystem::path> new_img_paths;
-        std::sample(
-            m_imgs_paths.begin(),
-            m_imgs_paths.end(),
-            std::back_inserter(new_img_paths),
-            m_limit_to_nr_imgs,
-            // std::mt19937{std::random_device{}()}
-            std::mt19937{0}
-        );
-        m_imgs_paths= new_img_paths;
+        if (m_img_selector=="random"){
+            std::vector< easy_pbr::Frame> new_frames;
+            std::sample(
+                m_frames.begin(),
+                m_frames.end(),
+                std::back_inserter(new_frames),
+                m_limit_to_nr_imgs,
+                // std::mt19937{std::random_device{}()}
+                std::mt19937{0}
+            );
+            m_frames= new_frames;
+        }else if(m_img_selector=="furthest"){
+            m_frames=furthest_frame_sampler(m_frames, m_limit_to_nr_imgs);
+
+        }else{
+            LOG(FATAL) <<"Unkown img_selector " << m_img_selector;
+        }
     }
 
 
@@ -252,19 +316,15 @@ void DataLoaderEasyPBR::read_data(){
     }
 
 
-    for (size_t i = 0; i < m_imgs_paths.size(); i++){
 
-        Frame frame;
+    //attempt 2
+    for (size_t i = 0; i < m_frames.size(); i++){
+        Frame& frame=m_frames[i];
 
-        fs::path img_path=m_imgs_paths[i];
-        // VLOG(1) << "reading " << img_path;
-
-        //get the idx
-        std::string filename=img_path.stem().string();
-        frame.frame_idx=std::stoi(filename);
+        VLOG(1) << "reading " << frame.rgb_path;
 
         //read rgba and split into rgb and alpha mask
-        cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
+        cv::Mat rgba_8u = cv::imread(frame.rgb_path, cv::IMREAD_UNCHANGED);
         cv::Mat rgb_8u;
         if(m_subsample_factor>1){
             cv::Mat resized;
@@ -284,48 +344,85 @@ void DataLoaderEasyPBR::read_data(){
         frame.width=frame.rgb_32f.cols;
         frame.height=frame.rgb_32f.rows;
 
-
-
-        //extrinsics
-        VLOG(1) << "img_path " <<img_path.filename().string();
-        std::string key=img_path.filename().string();
-        CHECK( m_filename2pose.find(key) != m_filename2pose.end() ) <<"Could not find the key " << key << " in the pose hashmap";
-        CHECK( m_filename2intrinsics.find(key) != m_filename2intrinsics.end() ) <<"Could not find the key " << key << " in the intrinsics hashmap";
-
-        frame.tf_cam_world=m_filename2pose[key].cast<float>().inverse();
-
-        // //flip z axis
-        // Eigen::Affine3f tf_world_cam=frame.tf_cam_world.inverse();
-        // Eigen::Matrix3f cam_axes;
-        // cam_axes=tf_world_cam.linear();
-        // cam_axes.col(2)=-cam_axes.col(2);
-        // tf_world_cam.linear()= cam_axes;
-        // frame.tf_cam_world=tf_world_cam.inverse();
-
-
-        //intrinsics
-        frame.K=m_filename2intrinsics[key].cast<float>();
-        if(m_subsample_factor>1){
-            // frame.K/=m_subsample_factor;
-            // frame.K(2,2)=1.0;
-            frame.rescale_K(1.0/m_subsample_factor);
-        }
-        // VLOG(1) << "K is" << frame.K;
-        // VLOG(1) << "width and height is " << frame.width <<  " " << frame.height;
-
-
-        //rescale things if necessary
-        if(m_scene_scale_multiplier>0.0){
-            Eigen::Affine3f tf_world_cam_rescaled = frame.tf_cam_world.inverse();
-            tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
-            frame.tf_cam_world=tf_world_cam_rescaled.inverse();
-        }
-
-        m_frames.push_back(frame);
-        // VLOG(1) << "pushback and frames is " << m_frames.size();
-
-
+        frame.is_shell=false;
     }
+
+
+
+    // for (size_t i = 0; i < m_imgs_paths.size(); i++){
+
+    //     Frame frame;
+
+    //     fs::path img_path=m_imgs_paths[i];
+    //     // VLOG(1) << "reading " << img_path;
+
+    //     //get the idx
+    //     std::string filename=img_path.stem().string();
+    //     frame.frame_idx=std::stoi(filename);
+
+    //     //read rgba and split into rgb and alpha mask
+    //     cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
+    //     cv::Mat rgb_8u;
+    //     if(m_subsample_factor>1){
+    //         cv::Mat resized;
+    //         cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+    //         rgba_8u=resized;
+    //     }
+    //     std::vector<cv::Mat> channels(4);
+    //     cv::split(rgba_8u, channels);
+    //     cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+    //     channels.pop_back();
+    //     cv::merge(channels, rgb_8u);
+
+
+    //     // cv::cvtColor(frame.rgb_8u, frame.gray_8u, CV_BGR2GRAY);
+    //     rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
+    //     // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+    //     frame.width=frame.rgb_32f.cols;
+    //     frame.height=frame.rgb_32f.rows;
+
+
+
+    //     //extrinsics
+    //     VLOG(1) << "img_path " <<img_path.filename().string();
+    //     std::string key=img_path.filename().string();
+    //     CHECK( m_filename2pose.find(key) != m_filename2pose.end() ) <<"Could not find the key " << key << " in the pose hashmap";
+    //     CHECK( m_filename2intrinsics.find(key) != m_filename2intrinsics.end() ) <<"Could not find the key " << key << " in the intrinsics hashmap";
+
+    //     frame.tf_cam_world=m_filename2pose[key].cast<float>().inverse();
+
+    //     // //flip z axis
+    //     // Eigen::Affine3f tf_world_cam=frame.tf_cam_world.inverse();
+    //     // Eigen::Matrix3f cam_axes;
+    //     // cam_axes=tf_world_cam.linear();
+    //     // cam_axes.col(2)=-cam_axes.col(2);
+    //     // tf_world_cam.linear()= cam_axes;
+    //     // frame.tf_cam_world=tf_world_cam.inverse();
+
+
+    //     //intrinsics
+    //     frame.K=m_filename2intrinsics[key].cast<float>();
+    //     if(m_subsample_factor>1){
+    //         // frame.K/=m_subsample_factor;
+    //         // frame.K(2,2)=1.0;
+    //         frame.rescale_K(1.0/m_subsample_factor);
+    //     }
+    //     // VLOG(1) << "K is" << frame.K;
+    //     // VLOG(1) << "width and height is " << frame.width <<  " " << frame.height;
+
+
+    //     //rescale things if necessary
+    //     if(m_scene_scale_multiplier>0.0){
+    //         Eigen::Affine3f tf_world_cam_rescaled = frame.tf_cam_world.inverse();
+    //         tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+    //         frame.tf_cam_world=tf_world_cam_rescaled.inverse();
+    //     }
+
+    //     m_frames.push_back(frame);
+    //     // VLOG(1) << "pushback and frames is " << m_frames.size();
+
+
+    // }
 
 
 }
@@ -376,6 +473,57 @@ Frame DataLoaderEasyPBR::get_closest_frame( const easy_pbr::Frame& frame){
     Frame  frame_closest= m_frames[closest_idx];
 
     return frame_closest;
+
+}
+std::vector< easy_pbr::Frame > DataLoaderEasyPBR::furthest_frame_sampler( std::vector<easy_pbr::Frame>& frames, const int nr_frames_to_pick ){
+
+    CHECK(!frames.empty()) <<"Frames vector is empty";
+
+    std::vector<bool> is_frame_pushed(frames.size(), false);
+
+    std::vector< easy_pbr::Frame > selected_frames;
+    //push first frame
+    selected_frames.push_back(frames[0]);
+    is_frame_pushed[0]=true;
+
+    while(selected_frames.size()<nr_frames_to_pick){
+        //loop through all the input frames and also loop through the selected ones, keep an idx of the furthest one
+        int idx_furthest=0;
+        float maximum_distance=std::numeric_limits<float>::min();
+
+        for (size_t fi = 0; fi < frames.size(); fi++){
+            Frame& input_frame=frames[fi];
+            if (is_frame_pushed[fi]){
+                continue;
+            }
+            //the current frame goes through all of the selected ones and calculates the closest distance. Then we select the frame with the highest closest distance
+            float min_distance_cur_frame=std::numeric_limits<float>::max();
+            for (size_t si = 0; si < selected_frames.size(); si++){
+                Frame& selected_frame=selected_frames[si];
+                float dist= (input_frame.pos_in_world() - selected_frame.pos_in_world()).norm();
+                // VLOG(1) << "dist is " <<dist;
+                if (dist<min_distance_cur_frame ){
+                    min_distance_cur_frame=dist;
+                }
+            }
+
+            //now we select the frame which is furthest away from all the other frames
+            if (min_distance_cur_frame>maximum_distance ){
+                maximum_distance=min_distance_cur_frame;
+                idx_furthest=fi;
+            }
+        }
+
+        //push the new furthest frame
+        selected_frames.push_back(frames[idx_furthest]);
+        is_frame_pushed[idx_furthest]=true;
+        // VLOG(1) << "pushign " << idx_furthest;
+        // VLOG(1) << "maximum_distance " << maximum_distance;
+
+
+    }
+
+    return selected_frames;
 
 }
 
