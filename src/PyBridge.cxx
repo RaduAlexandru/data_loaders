@@ -230,6 +230,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_test", &DataLoaderEasyPBR::set_mode_test )
     .def("set_mode_validation", &DataLoaderEasyPBR::set_mode_validation )
     .def("set_shuffle", &DataLoaderEasyPBR::set_shuffle )
+    .def("set_limit_to_nr_imgs", &DataLoaderEasyPBR::set_limit_to_nr_imgs )
     ;
 
 

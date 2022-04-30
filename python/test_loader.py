@@ -294,7 +294,7 @@ def test_easypbr():
             frustum_mesh=frame.create_frustum_mesh(0.02)
             # frustum_mesh=frame.create_frustum_mesh(0.2)
             frustum_mesh.m_vis.m_line_width=1
-            if frame.frame_idx==20:
+            if frame.frame_idx==1:
                 frustum_mesh.m_vis.m_line_color=[0.0, 1.0, 0.0]
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
             # mesh=Scene.get_mesh_with_name("frustum_"+str(frame.frame_idx))

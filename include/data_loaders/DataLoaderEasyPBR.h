@@ -55,6 +55,7 @@ public:
     void set_mode_test();
     void set_mode_validation();
     void set_shuffle(bool val);
+    void set_limit_to_nr_imgs(const int val){ m_limit_to_nr_imgs=val; };
 
 
 
