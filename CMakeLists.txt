@@ -1,4 +1,5 @@
-cmake_minimum_required(VERSION 2.8 FATAL_ERROR) # we need at least 3.11 because we use the FetchContent feature to manage dependencies and at least 3.14 because we use FetchContent_MakeAvailable
+# cmake_minimum_required(VERSION 2.8 FATAL_ERROR) # we need at least 3.11 because we use the FetchContent feature to manage dependencies and at least 3.14 because we use FetchContent_MakeAvailable
+cmake_minimum_required(VERSION 2.8...3.22)
 
 project(data_loaders)
 
@@ -70,7 +71,7 @@ option(LIBIGL_WITH_XML               "Use XML"            OFF)
 ######   PACKAGES   ############################################################
 find_package(catkin)
 # set(catkin_FOUND 0 )
-message("catkin found is ",  ${catkin_FOUND} )
+message("catkin found is ${catkin_FOUND}" )
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
 find_package(OpenCV REQUIRED)
 find_package(LIBIGL REQUIRED)
@@ -104,7 +105,6 @@ endif()
 
 
 
-message("--------------------------------------EASYPBR_SRC_PATH is ", ${EASYPBR_SRC_PATH})
 add_subdirectory( ${EASYPBR_SRC_PATH}/deps/pybind11 ./../../build/pybind11 EXCLUDE_FROM_ALL)
 #pybind attempt 3
 pybind11_add_module(dataloaders ${PROJECT_SOURCE_DIR}/src/PyBridge.cxx )
@@ -185,6 +185,15 @@ if(${TORCH_FOUND})
 endif()
 
 
+#disable warnings for yaml-cpp and cnpy
+set_source_files_properties(
+  ${PROJECT_SOURCE_DIR}/deps/cnpy/cnpy.cpp
+  PROPERTIES
+  COMPILE_FLAGS "-w"
+)
+set_target_properties(yaml-cpp PROPERTIES COMPILE_FLAGS "-w")
+
+
 ###   SET ALL THE GLOBAL OPTIONS #########################################
 if(${catkin_FOUND})
     message("USING ROS")
@@ -221,7 +230,7 @@ endif()
 
 
 ###   LIBS   ###############################################
-message("easypbr lib is ", ${EASYPBR_LIBRARY})
+# message("easypbr lib is ", ${EASYPBR_LIBRARY})
 set(LIBS ${LIBS} igl::core  ${catkin_LIBRARIES} ${EASYPBR_LIBRARY} ${OpenCV_LIBS}  yaml-cpp  )
 if(${TORCH_FOUND})
     set(LIBS ${LIBS} ${TORCH_LIBRARIES} )
