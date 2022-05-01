@@ -167,7 +167,7 @@ void DataLoaderNerf::init_poses(){
 
         //read the psoe as a 4x4 matrix
         Eigen::Affine3d tf_world_cam;
-        int rows=4;
+        // int rows=4;
         for (int r = 0; r < 4; r++){
             for (int c = 0; c < 4; c++){
                 // VLOG(1) << "tf matri is " << k["transform_matrix"][r][c].number_value();
@@ -346,7 +346,7 @@ void DataLoaderNerf::read_data(){
 
 
 Frame DataLoaderNerf::get_next_frame(){
-    CHECK(m_idx_img_to_read<m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
+    CHECK(m_idx_img_to_read<(int)m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
     Frame  frame= m_frames[m_idx_img_to_read];
 
     if(!m_do_overfit){
@@ -359,7 +359,7 @@ std::vector<easy_pbr::Frame> DataLoaderNerf::get_all_frames(){
     return m_frames;
 }
 Frame DataLoaderNerf::get_frame_at_idx( const int idx){
-    CHECK(idx<m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
+    CHECK(idx<(int)m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
 
     Frame  frame= m_frames[idx];
 
@@ -395,11 +395,11 @@ Frame DataLoaderNerf::get_closest_frame( const easy_pbr::Frame& frame){
 
 std::vector<easy_pbr::Frame>  DataLoaderNerf::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx){
 
-    CHECK(nr_frames<m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
+    CHECK(nr_frames<(int)m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
 
     std::vector<easy_pbr::Frame> selected_close_frames;
 
-    for(size_t i=0; i<nr_frames; i++){
+    for(int i=0; i<nr_frames; i++){
 
         //select a close frame
         float closest_distance=std::numeric_limits<float>::max();
@@ -494,7 +494,7 @@ std::vector<easy_pbr::Frame>  DataLoaderNerf::get_close_frames( const easy_pbr::
 
 bool DataLoaderNerf::is_finished(){
     //check if this loader has returned all the images it has
-    if(m_idx_img_to_read<m_frames.size()){
+    if(m_idx_img_to_read<(int)m_frames.size()){
         return false; //there is still more files to read
     }
 

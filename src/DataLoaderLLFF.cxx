@@ -176,7 +176,7 @@ void DataLoaderLLFF::read_data(){
     // Unique identifier for images.
     typedef uint32_t image_t;
     // Index per image, i.e. determines maximum number of 2D points per image.
-    typedef uint32_t point2D_t;
+    // typedef uint32_t point2D_t;
     // Unique identifier per added 3D point. Since we add many 3D points,
     // delete them, and possibly re-add them again, the maximum number of allowed
     // unique indices should be large.
@@ -214,7 +214,7 @@ void DataLoaderLLFF::read_data(){
             }
         } while (name_char != '\0');
 
-        VLOG(1) << "image name " << image_name;
+        VLOG(1) << "image name " << image_name << "with img id" << image_id;
 
         const size_t num_points2D = ReadBinaryLittleEndian<uint64_t>(&file);
 
@@ -365,19 +365,20 @@ void DataLoaderLLFF::read_data(){
     const size_t num_cameras = ReadBinaryLittleEndian<uint64_t>(&camera_file);
     VLOG(1) << "Reading intrinsics for nr of cameras: " << num_cameras;
     for (size_t i = 0; i < num_cameras; ++i) {
-      // class Camera camera;
-      camera_t camera_id = ReadBinaryLittleEndian<camera_t>(&camera_file);
-      int model_id =ReadBinaryLittleEndian<int>(&camera_file);
-      uint64_t width = ReadBinaryLittleEndian<uint64_t>(&camera_file);
-      uint64_t height = ReadBinaryLittleEndian<uint64_t>(&camera_file);
-      std::vector<double> params;
-      params.resize(6);
-      ReadBinaryLittleEndian<double>(&camera_file, &params );
+    // class Camera camera;
+    camera_t camera_id = ReadBinaryLittleEndian<camera_t>(&camera_file);
+    int model_id =ReadBinaryLittleEndian<int>(&camera_file);
+    uint64_t width = ReadBinaryLittleEndian<uint64_t>(&camera_file);
+    uint64_t height = ReadBinaryLittleEndian<uint64_t>(&camera_file);
+    std::vector<double> params;
+    params.resize(6);
+    ReadBinaryLittleEndian<double>(&camera_file, &params );
 
-
-      for (size_t j = 0; j < params.size(); j++) {
-          VLOG(1) << "param " << j << " is " <<params[j];
-      }
+    VLOG(1) << "width and height" << width << " " << height ;
+    VLOG(1) << "model id "  << model_id;
+    for (size_t j = 0; j < params.size(); j++) {
+        VLOG(1) << "param " << j << " is " <<params[j];
+    }
 
 
     //   CHECK(params.size()==4) << " params should have size of 4, so it should contain fx,fy,cx,cy. So the camera model should be simple_pinhole. However the size is " << params.size();
@@ -388,7 +389,7 @@ void DataLoaderLLFF::read_data(){
       //get all the frames which have frame_idx to be camera_id and we set the params;
       for (size_t j = 0; j < m_frames.size(); j++) {
             Frame& frame = m_frames[j];
-            if (frame.cam_id==camera_id){
+            if (frame.cam_id==(int)camera_id){
                 //this correspond so we set it
                 double fx,fy,cx,cy;
                 fx=params[0];
@@ -435,7 +436,7 @@ void DataLoaderLLFF::read_data(){
 
 
 Frame DataLoaderLLFF::get_next_frame(){
-    CHECK(m_idx_img_to_read<m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
+    CHECK(m_idx_img_to_read<(int)m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
     Frame  frame= m_frames[m_idx_img_to_read];
 
     if(!m_do_overfit){
@@ -445,7 +446,7 @@ Frame DataLoaderLLFF::get_next_frame(){
     return frame;
 }
 Frame DataLoaderLLFF::get_frame_at_idx( const int idx){
-    CHECK(idx<m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
+    CHECK(idx<(int)m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
 
     Frame  frame= m_frames[idx];
 
@@ -480,11 +481,11 @@ Frame DataLoaderLLFF::get_closest_frame( const easy_pbr::Frame& frame){
 
 std::vector<easy_pbr::Frame>  DataLoaderLLFF::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx){
 
-    CHECK(nr_frames<m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
+    CHECK(nr_frames<(int)m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
 
     std::vector<easy_pbr::Frame> selected_close_frames;
 
-    for(size_t i=0; i<nr_frames; i++){
+    for(int i=0; i<nr_frames; i++){
 
         //select a close frame
         float closest_distance=std::numeric_limits<float>::max();
@@ -536,7 +537,7 @@ std::vector<easy_pbr::Frame>  DataLoaderLLFF::get_close_frames( const easy_pbr::
 
 bool DataLoaderLLFF::is_finished(){
     //check if this loader has returned all the images it has
-    if(m_idx_img_to_read<m_frames.size()){
+    if(m_idx_img_to_read<(int)m_frames.size()){
         return false; //there is still more files to read
     }
 

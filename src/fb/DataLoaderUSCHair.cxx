@@ -236,7 +236,7 @@ void DataLoaderUSCHair::read_data(){
         // int filenames_to_read= m_do_overfit? 1: m_data_filenames.size();
         // VLOG(1) << "filenames_to_read" << filenames_to_read;
 
-        for(int i=0; i< m_data_filenames.size(); i++){
+        for(size_t i=0; i< m_data_filenames.size(); i++){
             std::string data_filepath=m_data_filenames[ i ].string();
 
             VLOG(1) << "data_filepath " << data_filepath;
@@ -276,13 +276,15 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     // std::vector<double> strand_lengths_vec;
     // int nr_strands_added=0;
 
+    int fret;
+
     int nstrands = 0;
-    fread(&nstrands, 4, 1, f);
+    fret=fread(&nstrands, 4, 1, f);
 
 
     for (int i = 0; i < nstrands; i++) {
         int nverts = 0;
-        fread(&nverts, 4, 1, f);
+        fret=fread(&nverts, 4, 1, f);
 
 
 
@@ -294,7 +296,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         if (m_rand_gen->rand_bool(m_percentage_strand_drop) && m_load_buffered){
             is_strand_valid=false;
         }
-        if(m_load_only_strand_with_idx>=0 && usc_hair->strand_meshes.size()!=m_load_only_strand_with_idx){ //loads only one strand with a certain index
+        if(m_load_only_strand_with_idx>=0 && (int)usc_hair->strand_meshes.size()!=m_load_only_strand_with_idx){ //loads only one strand with a certain index
             is_strand_valid=false;
         }
 
@@ -310,9 +312,9 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
             // VLOG(1) << "vert " <<j;
             // fread(&strand_points_float(i,0), 12, 1, f);
             float x,y,z;
-            fread(&x, 4, 1, f);
-            fread(&y, 4, 1, f);
-            fread(&z, 4, 1, f);
+            fret=fread(&x, 4, 1, f);
+            fret=fread(&y, 4, 1, f);
+            fret=fread(&z, 4, 1, f);
 
             Eigen::Vector3d point;
             point << x,y,z;
@@ -350,7 +352,9 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     }
 
 
-    fclose(f);
+    fret=fclose(f);
+
+    CHECK(fret==0) << "The file was not correctly closed for some reason";
 
 
     // //if we augment in tbn space we need to compute the tbn for each strand
@@ -657,7 +661,7 @@ void DataLoaderUSCHair::compute_all_atributes(std::shared_ptr<USCHair>& usc_hair
     //get the tbn into the tensor
     usc_hair->tbn_roots_tensor = torch::empty({ nr_strands,3,3 }, torch::dtype(torch::kFloat32) );
     auto tbn_roots_tensor_accesor = usc_hair->tbn_roots_tensor.accessor<float,3>();
-    for(int i=0; i<tbn_roots.size(); i++){
+    for(size_t i=0; i<tbn_roots.size(); i++){
         // //row 0
         tbn_roots_tensor_accesor[i][0][0]=tbn_roots[i](0,0);
         tbn_roots_tensor_accesor[i][0][1]=tbn_roots[i](0,1);
@@ -802,6 +806,7 @@ void DataLoaderUSCHair::xyz2local(int nr_strands, int nr_verts_per_strand, const
         //the cur_to_world starts a the root with the TBN of the root
         R_world_cur=tbn_roots[s];
         Eigen::Vector3d last_N;
+        last_N.setZero();
 
         for(int p=0; p<nr_verts_per_strand-1; p++){
 
@@ -986,7 +991,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::get_random_roots(const int nr_strand
     //tbn roots to tensor
     usc_hair->tbn_roots_tensor = torch::empty({ nr_strands,3,3 }, torch::dtype(torch::kFloat32) );
     auto tbn_roots_tensor_accesor = usc_hair->tbn_roots_tensor.accessor<float,3>();
-    for(int i=0; i<tbn_roots.size(); i++){
+    for(size_t i=0; i<tbn_roots.size(); i++){
         // //row 0
         tbn_roots_tensor_accesor[i][0][0]=tbn_roots[i](0,0);
         tbn_roots_tensor_accesor[i][0][1]=tbn_roots[i](0,1);
@@ -1065,7 +1070,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::get_hair(){
     //augment the data
     std::shared_ptr<USCHair> aug_hair(new USCHair); //we create a new augmented one
     //copyt all the stuff so thet internally we keep the same strands
-    for (int i = 0; i < hair->strand_meshes.size(); i++) {
+    for (size_t i = 0; i < hair->strand_meshes.size(); i++) {
         bool is_strand_valid=true;
         if (m_rand_gen->rand_bool(m_percentage_strand_drop) && !m_load_buffered){ //if we have them all stored in a vector we do here the subsampling
             is_strand_valid=false;
@@ -1083,7 +1088,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::get_hair(){
     std::vector<Eigen::Matrix3d> tbn_roots;
     if (m_augment_in_tbn_space){
         std::vector<Eigen::Vector3d> position_roots_vec;
-        for (int i=0; i<aug_hair->strand_meshes.size(); i++){
+        for (size_t i=0; i<aug_hair->strand_meshes.size(); i++){
             position_roots_vec.push_back( aug_hair->strand_meshes[i]->V.row(0) );
         }
         //get uv and tbn
@@ -1093,7 +1098,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::get_hair(){
     //actual aguemnt
     if(m_mode=="train"){
         if (m_augment_per_strand){ //agument each strand individually
-            for (int i = 0; i < aug_hair->strand_meshes.size(); i++) {
+            for (size_t i = 0; i < aug_hair->strand_meshes.size(); i++) {
 
                 Eigen::Affine3d tf_world_scalp;
                 Eigen::Affine3d tf_scalp_world;

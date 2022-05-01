@@ -197,7 +197,7 @@ void DataLoaderColmap::read_data(){
     // Unique identifier for images.
     typedef uint32_t image_t;
     // Index per image, i.e. determines maximum number of 2D points per image.
-    typedef uint32_t point2D_t;
+    // typedef uint32_t point2D_t;
     // Unique identifier per added 3D point. Since we add many 3D points,
     // delete them, and possibly re-add them again, the maximum number of allowed
     // unique indices should be large.
@@ -224,6 +224,9 @@ void DataLoaderColmap::read_data(){
       t.z() = ReadBinaryLittleEndian<double>(&file);
 
       camera_t camera_id = ReadBinaryLittleEndian<camera_t>(&file);
+
+
+      VLOG(1) << "image_id" << image_id;
 
 
       std::string image_name;
@@ -375,6 +378,10 @@ void DataLoaderColmap::read_data(){
       params.resize(4);
       ReadBinaryLittleEndian<double>(&camera_file, &params );
 
+
+      VLOG(1) << "width and height" << width << " " << height;
+      VLOG(1) << "model id " << model_id;
+
       // CHECK(params.size()==4) << " params should have size of 4, so it should contain fx,fy,cx,cy. So the camera model should be simple_pinhole. However the size is " << params.size();
 
       // VLOG(1) << "Read intrinsics for frame_idx " << camera_id;
@@ -382,7 +389,7 @@ void DataLoaderColmap::read_data(){
       //get all the frames which have frame_idx to be camera_id and we set the params;
       for (size_t j = 0; j < m_frames.size(); j++) {
         Frame& frame = m_frames[j];
-        if (frame.cam_id==camera_id){
+        if (frame.cam_id==(int)camera_id){
           //this correspond so we set it
           double fx,fy,cx,cy;
           fx=params[0];
@@ -492,7 +499,7 @@ void DataLoaderColmap::read_data(){
 
 
 Frame DataLoaderColmap::get_next_frame(){
-    CHECK(m_idx_img_to_read<m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
+    CHECK(m_idx_img_to_read<(int)m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
     Frame  frame= m_frames[m_idx_img_to_read];
 
     if(!m_do_overfit){
@@ -502,7 +509,7 @@ Frame DataLoaderColmap::get_next_frame(){
     return frame;
 }
 Frame DataLoaderColmap::get_frame_at_idx( const int idx){
-    CHECK(idx<m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
+    CHECK(idx<(int)m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
 
     Frame  frame= m_frames[idx];
 
@@ -537,11 +544,11 @@ Frame DataLoaderColmap::get_closest_frame( const easy_pbr::Frame& frame){
 
 std::vector<easy_pbr::Frame>  DataLoaderColmap::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx){
 
-    CHECK(nr_frames<m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
+    CHECK(nr_frames<(int)m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
 
     std::vector<easy_pbr::Frame> selected_close_frames;
 
-    for(size_t i=0; i<nr_frames; i++){
+    for(int i=0; i<nr_frames; i++){
 
         //select a close frame
         float closest_distance=std::numeric_limits<float>::max();
@@ -593,7 +600,7 @@ std::vector<easy_pbr::Frame>  DataLoaderColmap::get_close_frames( const easy_pbr
 
 bool DataLoaderColmap::is_finished(){
     //check if this loader has returned all the images it has
-    if(m_idx_img_to_read<m_frames.size()){
+    if(m_idx_img_to_read<(int)m_frames.size()){
         return false; //there is still more files to read
     }
 

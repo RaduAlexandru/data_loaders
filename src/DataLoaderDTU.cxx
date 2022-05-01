@@ -156,7 +156,7 @@ void DataLoaderDTU::start_reading_next_scene(){
     CHECK(m_is_running==false) << "The loader thread is already running. Wait until the scene is finished loading before loading a new one. You can check this with finished_reading_scene()";
 
     std::string scene_path;
-    if ( m_idx_scene_to_read< m_scene_folders.size()){
+    if ( m_idx_scene_to_read< (int)m_scene_folders.size()){
         scene_path=m_scene_folders[m_idx_scene_to_read].string();
     }
 
@@ -496,7 +496,7 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
     // std::unordered_map<std::string,      std::unordered_map<int, Eigen::Matrix3f>    > m_scene2frame_idx2K;
 
 
-    for(size_t scene_idx; scene_idx<m_scene_folders.size(); scene_idx++){
+    for(size_t scene_idx=0; scene_idx<m_scene_folders.size(); scene_idx++){
 
         std::string scene_path=m_scene_folders[scene_idx].string();
         VLOG(1) << "reading poses and intrinsics for scene " << fs::path(scene_path).stem();
@@ -652,7 +652,7 @@ Frame DataLoaderDTU::get_random_frame(){
 }
 
 Frame DataLoaderDTU::get_frame_at_idx( const int idx){
-    CHECK(idx<m_frames_for_scene.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames_for_scene.size();
+    CHECK(idx<(int)m_frames_for_scene.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames_for_scene.size();
 
     Frame  frame= m_frames_for_scene[idx];
 
@@ -664,7 +664,7 @@ Frame DataLoaderDTU::get_frame_at_idx( const int idx){
 
 bool DataLoaderDTU::is_finished(){
     //check if this loader has loaded everything
-    if(m_idx_scene_to_read<m_scene_folders.size()){
+    if(m_idx_scene_to_read<(int)m_scene_folders.size()){
         return false; //there is still more files to read
     }
 
@@ -933,7 +933,7 @@ Eigen::Affine3f DataLoaderDTU::process_extrinsics_line(const std::string line){
     Eigen::Matrix3f worldGL_worldROS_rot;
     worldGL_worldROS_rot = Eigen::AngleAxisf(-0.5*M_PI, Eigen::Vector3f::UnitX());
     tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
-    Eigen::Affine3f tf_worldROS_worldGL=tf_worldGL_worldROS.inverse();
+    // Eigen::Affine3f tf_worldROS_worldGL=tf_worldGL_worldROS.inverse();
     Eigen::Affine3f tf_ret_cor=tf_worldGL_worldROS*tf_ret.inverse();
     tf_ret=tf_ret_cor.inverse();
 

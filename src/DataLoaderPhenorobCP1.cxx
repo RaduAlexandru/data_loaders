@@ -445,7 +445,7 @@ void DataLoaderPhenorobCP1::init_poses_kalibr(){
 
         //set the poses for every cam in every block
         for (size_t blk_idx = 0; blk_idx < m_scans[scan_idx]->m_blocks.size(); blk_idx++){
-            CHECK( nr_calibrated_cams==m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size() ) << "We need calibration for each camera. We have nr calibrated cams " << nr_calibrated_cams << " but we have nr frames " << m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size();
+            CHECK( nr_calibrated_cams==(int)m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size() ) << "We need calibration for each camera. We have nr calibrated cams " << nr_calibrated_cams << " but we have nr frames " << m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size();
 
             for (size_t cam_idx = 0; cam_idx < m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size(); cam_idx++){
                 std::shared_ptr<Frame> frame=m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[cam_idx];
@@ -522,7 +522,7 @@ void DataLoaderPhenorobCP1::init_intrinsics_kalibr(){
 
         //set the poses for every cam in every block
         for (size_t blk_idx = 0; blk_idx < m_scans[scan_idx]->m_blocks.size(); blk_idx++){
-            CHECK( nr_calibrated_cams==m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size() ) << "We need calibration for each camera. We have nr calibrated cams " << nr_calibrated_cams << " but we have nr frames " << m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size();
+            CHECK( nr_calibrated_cams==(int)m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size() ) << "We need calibration for each camera. We have nr calibrated cams " << nr_calibrated_cams << " but we have nr frames " << m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size();
 
             for (size_t cam_idx = 0; cam_idx < m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames.size(); cam_idx++){
                 std::shared_ptr<Frame> frame=m_scans[scan_idx]->m_blocks[blk_idx]->m_rgb_frames[cam_idx];
@@ -602,8 +602,8 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
 
                 tokens=split(line," ");
                 int cam_idx=std::stoi(tokens[0]);
-                int width=std::stoi(tokens[1]);
-                int height=std::stoi(tokens[2]);
+                // int width=std::stoi(tokens[1]);
+                // int height=std::stoi(tokens[2]);
 
                 //3 lines for intrinsics
                 std::string intrinsics_string_full;
@@ -964,7 +964,7 @@ std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorobCP1::load_mesh(const std::shar
 
 //BLOCK functions------------------
 std::shared_ptr<Frame> PRCP1Block::get_rgb_frame_with_idx( const int idx){
-    CHECK(idx<m_rgb_frames.size()) << "idx is out of bounds. It is " << idx << " while m_rgb_frames has size " << m_rgb_frames.size();
+    CHECK(idx<(int)m_rgb_frames.size()) << "idx is out of bounds. It is " << idx << " while m_rgb_frames has size " << m_rgb_frames.size();
     std::shared_ptr<Frame>  frame= m_rgb_frames[idx];
     return frame;
 }
@@ -973,7 +973,7 @@ int PRCP1Block::nr_frames(){
 }
 //SCAN functions----------------
 std::shared_ptr<PRCP1Block> PRCP1Scan::get_block_with_idx(const int idx){
-    CHECK(idx<m_blocks.size()) << "idx is out of bounds. It is " << idx << " while m_blocks has size " << m_blocks.size();
+    CHECK(idx<(int)m_blocks.size()) << "idx is out of bounds. It is " << idx << " while m_blocks has size " << m_blocks.size();
     std::shared_ptr<PRCP1Block>  block = m_blocks[idx];
     return block;
 }
@@ -985,7 +985,7 @@ int PRCP1Scan::nr_blocks(){
 
 
 std::shared_ptr<PRCP1Scan> DataLoaderPhenorobCP1::get_scan_with_idx(const int idx){
-    CHECK(idx<m_scans.size()) << "idx is out of bounds. It is " << idx << " while m_scans has size " << m_scans.size();
+    CHECK(idx<(int)m_scans.size()) << "idx is out of bounds. It is " << idx << " while m_scans has size " << m_scans.size();
     std::shared_ptr<PRCP1Scan>  scan = m_scans[idx];
     return scan;
 }
@@ -1009,6 +1009,7 @@ std::string DataLoaderPhenorobCP1::dataset_type(){
         return "colmap";
     }else{
         LOG(FATAL) <<"Unknown dataset type";
+        return ""; //just that we return something and therefore the compiler doesn't complain. Even if this line will never be reached
     }
 }
 

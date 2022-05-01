@@ -206,7 +206,7 @@ void DataLoaderPheno4D::init_data_reading(){
 
     //get the days
     std::vector<fs::path> sample_filenames_all;
-    for (int i=0; i<plant_folders.size(); i++){
+    for (size_t i=0; i<plant_folders.size(); i++){
         int  day_for_plant=0;
         int  days_added_for_plant=0;
         for(auto& entry : boost::make_iterator_range(boost::filesystem::directory_iterator(plant_folders[i]), {})){
@@ -267,7 +267,7 @@ void DataLoaderPheno4D::read_data(){
 
     //if we preload, we just read the meshes and store them in memory, data transformation will be done while reading the mesh
     if (m_preload){
-        for(int i=0; i<m_sample_filenames.size(); i++ ){
+        for(size_t i=0; i<m_sample_filenames.size(); i++ ){
 
             fs::path sample_filename=m_sample_filenames[ m_idx_cloud_to_read ];
             VLOG(1) << "preloading from " << sample_filename;
@@ -331,7 +331,7 @@ std::shared_ptr<Mesh> DataLoaderPheno4D::read_sample(const fs::path sample_filen
         if(m_plant_type=="maize"){
             expected_tokens=5; //if we load maize it will have 5 tokens corresponding to xyz, label collar, label tip
         }
-        if(tokens.size()!=expected_tokens){
+        if((int)tokens.size()!=expected_tokens){
             continue;
         }
 

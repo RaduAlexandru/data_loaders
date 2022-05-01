@@ -138,7 +138,7 @@ void DataLoaderVolRef::init_data_reading(){
                 // VLOG(1) << "loading from selected indexes";
                 bool do_we_load_from_idx=false;
                 for(int j=0; j < m_load_from_idxs.rows(); j++){
-                    if(i==(int)m_load_from_idxs[j]){
+                    if((int)i==m_load_from_idxs[j]){
                         do_we_load_from_idx=true;
                         // VLOG(1) << "loading for this idx";
                     }
@@ -189,7 +189,7 @@ void DataLoaderVolRef::read_data(){
 
     //if we preload, we just read the meshes and store them in memory, data transformation will be done while reading the mesh
     if (m_preload){
-        for(int i=0; i<m_samples_filenames.size(); i++ ){
+        for(size_t i=0; i<m_samples_filenames.size(); i++ ){
 
             fs::path sample_filename=m_samples_filenames[ m_idx_sample_to_read ];
             VLOG(1) << "preloading from " << sample_filename;
@@ -565,7 +565,7 @@ Frame DataLoaderVolRef::get_depth_frame(){
 }
 
 Frame DataLoaderVolRef::get_frame_at_idx( const int idx){
-    CHECK(idx<m_frames_color_vec.size()) << "idx is out of bounds. It is " << idx << " while m_frames_color_vec has size " << m_frames_color_vec.size();
+    CHECK(idx<(int)m_frames_color_vec.size()) << "idx is out of bounds. It is " << idx << " while m_frames_color_vec has size " << m_frames_color_vec.size();
     CHECK(m_preload) <<"Getting frame of a certain index only works when preloading";
 
     Frame  frame= m_frames_color_vec[idx];
@@ -574,7 +574,7 @@ Frame DataLoaderVolRef::get_frame_at_idx( const int idx){
 }
 
 Frame DataLoaderVolRef::get_depth_frame_at_idx( const int idx){
-    CHECK(idx<m_frames_depth_vec.size()) << "idx is out of bounds. It is " << idx << " while m_frames_depth_vec has size " << m_frames_depth_vec.size();
+    CHECK(idx<(int)m_frames_depth_vec.size()) << "idx is out of bounds. It is " << idx << " while m_frames_depth_vec has size " << m_frames_depth_vec.size();
     CHECK(m_preload) <<"Getting frame of a certain index only works when preloading";
 
     Frame  frame= m_frames_depth_vec[idx];

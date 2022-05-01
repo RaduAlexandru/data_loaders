@@ -403,7 +403,7 @@ void DataLoaderCloudRos::read_pose_file_vel2lasermap(){
     if(!infile.is_open()){
         LOG(FATAL) << "Could not open pose file " << m_pose_file;
     }
-    uint64_t scan_nr;
+    // uint64_t scan_nr;
     uint64_t timestamp;
     Eigen::Vector3d position;
     Eigen::Quaterniond quat;

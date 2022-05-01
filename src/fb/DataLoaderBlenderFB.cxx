@@ -183,8 +183,8 @@ void DataLoaderBlenderFB::init_poses(){
 
         tokens=split(line," ");
         int cam_idx=std::stoi(tokens[0]);
-        int width=std::stoi(tokens[1]);
-        int height=std::stoi(tokens[2]);
+        // int width=std::stoi(tokens[1]);
+        // int height=std::stoi(tokens[2]);
         VLOG(1) <<"reading params for cam_idx " << cam_idx;
 
         //3 lines for intrinsics
@@ -569,7 +569,7 @@ void DataLoaderBlenderFB::load_images_in_frame(easy_pbr::Frame& frame){
 
 
 Frame DataLoaderBlenderFB::get_next_frame(){
-    CHECK(m_idx_img_to_read<m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
+    CHECK(m_idx_img_to_read<(int)m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
     Frame  frame= m_frames[m_idx_img_to_read];
 
     if(!m_do_overfit){
@@ -582,7 +582,7 @@ std::vector<easy_pbr::Frame> DataLoaderBlenderFB::get_all_frames(){
     return m_frames;
 }
 Frame DataLoaderBlenderFB::get_frame_at_idx( const int idx){
-    CHECK(idx<m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
+    CHECK(idx<(int)m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
 
     Frame  frame= m_frames[idx];
 
@@ -618,11 +618,11 @@ Frame DataLoaderBlenderFB::get_closest_frame( const easy_pbr::Frame& frame){
 
 std::vector<easy_pbr::Frame>  DataLoaderBlenderFB::get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx){
 
-    CHECK(nr_frames<m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
+    CHECK(nr_frames<(int)m_frames.size()) << "Cannot select more close frames than the total nr of frames that we have in the loader. Required select of " << nr_frames << " out of a total of " << m_frames.size() << " available in the loader";
 
     std::vector<easy_pbr::Frame> selected_close_frames;
 
-    for(size_t i=0; i<nr_frames; i++){
+    for(int i=0; i<nr_frames; i++){
 
         //select a close frame
         float closest_distance=std::numeric_limits<float>::max();
@@ -717,7 +717,7 @@ std::vector<easy_pbr::Frame>  DataLoaderBlenderFB::get_close_frames( const easy_
 
 bool DataLoaderBlenderFB::is_finished(){
     //check if this loader has returned all the images it has
-    if(m_idx_img_to_read<m_frames.size()){
+    if(m_idx_img_to_read<(int)m_frames.size()){
         return false; //there is still more files to read
     }
 

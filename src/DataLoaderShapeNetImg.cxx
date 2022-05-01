@@ -153,7 +153,7 @@ void DataLoaderShapeNetImg::start_reading_next_scene(){
     CHECK(m_is_running==false) << "The loader thread is already running. Wait until the scene is finished loading before loading a new one. You can check this with finished_reading_scene()";
 
     std::string scene_path;
-    if ( m_idx_scene_to_read< m_scene_folders.size()){
+    if ( m_idx_scene_to_read< (int)m_scene_folders.size()){
         scene_path=m_scene_folders[m_idx_scene_to_read].string();
     }
 
@@ -289,7 +289,7 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
 
 
-            auto tf=frame.tf_cam_world;
+            // auto tf=frame.tf_cam_world;
             // frame.tf_cam_world=tf.inverse();
 
 
@@ -300,7 +300,7 @@ void DataLoaderShapeNetImg::read_scene(const std::string scene_path){
 
             m_frames_for_scene.push_back(frame);
 
-            if(m_nr_imgs_to_read>0 && m_frames_for_scene.size()>=m_nr_imgs_to_read){
+            if(m_nr_imgs_to_read>0 && (int)m_frames_for_scene.size()>=m_nr_imgs_to_read){
                 break; //we finished reading how many images we need so we stop the thread
             }
 
@@ -398,7 +398,7 @@ Frame DataLoaderShapeNetImg::get_random_frame(){
 }
 
 Frame DataLoaderShapeNetImg::get_frame_at_idx( const int idx){
-    CHECK(idx<m_frames_for_scene.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames_for_scene.size();
+    CHECK(idx<(int)m_frames_for_scene.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames_for_scene.size();
 
     Frame  frame= m_frames_for_scene[idx];
 
@@ -410,7 +410,7 @@ Frame DataLoaderShapeNetImg::get_frame_at_idx( const int idx){
 
 bool DataLoaderShapeNetImg::is_finished(){
     //check if this loader has loaded everything
-    if(m_idx_scene_to_read<m_scene_folders.size()){
+    if(m_idx_scene_to_read<(int)m_scene_folders.size()){
         return false; //there is still more files to read
     }
 
@@ -660,7 +660,7 @@ Eigen::Affine3f DataLoaderShapeNetImg::process_extrinsics_line(const std::string
     Eigen::Matrix3f worldGL_worldROS_rot;
     worldGL_worldROS_rot = Eigen::AngleAxisf(-0.5*M_PI, Eigen::Vector3f::UnitX());
     tf_worldGL_worldROS.matrix().block<3,3>(0,0)=worldGL_worldROS_rot;
-    Eigen::Affine3f tf_worldROS_worldGL=tf_worldGL_worldROS.inverse();
+    // Eigen::Affine3f tf_worldROS_worldGL=tf_worldGL_worldROS.inverse();
     Eigen::Affine3f tf_ret_cor=tf_worldGL_worldROS*tf_ret.inverse();
     tf_ret=tf_ret_cor.inverse();
 
