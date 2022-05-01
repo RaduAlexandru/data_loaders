@@ -69,7 +69,7 @@ option(LIBIGL_WITH_XML               "Use XML"            OFF)
 
 
 ######   PACKAGES   ############################################################
-find_package(catkin)
+find_package(catkin QUIET)
 # set(catkin_FOUND 0 )
 message("catkin found is ${catkin_FOUND}" )
 find_package(Eigen3 3.3 REQUIRED NO_MODULE)
