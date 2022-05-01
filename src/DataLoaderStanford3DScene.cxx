@@ -213,7 +213,7 @@ void DataLoaderStanford3DScene::read_sample(Frame& frame_color, Frame& frame_dep
     //read depth
     std::string rgb_name = sample_filename.filename().string();
     std::string depth_path = (sample_filename.parent_path().parent_path()/"depth"/rgb_name).string();
-    cv::Mat depth=cv::imread(depth_path, CV_LOAD_IMAGE_ANYDEPTH);
+    cv::Mat depth=cv::imread(depth_path, cv::IMREAD_ANYDEPTH);
     if(m_depth_subsample_factor>1){
         cv::Mat resized;
         cv::resize(depth, resized, cv::Size(), 1.0/m_depth_subsample_factor, 1.0/m_depth_subsample_factor, cv::INTER_NEAREST);

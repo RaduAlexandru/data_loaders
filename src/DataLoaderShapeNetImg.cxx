@@ -358,7 +358,7 @@ void DataLoaderShapeNetImg::load_images_in_frame(easy_pbr::Frame& frame){
         // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_UNCHANGED);
         // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_ANYCOLOR | cv::IMREAD_ANYDEPTH );
         cv::Mat depth=cv::imread(depth_path.string() ,  cv::IMREAD_UNCHANGED  );
-        // cv::Mat depth=cv::imread(depth_path.string() , CV_LOAD_IMAGE_ANYDEPTH );
+        // cv::Mat depth=cv::imread(depth_path.string() , cv::IMREAD_ANYDEPTH );
         // VLOG(1) << "depth has type " << radu::utils::type2string(depth.type());
         // VLOG(1) << "depth has rows and cols " << depth.rows << " " << depth.cols;
         cv::threshold( depth, depth, 99999, 0.0, cv::THRESH_TOZERO_INV ); //vlaues above 9999 are set to zero depth

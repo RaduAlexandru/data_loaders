@@ -276,7 +276,7 @@ void DataLoaderVolRef::read_sample(Frame& frame_color, Frame& frame_depth, const
 
     //read depth
     std::string name = sample_filename.string().substr(0, sample_filename.string().size()-9); //removes the last 5 characters corresponding to "color"
-    cv::Mat depth=cv::imread(name+"depth.png", CV_LOAD_IMAGE_ANYDEPTH);
+    cv::Mat depth=cv::imread(name+"depth.png", cv::IMREAD_ANYDEPTH);
     if(m_depth_subsample_factor>1){
         cv::Mat resized;
         cv::resize(depth, resized, cv::Size(), 1.0/m_depth_subsample_factor, 1.0/m_depth_subsample_factor, cv::INTER_NEAREST);

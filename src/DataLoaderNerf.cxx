@@ -300,7 +300,7 @@ void DataLoaderNerf::read_data(){
         //     fs::path depth_img_path=parent/(img_filename+"_depth_0001.png");
         //     VLOG(1) << "depth img path" << depth_img_path;
 
-        //     cv::Mat depth=cv::imread(depth_img_path.string() , CV_LOAD_IMAGE_ANYDEPTH);
+        //     cv::Mat depth=cv::imread(depth_img_path.string() , cv::IMREAD_ANYDEPTH);
         //     CHECK(!depth.empty()) << "The depth image is empty at path " << depth_img_path;
         //     // depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in mm but we want it in meters
         //     depth.convertTo(frame.depth, CV_32FC1, 1.0/1000.0); //the depth was stored in cm but we want it in meters
