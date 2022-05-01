@@ -235,9 +235,9 @@ void DataLoaderNerf::read_data(){
         cv::merge(channels, rgb_8u);
 
 
-        // cv::cvtColor(frame.rgb_8u, frame.gray_8u, CV_BGR2GRAY);
+        // cv::cvtColor(frame.rgb_8u, frame.gray_8u, cv::COLOR_BGR2GRAY);
         rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
-        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY);
         frame.width=frame.rgb_32f.cols;
         frame.height=frame.rgb_32f.rows;
 
@@ -309,7 +309,7 @@ void DataLoaderNerf::read_data(){
         // }
 
         //load gradients
-        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY);
         // cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
         // cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
 

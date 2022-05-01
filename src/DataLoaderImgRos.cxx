@@ -306,11 +306,11 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     //     if(cv_img.channels()==1){
     //         // frame.rgb_8u.convertTo(frame.gray_32f, CV_32FC1, 1.0/255.0);
     //         cv::cvtColor ( cv_img, frame.rgb_8u, CV_BayerBG2RGB );  // only works on 8u and 16u
-    //         cv::cvtColor ( frame.rgb_8u, frame.rgb_8u, CV_BGR2RGB );
+    //         cv::cvtColor ( frame.rgb_8u, frame.rgb_8u, cv::COLOR_BGR2RGB );
     //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor); // can only do it here because cv image is a bayered image
     //         frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
     //         // std::cout << "After debayer the type is " << type2string(frame.rgb_32f.type()) << std::endl;
-    //         cv::cvtColor ( frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY );
+    //         cv::cvtColor ( frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY );
     //         //gradients
     //         cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
     //         cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
@@ -322,7 +322,7 @@ void DataLoaderImgRos::callback_img(const sensor_msgs::ImageConstPtr& img_msg, c
     //         frame.rgb_8u=cv_img;
     //         cv::resize(frame.rgb_8u, frame.rgb_8u, cv::Size(), 1.0/cam.m_img_subsample_factor, 1.0/cam.m_img_subsample_factor);
     //         frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
-    //         cv::cvtColor ( frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY );
+    //         cv::cvtColor ( frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY );
     //         //gradients
     //         cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
     //         cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);

@@ -363,7 +363,7 @@ void DataLoaderBlenderFB::read_data(){
 
         // rgb_32f=rgb_32f*m_exposure_change;
         // frame.rgb_32f= rgb_32f;
-        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY);
 
         // frame.width=frame.rgb_32f.cols;
         // frame.height=frame.rgb_32f.rows;
@@ -436,7 +436,7 @@ void DataLoaderBlenderFB::read_data(){
         // }
 
         //load gradients
-        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+        // cv::cvtColor(frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY);
         // cv::Scharr( frame.gray_32f, frame.grad_x_32f, CV_32F, 1, 0);
         // cv::Scharr( frame.gray_32f, frame.grad_y_32f, CV_32F, 0, 1);
 
@@ -526,7 +526,7 @@ void DataLoaderBlenderFB::load_images_in_frame(easy_pbr::Frame& frame){
 
     rgb_32f=rgb_32f*m_exposure_change;
     frame.rgb_32f= rgb_32f;
-    cv::cvtColor(frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY);
+    cv::cvtColor(frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY);
 
     frame.width=frame.rgb_32f.cols;
     frame.height=frame.rgb_32f.rows;

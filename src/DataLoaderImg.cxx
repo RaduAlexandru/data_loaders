@@ -333,7 +333,7 @@ void DataLoaderImg::read_data_for_cam(const int cam_id){
             // std::cout << "copying into the frame rgba yields " << type2string(frame.rgba.type()) << '\n';
 
             // //gray
-            cv::cvtColor ( frame.rgb_32f, frame.gray_32f, CV_BGR2GRAY );
+            cv::cvtColor ( frame.rgb_32f, frame.gray_32f, cv::COLOR_BGR2GRAY );
             // frame.gray.convertTo(frame.gray, CV_32F, 1.0/255.0);
             // if(!m_only_rgb || !frame.distort_coeffs.isZero() ){
             //     frame.gray=undistort_image(frame.gray, frame.K, frame.distort_coeffs, cam_id); //undistort only the gray image because rgb is only used for visualization
