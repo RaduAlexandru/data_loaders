@@ -57,6 +57,9 @@ class USCHair : public std::enable_shared_from_this<USCHair> {
         // Eigen::MatrixXd per_strand_R_rodri_across_canonical; //nr_strands x3
         // Eigen::MatrixXd per_strand_across_canonical_weight; //nr strands x1
         // Eigen::MatrixXd per_strand_dir_across; //nr_strand x3 irections across the strand after the points were transformed in canonical coords
+
+        std::string cloud_path;
+        int strand_idx=-1;
 } ;
 
 
@@ -71,6 +74,8 @@ public:
     std::shared_ptr<USCHair> get_hair(); //return the whole usc struct of hair
     std::shared_ptr<easy_pbr::Mesh> get_mesh_head();
     std::shared_ptr<easy_pbr::Mesh> get_mesh_scalp();
+    std::shared_ptr<USCHair> get_random_strand(std::shared_ptr<USCHair> usc_hair);
+    std::shared_ptr<USCHair> get_strand_with_idx(std::shared_ptr<USCHair> usc_hair, const int strand_idx);
     bool has_data();
     bool is_finished(); //returns true when we have finished reading AND processing everything
     bool is_finished_reading(); //returns true when we have finished reading everything but maybe not processing
@@ -126,6 +131,7 @@ private:
     int m_nr_clouds_to_read;
     float m_percentage_strand_drop;
     int m_load_only_strand_with_idx;
+    bool m_load_only_one_random_strand;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just one of the clouds, specifically the first one
     bool m_augment_per_strand; //agument either ech strand indivually or the whole hairstyle

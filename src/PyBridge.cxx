@@ -416,6 +416,8 @@ PYBIND11_MODULE(dataloaders, m) {
         .def("set_mode_test", &DataLoaderUSCHair::set_mode_test )
         .def("set_mode_validation", &DataLoaderUSCHair::set_mode_validation )
         .def("get_random_roots", &DataLoaderUSCHair::get_random_roots )
+        .def("get_random_strand", &DataLoaderUSCHair::get_random_strand )
+        .def("get_strand_with_idx", &DataLoaderUSCHair::get_strand_with_idx )
         ;
         //USCHair
         py::class_<USCHair, std::shared_ptr<USCHair> > (m, "USCHair")
@@ -437,6 +439,8 @@ PYBIND11_MODULE(dataloaders, m) {
         // .def_readwrite("per_strand_R_rodri_across_canonical", &USCHair::per_strand_R_rodri_across_canonical)
         // .def_readwrite("per_strand_across_canonical_weight", &USCHair::per_strand_across_canonical_weight)
         // .def_readwrite("per_strand_dir_across", &USCHair::per_strand_dir_across)
+        .def_readwrite("strand_idx", &USCHair::strand_idx)
+        .def_readwrite("cloud_path", &USCHair::cloud_path)
         ;
     #endif
 

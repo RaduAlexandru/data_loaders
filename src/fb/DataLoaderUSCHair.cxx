@@ -93,6 +93,7 @@ void DataLoaderUSCHair::init_params(const std::string config_file){
     m_nr_clouds_to_read=loader_config["nr_clouds_to_read"];
     m_percentage_strand_drop=loader_config["percentage_strand_drop"];
     m_load_only_strand_with_idx=loader_config["load_only_strand_with_idx"];
+    // m_load_only_one_random_strand=loader_config["load_only_one_random_strand"];
     m_shuffle=loader_config["shuffle"];
     m_do_overfit=loader_config["do_overfit"];
     m_augment_per_strand= loader_config["augment_per_strand"];
@@ -276,10 +277,16 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
     // std::vector<double> strand_lengths_vec;
     // int nr_strands_added=0;
 
+    usc_hair->cloud_path=data_filepath;
+
     int fret;
 
     int nstrands = 0;
     fret=fread(&nstrands, 4, 1, f);
+
+
+    // int load_random_strand_idx=m_rand_gen->rand_int(0, nstrands-1);
+    // int load_random_strand_idx=-1;
 
 
     for (int i = 0; i < nstrands; i++) {
@@ -299,6 +306,12 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
         if(m_load_only_strand_with_idx>=0 && (int)usc_hair->strand_meshes.size()!=m_load_only_strand_with_idx){ //loads only one strand with a certain index
             is_strand_valid=false;
         }
+
+        //if the strand survided until here(  it  is stil valid, we vote once if we select it or not )
+
+        // if (m_load_only_one_random_strand && (int)usc_hair->strand_meshes.size()!=load_random_strand_idx){
+        //     is_strand_valid=false;
+        // }
 
         //store also the previous point on the strand so we can compute length
         Eigen::Vector3d prev_point;
@@ -342,6 +355,7 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::read_hair_sample(const std::string d
 
 
             }
+            strand->add_extra_field("strand_idx",i);
             //finished reading this strand
             usc_hair->strand_meshes.push_back(strand);
 
@@ -1083,6 +1097,8 @@ std::shared_ptr<USCHair> DataLoaderUSCHair::get_hair(){
     // aug_hair->tbn_roots_tensor=hair->tbn_roots_tensor.clone();
     // aug_hair->position_roots=hair->position_roots;
 
+    aug_hair->cloud_path=hair->cloud_path;
+
     //if we augment in tbn space we need to compute the tbn for each strand
     Eigen::MatrixXd uv_roots;
     std::vector<Eigen::Matrix3d> tbn_roots;
@@ -1198,3 +1214,31 @@ void DataLoaderUSCHair::set_mode_test(){
 void DataLoaderUSCHair::set_mode_validation(){
     m_mode="val";
 }
+
+
+
+std::shared_ptr<USCHair> DataLoaderUSCHair::get_random_strand(std::shared_ptr<USCHair> usc_hair){
+
+    int rand_idx=rand() %  usc_hair->strand_meshes.size();
+
+    std::shared_ptr<USCHair> new_usc_hair=get_strand_with_idx(usc_hair, rand_idx);
+
+    return new_usc_hair;
+}
+
+std::shared_ptr<USCHair> DataLoaderUSCHair::get_strand_with_idx(std::shared_ptr<USCHair> usc_hair, const int strand_idx){
+
+
+    std::shared_ptr<USCHair> new_usc_hair(new USCHair);
+    new_usc_hair->strand_meshes.push_back(  usc_hair->strand_meshes[strand_idx]   );
+
+    new_usc_hair->cloud_path=usc_hair->cloud_path;
+    new_usc_hair->strand_idx=strand_idx;
+
+
+    compute_full_hair(new_usc_hair); 
+    compute_all_atributes(new_usc_hair); 
+
+    return new_usc_hair;
+}
+
