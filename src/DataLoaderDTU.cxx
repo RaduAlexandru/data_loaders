@@ -108,32 +108,56 @@ void DataLoaderDTU::init_data_reading(){
     //load the corresponding file and get from there the scene that we need to read
     fs::path scene_file_path= m_dataset_path/("new_"+m_mode+".lst");
 
-    std::ifstream scene_file(scene_file_path.string() );
-    if(!scene_file.is_open()){
-        LOG(FATAL) << "Could not open labels file " << scene_file_path;
-    }
-    // int nr_scenes_read=0;
-    for( std::string line; getline( scene_file, line ); ){
-        if(line.empty()){
-            continue;
+
+    //we find this the new_train.lst file only in the pixelnerf DTU version but not in the neus one
+    bool found_scene_file=boost::filesystem::exists(scene_file_path);
+
+    if (found_scene_file){
+        std::ifstream scene_file(scene_file_path.string() );
+        if(!scene_file.is_open()){
+            LOG(FATAL) << "Could not open labels file " << scene_file_path;
         }
-        std::string scan=trim_copy(line); //this scan is a string with format "scanNUMBER". We want just the number
-        int scan_idx=std::stoi(radu::utils::erase_substring(scan, "scan"));
-        VLOG(1) << "from scan line " << scan << "scan idx is " << scan_idx;
-        //if we want to load only one of the scans except for all of them
-        //push only one of the scenes
-        if(m_restrict_to_scan_idx>=0){
-            if(m_restrict_to_scan_idx==scan_idx){
-                m_scene_folders.push_back(m_dataset_path/scan);;
+        // int nr_scenes_read=0;
+        for( std::string line; getline( scene_file, line ); ){
+            if(line.empty()){
+                continue;
             }
-        }else{
-            //push all scenes
-            m_scene_folders.push_back(m_dataset_path/scan);
+            std::string scan=trim_copy(line); //this scan is a string with format "scanNUMBER". We want just the number
+            int scan_idx=std::stoi(radu::utils::erase_substring(scan, "scan"));
+            VLOG(1) << "from scan line " << scan << "scan idx is " << scan_idx;
+            //if we want to load only one of the scans except for all of them
+            //push only one of the scenes
+            if(m_restrict_to_scan_idx>=0){
+                if(m_restrict_to_scan_idx==scan_idx){
+                    m_scene_folders.push_back(m_dataset_path/scan);;
+                }
+            }else{
+                //push all scenes
+                m_scene_folders.push_back(m_dataset_path/scan);
+            }
+
+            // nr_scenes_read++;
+        }
+    }else{
+        //LOADING ALL SCENES because we are loading from the neus dataset
+        LOG(WARNING) << "Loading all scenes because we could not find a new_train.lst file";
+        for (fs::directory_iterator itr(m_dataset_path); itr!=fs::directory_iterator(); ++itr){
+            fs::path scene_path= itr->path();
+            VLOG(1) << "scene_path" << scene_path;
+            //get scan idx
+            int scan_idx=std::stoi(radu::utils::erase_substring(scene_path.filename().string(), "dtu_scan"));
+            if(m_restrict_to_scan_idx>=0){
+                if(m_restrict_to_scan_idx==scan_idx){
+                    m_scene_folders.push_back(scene_path);;
+                }
+            }else{
+                //push all scenes
+                m_scene_folders.push_back(scene_path);
+            }
         }
 
-        // nr_scenes_read++;
-    }
 
+    }
 
 
     VLOG(1) << "loaded nr of scenes " << m_scene_folders.size() << " for mode " << m_mode;
@@ -336,7 +360,17 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
 
         //read pose and camera params needs to be read from the camera.npz
         std::string pose_and_intrinsics_path=(fs::path(scene_path)/"cameras.npz").string();
+        //if it doesn't exists it means we might be using the neus dataset which means we have to load camera_sphere.npz
+        bool found_attempt1=boost::filesystem::exists(pose_and_intrinsics_path);
+        if (!found_attempt1){
+            pose_and_intrinsics_path=(fs::path(scene_path)/"cameras_sphere.npz").string();
+        }
         cnpy::npz_t npz_file = cnpy::npz_load( pose_and_intrinsics_path );
+
+        bool using_pixelnerf_format=true;
+        if (!found_attempt1){
+            using_pixelnerf_format=false;
+        }
 
 
 
@@ -366,16 +400,35 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
 
                 //get the P matrix which containst both K and the pose
                 Eigen::Affine3d P;
-                double* projection_mat_data = projection_mat_array.data<double>();
-                P.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(projection_mat_data);
-                // VLOG(1) << "P is " << P.matrix();
-                Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
-                // VLOG(1) << P_block;
-                //get scale
                 Eigen::Affine3d S;
-                double* scale_array_data = scale_array.data<double>();
-                S.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(scale_array_data);
-                // VLOG(1) << "S is " << S.matrix();
+                //pixelenrf format uses doubles in the nzp files and the neus format uses floats for some reason...
+                if (using_pixelnerf_format){
+                    //P
+                    Eigen::Affine3d P_tmp;
+                    double* projection_mat_data = projection_mat_array.data<double>();
+                    P_tmp.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(projection_mat_data);
+                    //S
+                    Eigen::Affine3d S_tmp;
+                    double* scale_array_data = scale_array.data<double>();
+                    S_tmp.matrix()= Eigen::Map<Eigen::Matrix<double,4,4,Eigen::RowMajor> >(scale_array_data);
+                    //cast
+                    P=P_tmp.cast<double>();
+                    S=S_tmp.cast<double>();
+                }else{
+                    //P
+                    Eigen::Affine3f P_tmp;
+                    float* projection_mat_data = projection_mat_array.data<float>();
+                    P_tmp.matrix()= Eigen::Map<Eigen::Matrix<float,4,4,Eigen::RowMajor> >(projection_mat_data);
+                    //S
+                    Eigen::Affine3f S_tmp;
+                    float* scale_array_data = scale_array.data<float>();
+                    S_tmp.matrix()= Eigen::Map<Eigen::Matrix<float,4,4,Eigen::RowMajor> >(scale_array_data);
+                    //cast
+                    P=P_tmp.cast<double>();
+                    S=S_tmp.cast<double>();
+                }
+                Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
+                
 
 
                 //Get the P_block into K and R and T as done in this line: K, R, t = cv2.decomposeProjectionMatrix(P)[:3]
@@ -435,6 +488,8 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 //add it to the hashmaps
                 m_scene2frame_idx2tf_cam_world[scene_path][img_idx]=tf_cam_world;
                 m_scene2frame_idx2K[scene_path][img_idx]=K.cast<float>();
+
+                // exit(1);
 
 
             }

@@ -361,7 +361,7 @@ def test_dtu():
     loader=DataLoaderDTU(config_path)
     loader.set_mode_train()
     # loader.set_mode_validation() #test set actually doesnt exist and we actually use the validation one
-    loader.set_restrict_to_scan_idx(5)
+    # loader.set_restrict_to_scan_idx(5)
     loader.start()
 
     i=0
@@ -377,6 +377,10 @@ def test_dtu():
 
             if frame.is_shell:
                 frame.load_images()
+
+            # print("frame.frame_idx", frame.frame_idx)
+            # if frame.frame_idx==0:
+                # print("frame.K is ", frame.K)
 
             Gui.show(frame.rgb_32f, "rgb")
             frustum=frame.create_frustum_mesh(0.02)
