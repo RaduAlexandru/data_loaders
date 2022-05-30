@@ -248,7 +248,12 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             frame.subsample_factor=m_subsample_factor;
 
             if (m_load_mask){
-                std::string mask_path=(fs::path(scene_path)/"mask"/img_path.filename()).string();
+                //for some reason the mask does not neceserraly have the same name as the image. the image can be 00002 and the mask is 002 so always with 3 digits 
+                std::stringstream ss;
+                ss << std::setw(3) << std::setfill('0') << img_idx;
+                std::string mask_filename=ss.str()+".png";
+                // std::string mask_path=(fs::path(scene_path)/"mask"/img_path.filename()).string();
+                std::string mask_path=(fs::path(scene_path)/"mask"/mask_filename ).string();
                 CHECK(boost::filesystem::exists(mask_path)) << "Mask does not exist under path" << mask_path;
 
                 frame.mask_path=mask_path;
