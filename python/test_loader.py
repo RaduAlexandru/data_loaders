@@ -361,6 +361,53 @@ def test_dtu():
     loader=DataLoaderDTU(config_path)
     loader.set_mode_train()
     # loader.set_mode_validation() #test set actually doesnt exist and we actually use the validation one
+    loader.start()
+
+    i=0
+
+    while True:
+        if(loader.finished_reading_scene() ):
+            frame=loader.get_random_frame()
+
+            # if i%1==0:
+                # loader.start_reading_next_scene()
+
+            print("frame rgb path is ", frame.rgb_path)
+
+            if frame.is_shell:
+                frame.load_images()
+
+            # print("frame.frame_idx", frame.frame_idx)
+            # if frame.frame_idx==0:
+                # print("frame.K is ", frame.K)
+
+            Gui.show(frame.rgb_32f, "rgb")
+            frustum=frame.create_frustum_mesh(0.02)
+            Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
+            # Scene.show(frustum, "frustum" )
+
+            # loader.start_reading_next_scene()
+            # while True:
+            #     if(loader.finished_reading_scene()):
+            #         break
+
+            i+=1
+
+
+        if loader.is_finished():
+            print("resetting")
+            loader.reset()
+
+        view.update()
+
+def test_blended_mvs():
+    #has the same loader as DTU because the Neus paper uses the same format
+    loader=DataLoaderDTU(config_path)
+    loader.set_mode_train()
+    loader.set_dataset_path("/media/rosu/Data/data/neus_data/data_BlendedMVS")
+    loader.set_restrict_to_scene_name("bmvs_dog")
+    loader.set_load_mask(True)
+    # loader.set_mode_validation() #test set actually doesnt exist and we actually use the validation one
     # loader.set_restrict_to_scan_idx(5)
     loader.start()
 
@@ -381,6 +428,9 @@ def test_dtu():
             # print("frame.frame_idx", frame.frame_idx)
             # if frame.frame_idx==0:
                 # print("frame.K is ", frame.K)
+            
+            if not frame.mask.empty():
+                Gui.show(frame.mask, "mask")
 
             Gui.show(frame.rgb_32f, "rgb")
             frustum=frame.create_frustum_mesh(0.02)
@@ -785,7 +835,8 @@ def test_phenorob_cp1():
 # test_colmap()
 # test_easypbr()
 # test_srn()
-test_dtu()
+# test_dtu()
+test_blended_mvs()
 # test_deep_voxels()
 # test_llff()
 # test_blender_fb()

@@ -49,8 +49,11 @@ public:
     int nr_scenes(); //returns the number of scenes that we have for this mode
     bool is_finished(); //check if we finished reading all the scenes
     std::string get_object_name();
+    void set_dataset_path(const std::string dataset_path);
     void set_object_name(const std::string object_name);
-    void set_restrict_to_scan_idx(const int scan_idx);
+    void set_restrict_to_scene_name(const std::string scene_name);
+    void set_scene_scale_multiplier(const float scene_scale_multiplier);
+    void set_load_mask(bool load_mask);
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
@@ -78,10 +81,11 @@ private:
     bool m_autostart;
     bool m_read_with_bg_thread;
     std::string m_mode; // train or test or val
+    bool m_load_mask;
     int m_subsample_factor;
     bool m_shuffle;
     bool m_do_overfit; // return all the time just images from the the first scene of that specified object class
-    int m_restrict_to_scan_idx; //restrict to only one of the scans
+    std::string m_restrict_to_scene_name; //restrict to only one of the scans
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are
     bool m_load_as_shell;

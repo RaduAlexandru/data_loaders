@@ -82,9 +82,10 @@ void DataLoaderDTU::init_params(const std::string config_file){
     m_do_overfit=loader_config["do_overfit"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
-    m_restrict_to_scan_idx= loader_config["restrict_to_scan_idx"];
+    m_restrict_to_scene_name= (std::string)loader_config["restrict_to_scene_name"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_mode= (std::string)loader_config["mode"];
+    m_load_mask=loader_config["load_mask"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
 
 
@@ -123,12 +124,12 @@ void DataLoaderDTU::init_data_reading(){
                 continue;
             }
             std::string scan=trim_copy(line); //this scan is a string with format "scanNUMBER". We want just the number
-            int scan_idx=std::stoi(radu::utils::erase_substring(scan, "scan"));
-            VLOG(1) << "from scan line " << scan << "scan idx is " << scan_idx;
+            // int scan_idx=std::stoi(radu::utils::erase_substring(scan, "scan"));
+            VLOG(1) << "from scan line " << scan;
             //if we want to load only one of the scans except for all of them
             //push only one of the scenes
-            if(m_restrict_to_scan_idx>=0){
-                if(m_restrict_to_scan_idx==scan_idx){
+            if(!m_restrict_to_scene_name.empty()){
+                if(m_restrict_to_scene_name==scan){
                     m_scene_folders.push_back(m_dataset_path/scan);;
                 }
             }else{
@@ -144,10 +145,11 @@ void DataLoaderDTU::init_data_reading(){
         for (fs::directory_iterator itr(m_dataset_path); itr!=fs::directory_iterator(); ++itr){
             fs::path scene_path= itr->path();
             VLOG(1) << "scene_path" << scene_path;
-            //get scan idx
-            int scan_idx=std::stoi(radu::utils::erase_substring(scene_path.filename().string(), "dtu_scan"));
-            if(m_restrict_to_scan_idx>=0){
-                if(m_restrict_to_scan_idx==scan_idx){
+            //get scene_name
+            // int scan_idx=std::stoi(radu::utils::erase_substring(scene_path.filename().string(), "dtu_scan"));
+            std::string scene_name=scene_path.filename().string();
+            if(!m_restrict_to_scene_name.empty()){
+                if(m_restrict_to_scene_name==scene_name){
                     m_scene_folders.push_back(scene_path);;
                 }
             }else{
@@ -245,6 +247,13 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
             frame.rgb_path=img_path.string();
             frame.subsample_factor=m_subsample_factor;
 
+            if (m_load_mask){
+                std::string mask_path=(fs::path(scene_path)/"mask"/img_path.filename()).string();
+                CHECK(boost::filesystem::exists(mask_path)) << "Mask does not exist under path" << mask_path;
+
+                frame.mask_path=mask_path;
+            }
+
 
             //load the images if necessary or delay it for whne it's needed
             frame.load_images=[this]( easy_pbr::Frame& frame ) -> void{ this->load_images_in_frame(frame); };
@@ -329,13 +338,31 @@ void DataLoaderDTU::load_images_in_frame(easy_pbr::Frame& frame){
     }
     frame.rgb_8u=rgb_8u;
 
+
+    //load also mask if it's there
+    if (!frame.mask_path.empty()){
+        cv::Mat mask=cv::imread(frame.mask_path );
+        if(frame.subsample_factor>1){
+            cv::Mat resized;
+            cv::resize(mask, resized, cv::Size(), 1.0/frame.subsample_factor, 1.0/frame.subsample_factor, cv::INTER_NEAREST);
+            mask=resized;
+        }
+        mask.convertTo(frame.mask, CV_32FC3, 1.0/255.0);
+        // VLOG(1) << "read mask of type "<< type2string( mask.type() );
+        // frame.mask=mask;
+
+        //multiply the rgb with the mask
+        // frame.rgb_8u=frame.rgb_8u*mask;
+    }
+
     // VLOG(1) << "img type is " << radu::utils::type2string( frame.rgb_8u.type() );
     frame.rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
     frame.width=frame.rgb_32f.cols;
     frame.height=frame.rgb_32f.rows;
     // VLOG(1) << " frame width ad height " << frame.width << " " << frame.height;
 
-
+    //multiply mask with rgb
+    // frame.rgb_32f=frame.rgb_32f*frame.mask;
 
 
 }
@@ -564,8 +591,21 @@ int DataLoaderDTU::nr_scenes(){
 }
 
 
-void DataLoaderDTU::set_restrict_to_scan_idx(const int scan_idx){
-    m_restrict_to_scan_idx=scan_idx;
+
+void DataLoaderDTU::set_scene_scale_multiplier(const float scene_scale_multiplier){
+    m_scene_scale_multiplier=scene_scale_multiplier;
+}
+
+void DataLoaderDTU::set_load_mask(bool load_mask){
+    m_load_mask=load_mask;
+}
+
+void DataLoaderDTU::set_dataset_path(const std::string dataset_path){
+    m_dataset_path=dataset_path;
+}
+
+void DataLoaderDTU::set_restrict_to_scene_name(const std::string scene_name){
+    m_restrict_to_scene_name=scene_name;
 }
 
 void DataLoaderDTU::set_mode_train(){
