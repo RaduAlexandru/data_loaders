@@ -87,6 +87,7 @@ void DataLoaderDTU::init_params(const std::string config_file){
     m_mode= (std::string)loader_config["mode"];
     m_load_mask=loader_config["load_mask"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
+    m_rotate_scene_x_axis_degrees= loader_config["rotate_scene_x_axis_degrees"];
 
 
 }
@@ -509,7 +510,8 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
 
                 //atteptm2
                 //rotate
-                Eigen::Quaternionf q = Eigen::Quaternionf( Eigen::AngleAxis<float>( 115 * M_PI / 180.0 ,  Eigen::Vector3f::UnitX() ) );
+                Eigen::Quaternionf q = Eigen::Quaternionf( Eigen::AngleAxis<float>( m_rotate_scene_x_axis_degrees * M_PI / 180.0 ,  Eigen::Vector3f::UnitX() ) );
+                // Eigen::Quaternionf q = Eigen::Quaternionf( Eigen::AngleAxis<float>( 0 * M_PI / 180.0 ,  Eigen::Vector3f::UnitX() ) );
                 Eigen::Affine3f tf_rot;
                 tf_rot.setIdentity();
                 tf_rot.linear()=q.toRotationMatrix();
@@ -600,6 +602,9 @@ int DataLoaderDTU::nr_scenes(){
 void DataLoaderDTU::set_scene_scale_multiplier(const float scene_scale_multiplier){
     m_scene_scale_multiplier=scene_scale_multiplier;
 }
+void DataLoaderDTU::set_rotate_scene_x_axis_degrees(const float degrees){
+    m_rotate_scene_x_axis_degrees=degrees;
+}
 
 void DataLoaderDTU::set_load_mask(bool load_mask){
     m_load_mask=load_mask;
@@ -611,6 +616,9 @@ void DataLoaderDTU::set_dataset_path(const std::string dataset_path){
 
 void DataLoaderDTU::set_restrict_to_scene_name(const std::string scene_name){
     m_restrict_to_scene_name=scene_name;
+}
+std::string DataLoaderDTU::get_restrict_to_scene_name(){
+    return m_restrict_to_scene_name;
 }
 
 void DataLoaderDTU::set_mode_train(){

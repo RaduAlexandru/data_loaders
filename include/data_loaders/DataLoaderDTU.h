@@ -52,7 +52,9 @@ public:
     void set_dataset_path(const std::string dataset_path);
     void set_object_name(const std::string object_name);
     void set_restrict_to_scene_name(const std::string scene_name);
+    std::string get_restrict_to_scene_name();
     void set_scene_scale_multiplier(const float scene_scale_multiplier);
+    void set_rotate_scene_x_axis_degrees(const float degrees);
     void set_load_mask(bool load_mask);
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
@@ -87,6 +89,7 @@ private:
     bool m_do_overfit; // return all the time just images from the the first scene of that specified object class
     std::string m_restrict_to_scene_name; //restrict to only one of the scans
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
+    float m_rotate_scene_x_axis_degrees;
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are
     bool m_load_as_shell;
     std::thread m_loader_thread;
