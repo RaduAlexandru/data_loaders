@@ -151,7 +151,7 @@ void DataLoaderPhenorobCP1::start(){
         init_intrinsics_and_poses_krt();
     }
 
-    init_stereo_pairs();
+    // init_stereo_pairs();
     read_data();
 }
 
@@ -258,6 +258,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                     std::string frame_name=photoneo_path.filename().string();
                     new_photoneo_frame.m_name=frame_name;
                     new_photoneo_frame.cam_id=block_nr;
+                    new_photoneo_frame.frame_idx=block_nr;
                     VLOG(1) << "Loaded photoneo with cam_id" << new_photoneo_frame.cam_id << " with depth " << new_photoneo_frame.depth_path;
                     //add it to the block
                     block->m_photoneo_frame=new_photoneo_frame;
@@ -302,6 +303,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                             std::vector<std::string> filename_tokens=radu::utils::split(filename, "_");
                             CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
                             new_rgb_frame->cam_id= std::stoi(filename_tokens[1]);
+                            new_rgb_frame->frame_idx= std::stoi(filename_tokens[1]);
                             //push
                             block->m_rgb_frames[new_rgb_frame->cam_id]=new_rgb_frame;
                         }
@@ -333,6 +335,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                         CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example 0.jpeg but the filename is " << filename;
                         int cam_id=std::stoi(filename_tokens[0]);
                         new_rgb_frame->cam_id= cam_id;
+                        new_rgb_frame->frame_idx= cam_id;
 
 
                         new_rgb_frame->rgb_path= rgb_img_path.string();
