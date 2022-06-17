@@ -296,12 +296,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
 
 
 
-            //rescale things if necessary
-            if(m_scene_scale_multiplier>0.0){
-                Eigen::Affine3f tf_world_cam_rescaled = frame.tf_cam_world.inverse();
-                tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
-                frame.tf_cam_world=tf_world_cam_rescaled.inverse();
-            }
+            
 
 
 
@@ -518,6 +513,17 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 tf_rot.linear()=q.toRotationMatrix();
                 tf_world_cam=tf_rot*tf_world_cam;
                 Eigen::Affine3f tf_cam_world=tf_world_cam.inverse();
+
+                //rescale
+                Eigen::Affine3f tf_world_cam_rescaled = tf_cam_world.inverse();
+                // tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+                Eigen::Affine3f recaling_matrix;
+                recaling_matrix.setIdentity();
+                recaling_matrix.linear()(0,0)=m_scene_scale_multiplier;
+                recaling_matrix.linear()(1,1)=m_scene_scale_multiplier;
+                recaling_matrix.linear()(2,2)=m_scene_scale_multiplier;
+                tf_world_cam_rescaled=recaling_matrix*tf_world_cam_rescaled;
+                tf_cam_world=tf_world_cam_rescaled.inverse();
                 
 
                 //add it to the hashmaps
@@ -525,6 +531,11 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 m_scene2frame_idx2K[scene_path][img_idx]=K.cast<float>();
 
                 // exit(1);
+
+                //save also the transform from the original dtu towards easypbr
+                m_tf_easypbr_dtu= recaling_matrix*tf_rot*S.cast<float>().inverse();
+                // m_tf_easypbr_dtu= tf_rot*S.cast<float>().inverse();
+                // m_tf_easypbr_dtu.translation()*=m_scene_scale_multiplier;
 
 
             }
@@ -630,6 +641,10 @@ void DataLoaderDTU::set_mode_test(){
 }
 void DataLoaderDTU::set_mode_validation(){
     m_mode="val";
+}
+
+Eigen::Affine3f DataLoaderDTU::get_tf_easypbr_dtu(){
+    return m_tf_easypbr_dtu;
 }
 
 

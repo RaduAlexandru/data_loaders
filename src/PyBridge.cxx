@@ -292,6 +292,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderDTU::set_mode_train )
     .def("set_mode_test", &DataLoaderDTU::set_mode_test )
     .def("set_mode_validation", &DataLoaderDTU::set_mode_validation )
+    .def("get_tf_easypbr_dtu", &DataLoaderDTU::get_tf_easypbr_dtu )
     ;
 
     //DataLoaderDeepVoxels

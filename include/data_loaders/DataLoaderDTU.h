@@ -59,6 +59,7 @@ public:
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
+    Eigen::Affine3f get_tf_easypbr_dtu();
 
 
 
@@ -95,6 +96,7 @@ private:
     std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_scene_to_read;
+    Eigen::Affine3f m_tf_easypbr_dtu;
 
 
 
