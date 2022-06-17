@@ -461,6 +461,7 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                     S=S_tmp.cast<double>();
                 }
                 Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
+                // VLOG(1) << "S is " << S.matrix();
                 
 
 
@@ -496,15 +497,15 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
 
 
                 //get S
-                // Eigen::Matrix3d S_block=
-                Eigen::Vector3d norm_trans=S.translation();
-                // VLOG(1) << "norm trans is " << norm_trans;
-                Eigen::Vector3d norm_scale;
-                norm_scale << S(0,0), S(1,1), S(2,2);
-                // VLOG(1) << "norm scale " << norm_scale;
-                tf_world_cam.translation()-=norm_trans.cast<float>();
-                tf_world_cam.translation()=tf_world_cam.translation().array()/norm_scale.cast<float>().array();
-                // VLOG(1) << "pose after the weird scaling " << tf_world_cam.matrix();
+                // Eigen::Vector3d norm_trans=S.translation();
+                // Eigen::Vector3d norm_scale;
+                // norm_scale << S(0,0), S(1,1), S(2,2);
+                // tf_world_cam.translation()-=norm_trans.cast<float>();
+                // tf_world_cam.translation()=tf_world_cam.translation().array()/norm_scale.cast<float>().array();
+
+
+                //try again but just with a matrix multiply
+                tf_world_cam=S.cast<float>().inverse()*tf_world_cam;
 
 
 

@@ -382,7 +382,7 @@ def test_dtu():
                 # print("frame.K is ", frame.K)
 
             Gui.show(frame.rgb_32f, "rgb")
-            frustum=frame.create_frustum_mesh(0.02)
+            frustum=frame.create_frustum_mesh(20)
             Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
             # Scene.show(frustum, "frustum" )
 
@@ -840,8 +840,8 @@ def test_phenorob_cp1():
 # test_colmap()
 # test_easypbr()
 # test_srn()
-# test_dtu()
-test_blended_mvs()
+test_dtu()
+# test_blended_mvs()
 # test_deep_voxels()
 # test_llff()
 # test_blender_fb()
