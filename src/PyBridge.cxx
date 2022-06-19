@@ -286,6 +286,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_dataset_path", &DataLoaderDTU::set_dataset_path )
     .def("set_restrict_to_scene_name", &DataLoaderDTU::set_restrict_to_scene_name )
     .def("get_restrict_to_scene_name", &DataLoaderDTU::get_restrict_to_scene_name )
+    .def("get_current_scene_name", &DataLoaderDTU::get_current_scene_name )
     .def("set_scene_scale_multiplier", &DataLoaderDTU::set_scene_scale_multiplier )
     .def("set_rotate_scene_x_axis_degrees", &DataLoaderDTU::set_rotate_scene_x_axis_degrees )
     .def("set_load_mask", &DataLoaderDTU::set_load_mask )

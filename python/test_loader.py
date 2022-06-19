@@ -363,7 +363,18 @@ def test_dtu():
     # loader.set_mode_validation() #test set actually doesnt exist and we actually use the validation one
     loader.start()
 
+
+    #get gt mesh from dtu
+    # gt_mesh=Mesh("/media/rosu/Data/data/dtu/data_prepared_for_gt/Points/stl/stl024_total.ply")
+    # tf_easypbr_dtu=loader.get_tf_easypbr_dtu()
+    # gt_mesh.transform_model_matrix(tf_easypbr_dtu.to_double())
+    # gt_mesh.apply_model_matrix_to_cpu(True)
+
+    # view.m_camera.from_string(" 107.104 -8.58596   478.92  0.918689 0.0670844  0.178054 -0.346129  96.2678 -34.0564  505.822 60 39.8026 3.98026e+06")
+    view.m_camera.from_string("4.61049 3.34609 2.97043 -0.237639  0.443042  0.123049 0.855627  0.548705  0.352442 0.0998282 60 0.00419346 419.346")
+
     i=0
+    first_time=True
 
     while True:
         if(loader.finished_reading_scene() ):
@@ -383,6 +394,7 @@ def test_dtu():
 
             Gui.show(frame.rgb_32f, "rgb")
             frustum=frame.create_frustum_mesh(20)
+            # frustum.apply_model_matrix_to_cpu(True)
             Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
             # Scene.show(frustum, "frustum" )
 
@@ -391,7 +403,24 @@ def test_dtu():
             #     if(loader.finished_reading_scene()):
             #         break
 
+            #color the gt mesh with the color from a frame
+            # if frame.frame_idx==33 and first_time:
+            # if first_time:
+            #     frame.assign_color(gt_mesh)
+            #     Scene.show(gt_mesh, "gt_mesh")
+            #     first_time=False
+
+            # if frame.frame_idx==0:
+            #     tf_cam_world=frame.tf_cam_world
+            #     tf_world_cam=tf_cam_world.inverse()
+            #     print("tf_cam_world ", tf_cam_world.matrix())
+            #     print("tf_world_cam ", tf_world_cam.matrix())
+
+
+            
+
             i+=1
+
 
 
         if loader.is_finished():

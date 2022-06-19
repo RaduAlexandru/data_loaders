@@ -53,6 +53,7 @@ public:
     void set_object_name(const std::string object_name);
     void set_restrict_to_scene_name(const std::string scene_name);
     std::string get_restrict_to_scene_name();
+    std::string get_current_scene_name(); //the scene we have currently active
     void set_scene_scale_multiplier(const float scene_scale_multiplier);
     void set_rotate_scene_x_axis_degrees(const float degrees);
     void set_load_mask(bool load_mask);
@@ -96,7 +97,7 @@ private:
     std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_scene_to_read;
-    Eigen::Affine3f m_tf_easypbr_dtu;
+    // Eigen::Affine3f m_tf_easypbr_dtu;
 
 
 
@@ -105,7 +106,9 @@ private:
     std::vector< easy_pbr::Frame > m_frames_for_scene;
     std::unordered_map<std::string,      std::unordered_map<int, Eigen::Affine3f>     > m_scene2frame_idx2tf_cam_world;
     std::unordered_map<std::string,      std::unordered_map<int, Eigen::Matrix3f>    > m_scene2frame_idx2K;
+    std::unordered_map<std::string,      Eigen::Affine3f    > m_scene2tf_easypbr_dtu; //they key is the scan name eg: dtu_scan65
 
     int m_nr_scenes_read_so_far;
+    std::string m_current_scene_name;
 
 };

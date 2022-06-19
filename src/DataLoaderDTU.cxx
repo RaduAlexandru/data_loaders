@@ -214,6 +214,8 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
 
     TIME_SCOPE("read_scene");
 
+    m_current_scene_name= fs::path(scene_path).filename().string();
+
     m_frames_for_scene.clear();
 
     std::vector<fs::path> paths;
@@ -375,6 +377,8 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
     for(size_t scene_idx=0; scene_idx<m_scene_folders.size(); scene_idx++){
 
         std::string scene_path=m_scene_folders[scene_idx].string();
+        std::string current_scene_name= fs::path(scene_path).filename().string();
+
         VLOG(1) << "reading poses and intrinsics for scene " << fs::path(scene_path).stem();
 
 
@@ -457,7 +461,10 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 }
                 Eigen::Matrix<double,3,4> P_block = P.matrix().block<3,4>(0,0);
                 // VLOG(1) << "S is " << S.matrix();
-                
+
+                // if (img_idx==0){
+                    // VLOG(1) << " P is " << P.matrix();
+                // }
 
 
                 //Get the P_block into K and R and T as done in this line: K, R, t = cv2.decomposeProjectionMatrix(P)[:3]
@@ -533,9 +540,8 @@ void DataLoaderDTU::read_poses_and_intrinsics(){
                 // exit(1);
 
                 //save also the transform from the original dtu towards easypbr
-                m_tf_easypbr_dtu= recaling_matrix*tf_rot*S.cast<float>().inverse();
-                // m_tf_easypbr_dtu= tf_rot*S.cast<float>().inverse();
-                // m_tf_easypbr_dtu.translation()*=m_scene_scale_multiplier;
+                Eigen::Affine3f tf_easypbr_dtu= recaling_matrix*tf_rot*S.cast<float>().inverse();
+                m_scene2tf_easypbr_dtu[current_scene_name]=tf_easypbr_dtu;
 
 
             }
@@ -632,6 +638,9 @@ void DataLoaderDTU::set_restrict_to_scene_name(const std::string scene_name){
 std::string DataLoaderDTU::get_restrict_to_scene_name(){
     return m_restrict_to_scene_name;
 }
+std::string DataLoaderDTU::get_current_scene_name(){
+    return m_current_scene_name;
+}
 
 void DataLoaderDTU::set_mode_train(){
     m_mode="train";
@@ -644,7 +653,8 @@ void DataLoaderDTU::set_mode_validation(){
 }
 
 Eigen::Affine3f DataLoaderDTU::get_tf_easypbr_dtu(){
-    return m_tf_easypbr_dtu;
+    // return m_tf_easypbr_dtu;
+    return m_scene2tf_easypbr_dtu[get_current_scene_name()];
 }
 
 
