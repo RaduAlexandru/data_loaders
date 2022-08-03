@@ -381,7 +381,7 @@ void DataLoaderDTU::load_images_in_frame(easy_pbr::Frame& frame){
                 torch::Tensor mask_tensor=mat2tensor(frame.mask, false).to("cuda");
                 rgb_32f_tensor=rgb_32f_tensor*mask_tensor;
                 //get the mask as only 1 channel
-                mask_tensor=mask_tensor.slice(0, 0, 1); //dim,start,end
+                mask_tensor=mask_tensor.slice(1, 0, 1); //dim,start,end
                 frame.add_extra_field("mask_tensor",mask_tensor);
             }
             frame.add_extra_field("rgb_32f_tensor",rgb_32f_tensor);
