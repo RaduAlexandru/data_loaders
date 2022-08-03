@@ -60,6 +60,7 @@ public:
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
+    void set_preload_to_gpu_tensors(const bool val);
     Eigen::Affine3f get_tf_easypbr_dtu();
 
 
@@ -94,6 +95,7 @@ private:
     float m_rotate_scene_x_axis_degrees;
     boost::filesystem::path m_dataset_path;  //get the path where all the off files are
     bool m_load_as_shell;
+    bool m_preload_to_gpu_tensors;
     std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_scene_to_read;

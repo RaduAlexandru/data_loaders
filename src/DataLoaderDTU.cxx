@@ -1,5 +1,9 @@
 #include "data_loaders/DataLoaderDTU.h"
 
+#ifdef WITH_TORCH
+    #include "UtilsPytorch.h" //contains torch so it has to be added BEFORE any other include because the other ones might include loguru which gets screwed up if torch was included before it
+#endif
+
 //loguru
 #define LOGURU_REPLACE_GLOG 1
 #include <loguru.hpp>
@@ -86,6 +90,7 @@ void DataLoaderDTU::init_params(const std::string config_file){
     m_load_as_shell= loader_config["load_as_shell"];
     m_mode= (std::string)loader_config["mode"];
     m_load_mask=loader_config["load_mask"];
+    m_preload_to_gpu_tensors=loader_config["preload_to_gpu_tensors"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_rotate_scene_x_axis_degrees= loader_config["rotate_scene_x_axis_degrees"];
 
@@ -366,6 +371,27 @@ void DataLoaderDTU::load_images_in_frame(easy_pbr::Frame& frame){
 
     //multiply mask with rgb
     // frame.rgb_32f=frame.rgb_32f*frame.mask;
+
+
+    //if we also load into gpu, we do it here
+    if(m_preload_to_gpu_tensors){
+        #ifdef WITH_TORCH
+            torch::Tensor rgb_32f_tensor=mat2tensor(frame.rgb_32f, true).to("cuda");
+            if (!frame.mask_path.empty()){ //load mask if there is any
+                torch::Tensor mask_tensor=mat2tensor(frame.mask, false).to("cuda");
+                rgb_32f_tensor=rgb_32f_tensor*mask_tensor;
+                //get the mask as only 1 channel
+                mask_tensor=mask_tensor.slice(0, 0, 1); //dim,start,end
+                frame.add_extra_field("mask_tensor",mask_tensor);
+            }
+            frame.add_extra_field("rgb_32f_tensor",rgb_32f_tensor);
+            frame.add_extra_field("has_gpu_tensors",true);
+
+        #else 
+            LOG(FATAL) << "You need to compieo with torch in order to enable preloading to gpu";
+        #endif
+        
+    }
 
 
 }
@@ -650,6 +676,9 @@ void DataLoaderDTU::set_mode_test(){
 }
 void DataLoaderDTU::set_mode_validation(){
     m_mode="val";
+}
+void DataLoaderDTU::set_preload_to_gpu_tensors(const bool val){
+    m_preload_to_gpu_tensors=val;
 }
 
 Eigen::Affine3f DataLoaderDTU::get_tf_easypbr_dtu(){

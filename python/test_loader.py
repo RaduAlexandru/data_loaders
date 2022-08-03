@@ -15,6 +15,22 @@ from dataloaders import *
 np.random.seed(0)
 
 
+#Just to have something close to the macros we have in c++
+def profiler_start(name):
+    if(Profiler.is_profiling_gpu()):
+        torch.cuda.synchronize()
+    Profiler.start(name)
+def profiler_end(name):
+    if(Profiler.is_profiling_gpu()):
+        torch.cuda.synchronize()
+    Profiler.end(name)
+TIME_START = lambda name: profiler_start(name)
+TIME_END = lambda name: profiler_end(name)
+
+
+
+
+
 config_file="test_loader.cfg"
 
 config_path=os.path.join( os.path.dirname( os.path.realpath(__file__) ) , '../config', config_file)
@@ -380,6 +396,22 @@ def test_dtu():
         if(loader.finished_reading_scene() ):
             frame=loader.get_random_frame()
 
+
+            TIME_START("loadtotensor")
+            # gt_rgb=mat2tensor(frame.rgb_32f, True).to("cuda")
+            TIME_END("loadtotensor")
+
+            TIME_START("get_tensor")
+            if frame.has_extra_field("has_gpu_tensors"):
+                print("has gpu tensors")
+                rgb_tensor=frame.get_extra_field_tensor("rgb_32f_tensor")
+                mask_tensor=frame.get_extra_field_tensor("mask_tensor")
+                #show
+                Gui.show(tensor2mat(rgb_tensor).rgb2bgr(), "rgb_tensor")
+                Gui.show(tensor2mat(mask_tensor), "mask_tensor")
+            TIME_END("get_tensor")
+
+
             # if i%1==0:
                 # loader.start_reading_next_scene()
 
@@ -393,6 +425,7 @@ def test_dtu():
                 # print("frame.K is ", frame.K)
 
             Gui.show(frame.rgb_32f, "rgb")
+            Gui.show(frame.mask, "mask")
             frustum=frame.create_frustum_mesh(20)
             # frustum.apply_model_matrix_to_cpu(True)
             Scene.show(frustum, "frustum"+ str(frame.frame_idx) )
