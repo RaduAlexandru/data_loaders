@@ -375,8 +375,8 @@ def test_srn():
 
 def test_dtu():
     loader=DataLoaderDTU(config_path)
-    loader.set_mode_train()
-    # loader.set_mode_validation() #test set actually doesnt exist and we actually use the validation one
+    # loader.set_mode_train()
+    loader.set_mode_test()
     loader.start()
 
 

@@ -236,6 +236,10 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
         std::shuffle(std::begin(paths), std::end(paths), rng_1);
     }
 
+    //skip the ones we use for testing
+    //https://github.com/Totoro97/NeuS/issues/34
+    std::vector<int> indexes_for_testing={8, 13, 16, 21, 26, 31, 34, 56};
+
     //load all the scene for the chosen object
     for (size_t i=0; i<paths.size(); i++){
         // fs::path img_path= itr->path();
@@ -247,6 +251,24 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
 
             int img_idx=std::stoi( img_path.stem().string() );
             // VLOG(1) << "img idx is " << img_idx;
+
+            
+            if(std::find(indexes_for_testing.begin(), indexes_for_testing.end(), img_idx) != indexes_for_testing.end()) {
+                /* v contains x */
+                if(m_mode=="train"){ //we are in train mode and we found an image we should use for testing so we skip it
+                    continue;
+                }else if (m_mode=="test" || m_mode=="val"){
+                    //nothing happens because we are in test mode and the image is for testing
+                }
+            } else {
+                /* v does not contain x */
+                if(m_mode=="train"){ //we are in train mode and we found an image we should use for training
+                    //nothing happens
+                }else if (m_mode=="test" || m_mode=="val"){ //we are in test mode but we found an image that should be used for training so we skip it
+                    continue;
+                }
+            }
+
 
             Frame frame;
             frame.frame_idx=img_idx;
