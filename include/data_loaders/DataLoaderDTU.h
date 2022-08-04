@@ -60,6 +60,7 @@ public:
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
+    void set_mode_all(); //load all images
     void set_preload_to_gpu_tensors(const bool val);
     Eigen::Affine3f get_tf_easypbr_dtu();
 

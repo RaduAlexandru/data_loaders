@@ -232,7 +232,7 @@ void DataLoaderDTU::read_scene(const std::string scene_path){
     //shuffle the images from this scene
     unsigned seed1 = m_nr_scenes_read_so_far;
     auto rng_1 = std::default_random_engine(seed1);
-    if(m_mode=="train"){
+    if(m_mode=="train" || m_mode=="all"){
         std::shuffle(std::begin(paths), std::end(paths), rng_1);
     }
 
@@ -698,6 +698,9 @@ void DataLoaderDTU::set_mode_test(){
 }
 void DataLoaderDTU::set_mode_validation(){
     m_mode="val";
+}
+void DataLoaderDTU::set_mode_all(){
+    m_mode="all";
 }
 void DataLoaderDTU::set_preload_to_gpu_tensors(const bool val){
     m_preload_to_gpu_tensors=val;

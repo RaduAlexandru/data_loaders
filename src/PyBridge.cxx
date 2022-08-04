@@ -293,6 +293,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderDTU::set_mode_train )
     .def("set_mode_test", &DataLoaderDTU::set_mode_test )
     .def("set_mode_validation", &DataLoaderDTU::set_mode_validation )
+    .def("set_mode_all", &DataLoaderDTU::set_mode_all )
     .def("set_preload_to_gpu_tensors", &DataLoaderDTU::set_preload_to_gpu_tensors )
     .def("get_tf_easypbr_dtu", &DataLoaderDTU::get_tf_easypbr_dtu )
     ;

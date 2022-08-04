@@ -376,7 +376,8 @@ def test_srn():
 def test_dtu():
     loader=DataLoaderDTU(config_path)
     # loader.set_mode_train()
-    loader.set_mode_test()
+    # loader.set_mode_test()
+    loader.set_mode_all()
     loader.start()
 
 
