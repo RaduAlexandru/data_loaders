@@ -53,10 +53,12 @@ MiscDataFuncs::MiscDataFuncs(){
         torch::Tensor tf_world_cam_reel = torch::empty({ frames.size(), 4,4 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
         //Make a reel to contain all the image batches
         torch::Tensor rgb_reel = torch::empty({ frames.size(), 3, first_h, first_w }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
-        torch::Tensor mask_reel;
+
+        bool has_mask=false;
+        torch::Tensor mask_reel=torch::empty({ 1, 1, 1, 1 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
         if (!frames[0].mask.empty()){
-            VLOG(1) << "creating mask reel";
             mask_reel = torch::empty({ frames.size(), 1, first_h, first_w }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+            has_mask=true;
         }
 
         //load all the images and K and poses
@@ -68,7 +70,7 @@ MiscDataFuncs::MiscDataFuncs(){
             rgb_reel.slice(0, i, i+1)=rgb_32f_tensor;
 
             //load mask
-            if (mask_reel.defined()){
+            if (has_mask){
                 torch::Tensor mask_tensor=mat2tensor(frames[i].mask, false).to("cuda");
                 //get the mask as only 1 channel
                 mask_tensor=mask_tensor.slice(1, 0, 1); //dim,start,end
@@ -101,6 +103,7 @@ MiscDataFuncs::MiscDataFuncs(){
         reel.tf_world_cam_reel=tf_world_cam_reel;
         reel.rgb_reel=rgb_reel;
         reel.mask_reel=mask_reel;
+        reel.has_mask=has_mask;
 
         return reel;
 
