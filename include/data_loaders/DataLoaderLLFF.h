@@ -1,3 +1,6 @@
+#pragma once
+
+
 #include <thread>
 #include <unordered_map>
 #include <vector>

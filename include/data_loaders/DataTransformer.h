@@ -1,3 +1,6 @@
+#pragma once
+
+
 //eigen
 #include <Eigen/Core>
 

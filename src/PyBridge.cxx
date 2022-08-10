@@ -27,10 +27,12 @@
 #include "data_loaders/DataLoaderDTU.h"
 #include "data_loaders/DataLoaderDeepVoxels.h"
 #include "data_loaders/DataLoaderLLFF.h"
+#include "data_loaders/MiscDataFuncs.h"
 //fb
 #include "data_loaders/fb/DataLoaderBlenderFB.h"
 #ifdef WITH_TORCH
     #include "data_loaders/fb/DataLoaderUSCHair.h"
+    #include "data_loaders/TensorReel.h"
 #endif
 #include "easy_pbr/Mesh.h"
 #include "easy_pbr/LabelMngr.h"
@@ -276,6 +278,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("start", &DataLoaderDTU::start )
     .def("get_random_frame", &DataLoaderDTU::get_random_frame )
     .def("get_frame_at_idx", &DataLoaderDTU::get_frame_at_idx )
+    .def("get_all_frames", &DataLoaderDTU::get_all_frames )
     .def("start_reading_next_scene", &DataLoaderDTU::start_reading_next_scene )
     .def("finished_reading_scene", &DataLoaderDTU::finished_reading_scene )
     .def("has_data", &DataLoaderDTU::has_data )
@@ -380,6 +383,25 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("get_dense_cloud", &PRCP1Block::get_dense_cloud )
     .def("get_sparse_cloud", &PRCP1Block::get_sparse_cloud )
     .def("name", &PRCP1Block::name )
+    ;
+
+
+    #ifdef WITH_TORCH
+        py::class_<TensorReel> (m, "TensorReel")
+        .def(py::init())
+        .def_readwrite("rgb_reel", &TensorReel::rgb_reel )
+        .def_readwrite("mask_reel", &TensorReel::mask_reel )
+        .def_readwrite("K_reel", &TensorReel::K_reel )
+        .def_readwrite("tf_cam_world_reel", &TensorReel::tf_cam_world_reel )
+        ;
+    #endif
+
+
+    py::class_<MiscDataFuncs> (m, "MiscDataFuncs")
+    .def(py::init())
+    #ifdef WITH_TORCH
+        .def_static("frames2tensors", &MiscDataFuncs::frames2tensors )
+    #endif
     ;
 
 

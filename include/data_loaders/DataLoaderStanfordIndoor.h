@@ -1,3 +1,6 @@
+#pragma once
+
+
 // this is used to loader the S3DIS (Stanford 3D Indoor Spaces) dataset http://buildingparser.stanford.edu/method.html
 
 #include <thread>

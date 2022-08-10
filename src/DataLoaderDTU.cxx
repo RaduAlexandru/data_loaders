@@ -626,6 +626,9 @@ Frame DataLoaderDTU::get_frame_at_idx( const int idx){
 
     return frame;
 }
+std::vector< easy_pbr::Frame > DataLoaderDTU::get_all_frames(){
+    return m_frames_for_scene;
+} 
 
 
 
