@@ -58,6 +58,7 @@ public:
     void set_restrict_to_scene_name(const std::string scene_name);
     std::string get_restrict_to_scene_name();
     std::string get_current_scene_name(); //the scene we have currently active
+    void set_subsample_factor(const int val);
     void set_scene_scale_multiplier(const float scene_scale_multiplier);
     void set_rotate_scene_x_axis_degrees(const float degrees);
     void set_load_mask(bool load_mask);

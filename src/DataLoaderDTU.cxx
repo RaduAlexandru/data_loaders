@@ -667,7 +667,9 @@ int DataLoaderDTU::nr_scenes(){
 }
 
 
-
+void DataLoaderDTU::set_subsample_factor(const int val){
+    m_subsample_factor=val;
+}
 void DataLoaderDTU::set_scene_scale_multiplier(const float scene_scale_multiplier){
     m_scene_scale_multiplier=scene_scale_multiplier;
 }
