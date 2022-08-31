@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.6
+#!/usr/bin/env python3
 
 import os
 import numpy as np
@@ -680,203 +680,217 @@ def test_phenorob_cp1():
         input_clamped=torch.clamp(input_val, input_start, input_end)
         return output_start + ((output_end - output_start) / (input_end - input_start)) * (input_clamped - input_start)
 
+    #ITER days
+    for d_idx in range(loader.nr_days()):
+        day=loader.get_day_with_idx(d_idx)
+        print("loading day with idx", d_idx)
 
-    for s_idx in range(loader.nr_scans()):
-        scan=loader.get_scan_with_idx(s_idx)
-        print("loading scan with idx", s_idx)
-        for b_idx in range(scan.nr_blocks()):
-            block=scan.get_block_with_idx(b_idx)
-            #show all the images from the first block only
-            if b_idx==0:
-                print("loading block with idx", b_idx)
-                for f_idx in range(block.nr_frames()):
-                    frame=block.get_rgb_frame_with_idx(f_idx)
-                    if frame.is_shell:
-                        frame.load_images()
-                    #create a frustum fro the RGB frames
-                    frustum_mesh=frame.create_frustum_mesh(0.2, True, 256)
-                    # frustum_mesh=frame.create_frustum_mesh(0.01, True, 256)
-                    frustum_mesh.m_vis.m_line_width=1
-                    Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
+        #ITER scans
+        for s_idx in range(day.nr_scans()):
+            scan=day.get_scan_with_idx(s_idx)
+            print("loading scan with idx", s_idx)
+
+            #ITER blocks
+            for b_idx in range(scan.nr_blocks()):
+                block=scan.get_block_with_idx(b_idx)
 
 
-                    #show the visible points
-                    if f_idx==0 and frame.has_extra_field("visible_points"):
-                        visible_points=frame.get_extra_field_mesh("visible_points")
-                        visible_points=loader.load_mesh(visible_points)
-                        visible_points.apply_model_matrix_to_cpu(True)
-                        visible_points.recalculate_min_max_height()
-                        Scene.show(visible_points, "visible_points_"+str(f_idx))
-                        #show the frame0 together with the depth of the visible points
-                        Gui.show(frame.rgb_32f, "rgb_"+str(f_idx))
-                        #get the visible points in cam coordinates, compute the depth, and then splat it
-                        visible_points_cam=visible_points.clone()
-                        visible_points_cam.transform_model_matrix( frame.tf_cam_world.to_double() )
-                        visible_points_cam.apply_model_matrix_to_cpu(True)
-                        visible_points_cam_t=torch.from_numpy(visible_points_cam.V).float()
-                        visible_points_depth=visible_points_cam_t.norm(dim=1,keepdim=True)
-                        print("visible_points_depth", visible_points_depth.shape)
-                        visible_points_depth_np=visible_points_depth.cpu().float().numpy()
-                        depth_visible_points_mat=frame.naive_splat(visible_points, visible_points_depth_np)
-                        Gui.show(depth_visible_points_mat, "depth_visible_points_mat")
-                    
-
-                    #show the depth if it exists
-                    if f_idx==0 and not frame.depth.empty() and show_backprojected_depth:
-                        sfm_depth_backproj=frame.depth2world_xyz_mesh()
-                        sfm_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
-                        Scene.show(sfm_depth_backproj, "sfm_depth_backproj_"+str(f_idx))
-                        depth_tensor=mat2tensor(frame.depth, False)
-                        depth_tensor_original=depth_tensor
-                        depth_tensor=map_range_tensor(depth_tensor, 8.0, 16.0, 0.0, 1.0)
-                        depth_tensor=depth_tensor.repeat(1,3,1,1)
-                        Gui.show(tensor2mat(depth_tensor), "depth", frame.rgb_32f, "rgb")
-                        depth_tensor_small=(   torch.logical_and(depth_tensor_original<5.0, depth_tensor_original!=0  )  )*1.0
-                        Gui.show(tensor2mat(depth_tensor_small), "depth_tensor_small")
-                        Gui.show(tensor2mat(depth_tensor_original), "depth", tensor2mat(depth_tensor_small), "depth_tensor_small")
-
-                    #show the distance_along_ray if it exists
-                    if f_idx==0 and not frame.depth_along_ray.empty() and show_backprojected_depth_along_ray:
-                    # if not frame.depth_along_ray.empty() and show_backprojected_depth_along_ray:
-                        depth_along_ray_mat=frame.depth_along_ray
-                        Gui.show(depth_along_ray_mat, "depth_along_ray_mat" )
-                        #BACKPROJECT also this depth to check if its correct
-                        ######################create rays and dirs
-                        x_coord= torch.arange(frame.width).view(-1, 1, 1).repeat(1,frame.height, 1)+0.5 #width x height x 1
-                        y_coord= torch.arange(frame.height).view(1, -1, 1).repeat(frame.width, 1, 1)+0.5 #width x height x 1
-                        ones=torch.ones(frame.width, frame.height).view(frame.width, frame.height, 1)
-                        points_2D=torch.cat([x_coord, y_coord, ones],2).transpose(0,1).reshape(-1,3).cuda()
-                        K_inv=torch.from_numpy( np.linalg.inv(frame.K) ).to("cuda").float()
-                        #get from screen to cam coords
-                        pixels_selected_screen_coords_t=points_2D.transpose(0,1) #3xN
-                        pixels_selected_cam_coords=torch.matmul(K_inv,pixels_selected_screen_coords_t).transpose(0,1)
-                        #multiply at various depths
-                        nr_rays=pixels_selected_cam_coords.shape[0]
-                        pixels_selected_cam_coords=pixels_selected_cam_coords.view(nr_rays, 3)
-                        #get from cam_coords to world_coords
-                        tf_world_cam=frame.tf_cam_world.inverse()
-                        R=torch.from_numpy( tf_world_cam.linear() ).to("cuda").float()
-                        t=torch.from_numpy( tf_world_cam.translation() ).to("cuda").view(1,3).float()
-                        pixels_selected_world_coords=torch.matmul(R, pixels_selected_cam_coords.transpose(0,1).contiguous() ).transpose(0,1).contiguous()  + t
-                        #get direction
-                        ray_dirs = pixels_selected_world_coords-t
-                        ray_dirs=F.normalize(ray_dirs, p=2, dim=1)
-                        #ray_origins
-                        ray_origins=t.repeat(nr_rays,1)
-                        #################get the depth for each pixel
-                        # tex=img2tex(img) #hwc
-                        depth_along_ray_tensor=mat2tensor(depth_along_ray_mat,False).cuda()
-                        tex=depth_along_ray_tensor.permute(0,2,3,1).squeeze(0) #hwc
-                        tex_channels=tex.shape[2]
-                        tex_flattened=tex.view(-1,tex_channels)        
-                        gt_depth_along_ray_full=tex_flattened
-                        gt_ray_end_full = ray_origins + ray_dirs * gt_depth_along_ray_full.view(-1,1)
-                        ################show points
-                        pred_points_cpu=gt_ray_end_full.contiguous().view(-1,3).detach().double().cpu().numpy()
-                        pred_strands_mesh=Mesh()
-                        pred_strands_mesh.V=pred_points_cpu
-                        pred_strands_mesh.m_vis.m_show_points=True
-                        Scene.show(pred_strands_mesh, "points_depth_along_ray"+str(f_idx))
-                                                
-
-
-
-                    
-
-
-
-
-                    #get the right stereo pair if it exists
-                    if ( frame.has_right_stereo_pair() ):
-                        frame_right=frame.right_stereo_pair();
-                        print("cam ", frame.cam_id, " has right pair ", frame_right.cam_id)
-                        if frame_right.is_shell:
-                            frame_right.load_images()
-
-                        
-                        # #if this is the camera on the top fo robot, we need to rotate them to create a stereo pair, rotate the left frame 90 degrees and the right one 270
-                        # if frame.cam_id==13:
-                        #     print("rotating top cameras")
-                        #     frame=frame.rotate_clockwise_90()
-                        #     frame_right=frame_right.rotate_clockwise_90()
-                        #     frame_right=frame_right.rotate_clockwise_90()
-                        #     frame_right=frame_right.rotate_clockwise_90()
-                        #     frame.set_right_stereo_pair(frame_right)
-                        #     # #show the frames
-                        #     frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
-                        #     frustum_mesh.m_vis.m_line_width=1
-                        #     Scene.show(frustum_mesh, "frustumleft" )
-                        #     frustum_mesh=frame_right.create_frustum_mesh(0.05, True, 256)
-                        #     frustum_mesh.m_vis.m_line_width=1
-                        #     Scene.show(frustum_mesh, "frustumright" )
-                        #     # TODO currently someone bumped their head into the top camera because the images don't look the same as when it was calibrated
-
-
-                        #show the left and right camera images                           
-                        # Gui.show(frame.rgb_32f, str(frame.cam_id)+"_left", frame_right.rgb_32f, str(frame_right.cam_id)+"_right")
-                        
-                        #rectify
-                        # pair=frame.rectify_stereo_pair(0)
-                        # frame_left_rectified=pair[0]
-                        # frame_right_rectified=pair[1]
-                        # baseline=pair[2]
-                        # Q=pair[3]
-                        # Gui.show(frame_left_rectified.rgb_32f, str(frame.cam_id)+"_rectleft", frame_right_rectified.rgb_32f, str(frame_right.cam_id)+"_rectright")
-                        # print("baseline is ", baseline)
-
-
-                        # #Show the rectified frame for the top one
-                        # if frame.cam_id==13:
-                        #     frustum_mesh=frame_left_rectified.create_frustum_mesh(0.05, True, 256)
-                        #     Scene.show(frustum_mesh, "rect_fr_left" )
-                        #     frustum_mesh=frame_right_rectified.create_frustum_mesh(0.05, True, 256)
-                        #     Scene.show(frustum_mesh, "rect_fr_right" )
-
-
-
-
-            # load the photoneo frame from this block
-            if loader.dataset_type()=="kalibr":
-                photoneo_frame=block.get_photoneo_frame()
-                photoneo_frame.load_images()
-                frustum_mesh=photoneo_frame.create_frustum_mesh(0.05, True, 256)
-                frustum_mesh.m_vis.m_line_width=1
-                Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
-                #load photoneo cloud
-                photoneo_mesh=block.get_photoneo_mesh()
-                photoneo_mesh=loader.load_mesh(photoneo_mesh)
-                # photoneo_mesh.load_from_file(photoneo_mesh.m_disk_path)
-                #show the confidence 
-                # Gui.show(photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
-                #show depth
-                # Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id))
-                #show both depth and confidence
-                Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id), photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
-                #color the first cloud
+                #show all the images from the first block only
                 if b_idx==0:
-                    frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
-                    frame0.load_images()
-                    photoneo_mesh=frame0.assign_color(photoneo_mesh)
-                    print("frame 0 K is ", frame0.K)
-                    print("width", frame0.width)
-                Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
-                # backproject depth
-                # photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
-                # photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
-                # Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
+                    print("loading block with idx", b_idx)
+                    for f_idx in range(block.nr_frames()):
+                        frame=block.get_rgb_frame_with_idx(f_idx)
+                        if frame.is_shell:
+                            frame.load_images()
+                        #create a frustum fro the RGB frames
+                        frustum_mesh=frame.create_frustum_mesh(0.2, True, 256)
+                        # frustum_mesh=frame.create_frustum_mesh(0.01, True, 256)
+                        frustum_mesh.m_vis.m_line_width=1
+                        Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
 
 
-            #load the dense cloud for this block
-            if loader.loaded_dense_cloud():
-                dense_cloud=block.get_dense_cloud()
-                dense_cloud=loader.load_mesh(dense_cloud)
-                # dense_cloud.load_from_file(dense_cloud.m_disk_path)
-                print("dense_cloud", dense_cloud.model_matrix.matrix() )
-                dense_cloud.apply_model_matrix_to_cpu(True)
-                dense_cloud.recalculate_min_max_height()
-                Scene.show(dense_cloud, "dense_cloud_"+str(b_idx))
+                        #show the visible points
+                        if f_idx==0 and frame.has_extra_field("visible_points"):
+                            visible_points=frame.get_extra_field_mesh("visible_points")
+                            visible_points=loader.load_mesh(visible_points)
+                            visible_points.apply_model_matrix_to_cpu(True)
+                            visible_points.recalculate_min_max_height()
+                            Scene.show(visible_points, "visible_points_"+str(f_idx))
+                            #show the frame0 together with the depth of the visible points
+                            Gui.show(frame.rgb_32f, "rgb_"+str(f_idx))
+                            #get the visible points in cam coordinates, compute the depth, and then splat it
+                            visible_points_cam=visible_points.clone()
+                            visible_points_cam.transform_model_matrix( frame.tf_cam_world.to_double() )
+                            visible_points_cam.apply_model_matrix_to_cpu(True)
+                            visible_points_cam_t=torch.from_numpy(visible_points_cam.V).float()
+                            visible_points_depth=visible_points_cam_t.norm(dim=1,keepdim=True)
+                            print("visible_points_depth", visible_points_depth.shape)
+                            visible_points_depth_np=visible_points_depth.cpu().float().numpy()
+                            depth_visible_points_mat=frame.naive_splat(visible_points, visible_points_depth_np)
+                            Gui.show(depth_visible_points_mat, "depth_visible_points_mat")
+                        
+
+                        #show the depth if it exists
+                        if f_idx==0 and not frame.depth.empty() and show_backprojected_depth:
+                            sfm_depth_backproj=frame.depth2world_xyz_mesh()
+                            sfm_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
+                            Scene.show(sfm_depth_backproj, "sfm_depth_backproj_"+str(f_idx))
+                            depth_tensor=mat2tensor(frame.depth, False)
+                            depth_tensor_original=depth_tensor
+                            depth_tensor=map_range_tensor(depth_tensor, 8.0, 16.0, 0.0, 1.0)
+                            depth_tensor=depth_tensor.repeat(1,3,1,1)
+                            Gui.show(tensor2mat(depth_tensor), "depth", frame.rgb_32f, "rgb")
+                            depth_tensor_small=(   torch.logical_and(depth_tensor_original<5.0, depth_tensor_original!=0  )  )*1.0
+                            Gui.show(tensor2mat(depth_tensor_small), "depth_tensor_small")
+                            Gui.show(tensor2mat(depth_tensor_original), "depth", tensor2mat(depth_tensor_small), "depth_tensor_small")
+
+                        #show the distance_along_ray if it exists
+                        if f_idx==0 and not frame.depth_along_ray.empty() and show_backprojected_depth_along_ray:
+                        # if not frame.depth_along_ray.empty() and show_backprojected_depth_along_ray:
+                            depth_along_ray_mat=frame.depth_along_ray
+                            Gui.show(depth_along_ray_mat, "depth_along_ray_mat" )
+                            #BACKPROJECT also this depth to check if its correct
+                            ######################create rays and dirs
+                            x_coord= torch.arange(frame.width).view(-1, 1, 1).repeat(1,frame.height, 1)+0.5 #width x height x 1
+                            y_coord= torch.arange(frame.height).view(1, -1, 1).repeat(frame.width, 1, 1)+0.5 #width x height x 1
+                            ones=torch.ones(frame.width, frame.height).view(frame.width, frame.height, 1)
+                            points_2D=torch.cat([x_coord, y_coord, ones],2).transpose(0,1).reshape(-1,3).cuda()
+                            K_inv=torch.from_numpy( np.linalg.inv(frame.K) ).to("cuda").float()
+                            #get from screen to cam coords
+                            pixels_selected_screen_coords_t=points_2D.transpose(0,1) #3xN
+                            pixels_selected_cam_coords=torch.matmul(K_inv,pixels_selected_screen_coords_t).transpose(0,1)
+                            #multiply at various depths
+                            nr_rays=pixels_selected_cam_coords.shape[0]
+                            pixels_selected_cam_coords=pixels_selected_cam_coords.view(nr_rays, 3)
+                            #get from cam_coords to world_coords
+                            tf_world_cam=frame.tf_cam_world.inverse()
+                            R=torch.from_numpy( tf_world_cam.linear() ).to("cuda").float()
+                            t=torch.from_numpy( tf_world_cam.translation() ).to("cuda").view(1,3).float()
+                            pixels_selected_world_coords=torch.matmul(R, pixels_selected_cam_coords.transpose(0,1).contiguous() ).transpose(0,1).contiguous()  + t
+                            #get direction
+                            ray_dirs = pixels_selected_world_coords-t
+                            ray_dirs=F.normalize(ray_dirs, p=2, dim=1)
+                            #ray_origins
+                            ray_origins=t.repeat(nr_rays,1)
+                            #################get the depth for each pixel
+                            # tex=img2tex(img) #hwc
+                            depth_along_ray_tensor=mat2tensor(depth_along_ray_mat,False).cuda()
+                            tex=depth_along_ray_tensor.permute(0,2,3,1).squeeze(0) #hwc
+                            tex_channels=tex.shape[2]
+                            tex_flattened=tex.view(-1,tex_channels)        
+                            gt_depth_along_ray_full=tex_flattened
+                            gt_ray_end_full = ray_origins + ray_dirs * gt_depth_along_ray_full.view(-1,1)
+                            ################show points
+                            pred_points_cpu=gt_ray_end_full.contiguous().view(-1,3).detach().double().cpu().numpy()
+                            pred_strands_mesh=Mesh()
+                            pred_strands_mesh.V=pred_points_cpu
+                            pred_strands_mesh.m_vis.m_show_points=True
+                            Scene.show(pred_strands_mesh, "points_depth_along_ray"+str(f_idx))
+                                                    
 
 
+
+                        
+
+
+
+
+                        #get the right stereo pair if it exists
+                        if ( frame.has_right_stereo_pair() ):
+                            frame_right=frame.right_stereo_pair();
+                            print("cam ", frame.cam_id, " has right pair ", frame_right.cam_id)
+                            if frame_right.is_shell:
+                                frame_right.load_images()
+
+                            
+                            # #if this is the camera on the top fo robot, we need to rotate them to create a stereo pair, rotate the left frame 90 degrees and the right one 270
+                            # if frame.cam_id==13:
+                            #     print("rotating top cameras")
+                            #     frame=frame.rotate_clockwise_90()
+                            #     frame_right=frame_right.rotate_clockwise_90()
+                            #     frame_right=frame_right.rotate_clockwise_90()
+                            #     frame_right=frame_right.rotate_clockwise_90()
+                            #     frame.set_right_stereo_pair(frame_right)
+                            #     # #show the frames
+                            #     frustum_mesh=frame.create_frustum_mesh(0.05, True, 256)
+                            #     frustum_mesh.m_vis.m_line_width=1
+                            #     Scene.show(frustum_mesh, "frustumleft" )
+                            #     frustum_mesh=frame_right.create_frustum_mesh(0.05, True, 256)
+                            #     frustum_mesh.m_vis.m_line_width=1
+                            #     Scene.show(frustum_mesh, "frustumright" )
+                            #     # TODO currently someone bumped their head into the top camera because the images don't look the same as when it was calibrated
+
+
+                            #show the left and right camera images                           
+                            # Gui.show(frame.rgb_32f, str(frame.cam_id)+"_left", frame_right.rgb_32f, str(frame_right.cam_id)+"_right")
+                            
+                            #rectify
+                            # pair=frame.rectify_stereo_pair(0)
+                            # frame_left_rectified=pair[0]
+                            # frame_right_rectified=pair[1]
+                            # baseline=pair[2]
+                            # Q=pair[3]
+                            # Gui.show(frame_left_rectified.rgb_32f, str(frame.cam_id)+"_rectleft", frame_right_rectified.rgb_32f, str(frame_right.cam_id)+"_rectright")
+                            # print("baseline is ", baseline)
+
+
+                            # #Show the rectified frame for the top one
+                            # if frame.cam_id==13:
+                            #     frustum_mesh=frame_left_rectified.create_frustum_mesh(0.05, True, 256)
+                            #     Scene.show(frustum_mesh, "rect_fr_left" )
+                            #     frustum_mesh=frame_right_rectified.create_frustum_mesh(0.05, True, 256)
+                            #     Scene.show(frustum_mesh, "rect_fr_right" )
+
+
+
+
+                # load the photoneo frame from this block
+                if loader.dataset_type()=="kalibr":
+                    photoneo_frame=block.get_photoneo_frame()
+                    photoneo_frame.load_images()
+                    frustum_mesh=photoneo_frame.create_frustum_mesh(0.05, True, 256)
+                    frustum_mesh.m_vis.m_line_width=1
+                    Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
+                    #load photoneo cloud
+                    photoneo_mesh=block.get_photoneo_mesh()
+                    photoneo_mesh=loader.load_mesh(photoneo_mesh)
+                    # photoneo_mesh.load_from_file(photoneo_mesh.m_disk_path)
+                    #show the confidence 
+                    # Gui.show(photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
+                    #show depth
+                    # Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id))
+                    #show both depth and confidence
+                    Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id), photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
+                    #color the first cloud
+                    if b_idx==0:
+                        frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
+                        frame0.load_images()
+                        photoneo_mesh=frame0.assign_color(photoneo_mesh)
+                        print("frame 0 K is ", frame0.K)
+                        print("width", frame0.width)
+                    Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
+                    # backproject depth
+                    # photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
+                    # photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
+                    # Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
+
+
+                #load the dense cloud for this block
+                if loader.loaded_dense_cloud():
+                    dense_cloud=block.get_dense_cloud()
+                    dense_cloud=loader.load_mesh(dense_cloud)
+                    # dense_cloud.load_from_file(dense_cloud.m_disk_path)
+                    print("dense_cloud", dense_cloud.model_matrix.matrix() )
+                    dense_cloud.apply_model_matrix_to_cpu(True)
+                    dense_cloud.recalculate_min_max_height()
+                    Scene.show(dense_cloud, "dense_cloud_"+str(b_idx))
+
+
+            print("test_loader showng only one scan")
+            break
+
+        print("test_loader showng only one day")
+        break
 
 
 
@@ -903,10 +917,10 @@ def test_phenorob_cp1():
 # test_colmap()
 # test_easypbr()
 # test_srn()
-test_dtu()
+# test_dtu()
 # test_blended_mvs()
 # test_deep_voxels()
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-# test_phenorob_cp1()
+test_phenorob_cp1()

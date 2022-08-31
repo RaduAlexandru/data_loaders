@@ -40,7 +40,7 @@ MiscDataFuncs::MiscDataFuncs(){
         //we assume all the images have the same size so that they can be packed into a tensor of size BCHW where B is the nr of images
         int first_w=frames[0].width;
         int first_h=frames[0].height;
-        for (int i=0; i<frames.size(); i++){
+        for (size_t i=0; i<frames.size(); i++){
             if(frames[i].width!= first_w || frames[i].height!=first_h){
                 LOG(FATAL) << "Frames vector contains images that are not the same size. Found image at idx " << i << " with width and height " << frames[i].width << " " << frames[i].height << " when the first image in the vector has width and height " << first_w << " " << first_h << ". Please use frame.crop to get a frame that has all the same size";
             }
@@ -48,21 +48,21 @@ MiscDataFuncs::MiscDataFuncs(){
         
 
         //make tensors for K(as 3x3 matrix) and poses as 4x4 matrices
-        torch::Tensor K_reel = torch::empty({ frames.size(), 3,3 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
-        torch::Tensor tf_cam_world_reel = torch::empty({ frames.size(), 4,4 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
-        torch::Tensor tf_world_cam_reel = torch::empty({ frames.size(), 4,4 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+        torch::Tensor K_reel = torch::empty({ (int)frames.size(), 3,3 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+        torch::Tensor tf_cam_world_reel = torch::empty({ (int)frames.size(), 4,4 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+        torch::Tensor tf_world_cam_reel = torch::empty({ (int)frames.size(), 4,4 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
         //Make a reel to contain all the image batches
-        torch::Tensor rgb_reel = torch::empty({ frames.size(), 3, first_h, first_w }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+        torch::Tensor rgb_reel = torch::empty({ (int)frames.size(), 3, first_h, first_w }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
 
         bool has_mask=false;
         torch::Tensor mask_reel=torch::empty({ 1, 1, 1, 1 }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
         if (!frames[0].mask.empty()){
-            mask_reel = torch::empty({ frames.size(), 1, first_h, first_w }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
+            mask_reel = torch::empty({ (int)frames.size(), 1, first_h, first_w }, torch::dtype(torch::kFloat32).device(torch::kCUDA, 0) );
             has_mask=true;
         }
 
         //load all the images and K and poses
-        for (int i=0; i<frames.size(); i++){ 
+        for (size_t i=0; i<frames.size(); i++){ 
             
 
             //load rgb
