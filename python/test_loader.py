@@ -11,6 +11,8 @@ except ImportError:
     pass
 from easypbr  import *
 from dataloaders import *
+from collections import namedtuple
+
 # np.set_printoptions(threshold=sys.maxsize)
 np.random.seed(0)
 
@@ -671,8 +673,81 @@ def test_phenorob_cp1():
     loader.set_mode_all()
     loader.start()
 
-    show_backprojected_depth=True
-    show_backprojected_depth_along_ray=True
+    show_backprojected_depth=False
+    show_backprojected_depth_along_ray=False
+
+    #make a sphere of radius 0.7 at origin because this is kinda what we use for instant ngp
+    sphere=Mesh()
+    sphere.create_sphere([0,0,0], 0.7)
+    sphere.m_vis.m_show_mesh=False
+    sphere.m_vis.m_show_wireframe=True
+    Scene.show(sphere,"sphere")
+
+
+
+    # frames_train=[]
+    # max_width=0
+    # max_height=0
+    # CropStruct = namedtuple("CropStruct", "start_x start_y crop_width crop_height")
+    # list_of_true_crops=[]
+    # for i in range(loader.nr_samples()):
+    #     frame=loader.get_frame_at_idx(i)
+    #     if frame.is_shell:
+    #         frame.load_images()
+    #     cam=Camera()
+    #     coords_2d_center=frame.project([0,0,0]) #project the center (the dataloader already ensures that the plant in interest is at the center)
+    #     #project also along the x and y axis of the camera to get the bounds of the sphere in camera coords
+    #     cam.from_frame(frame)
+    #     cam_axes=cam.cam_axes()
+    #     x_axis=cam_axes[:,0]
+    #     y_axis=cam_axes[:,1]
+    #     radius=0.7
+    #     coords_2d_x_positive=frame.project(x_axis*radius)
+    #     coords_2d_x_negative=frame.project(-x_axis*radius)
+    #     coords_2d_y_positive=frame.project(y_axis*radius)
+    #     coords_2d_y_negative=frame.project(-y_axis*radius)
+    #     #for cropping
+    #     start_x=int(coords_2d_x_negative[0])
+    #     start_y=int(coords_2d_y_positive[1])
+    #     width=int(coords_2d_x_positive[0]-coords_2d_x_negative[0])
+    #     height=int(coords_2d_y_negative[1]-coords_2d_y_positive[1])
+    #     print("start_x",start_x)
+    #     print("start_y",start_y)
+    #     print("width",width)
+    #     print("height",height)
+    #     start_x, start_y, width, height=frame.get_valid_crop(start_x, start_y, width, height)
+    #     frame=frame.crop(start_x, start_y, width, height, True)
+    #     # frames_train.append(frame)
+    #     # Gui.show(frame.rgb_32f, " frame "+str(i) ) 
+    #     if frame.width>max_width:
+    #         max_width=frame.width
+    #     if frame.height>max_height:
+    #         max_height=frame.height
+    #     true_crop = CropStruct(start_x, start_y, width, height)
+    #     list_of_true_crops.append(true_crop)
+    # print("max_width",max_width)
+    # print("max_height",max_height)
+    # #upsampel the true crops so that they are still inside the image but they all have the same width and height so that we can use the tensorreel
+    # frames_train_cropped_equal=[]
+    # for i in range(loader.nr_samples()):
+    #     frame=loader.get_frame_at_idx(i)
+    #     if frame.is_shell:
+    #         frame.load_images()
+    #     true_crop=list_of_true_crops[i]
+    #     start_x, start_y, width, height=frame.enlarge_crop_to_size(true_crop.start_x, true_crop.start_y, true_crop.crop_width, true_crop.crop_height, max_width, max_height) #crops then all to the same size
+    #     # print("enlarged crop has x,y, width and height ", start_x, start_y, width, height)
+    #     # print("will now crop a frame of size width and height ", frame.width, frame.height)
+    #     # print("true crop", true_crop)
+    #     frame=frame.crop(start_x, start_y, width, height, True)
+    #     print("frame shouls all have equal size now ", frame.width, " ", frame.height)
+    #     frames_train_cropped_equal.append(frame)
+    #     Gui.show(frame.rgb_32f, " frame "+str(i) ) 
+
+
+
+
+
+
 
     def map_range_tensor( input_val, input_start, input_end,  output_start,  output_end):
         # input_clamped=torch.clamp(input_val, input_start, input_end)
@@ -710,7 +785,8 @@ def test_phenorob_cp1():
 
 
                         #show the visible points
-                        if f_idx==0 and frame.has_extra_field("visible_points"):
+                        # if f_idx==0 and frame.has_extra_field("visible_points"):
+                        if False:
                             visible_points=frame.get_extra_field_mesh("visible_points")
                             visible_points=loader.load_mesh(visible_points)
                             visible_points.apply_model_matrix_to_cpu(True)
@@ -843,38 +919,6 @@ def test_phenorob_cp1():
 
 
 
-
-                # load the photoneo frame from this block
-                if loader.dataset_type()=="kalibr":
-                    photoneo_frame=block.get_photoneo_frame()
-                    photoneo_frame.load_images()
-                    frustum_mesh=photoneo_frame.create_frustum_mesh(0.05, True, 256)
-                    frustum_mesh.m_vis.m_line_width=1
-                    Scene.show(frustum_mesh, "photoneo_frustum_"+str(photoneo_frame.cam_id) )
-                    #load photoneo cloud
-                    photoneo_mesh=block.get_photoneo_mesh()
-                    photoneo_mesh=loader.load_mesh(photoneo_mesh)
-                    # photoneo_mesh.load_from_file(photoneo_mesh.m_disk_path)
-                    #show the confidence 
-                    # Gui.show(photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
-                    #show depth
-                    # Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id))
-                    #show both depth and confidence
-                    Gui.show(photoneo_frame.depth.normalize_range(), "depth_photoneo_"+str(photoneo_frame.cam_id), photoneo_frame.confidence, "confidence_photoneo_"+str(photoneo_frame.cam_id))
-                    #color the first cloud
-                    if b_idx==0:
-                        frame0=loader.get_scan_with_idx(0).get_block_with_idx(0).get_rgb_frame_with_idx(0)
-                        frame0.load_images()
-                        photoneo_mesh=frame0.assign_color(photoneo_mesh)
-                        print("frame 0 K is ", frame0.K)
-                        print("width", frame0.width)
-                    Scene.show(photoneo_mesh, "photoneo_mesh_"+str(b_idx))
-                    # backproject depth
-                    # photoneo_depth_backproj=photoneo_frame.depth2world_xyz_mesh()
-                    # photoneo_depth_backproj.m_vis.m_point_color=[0.7, 0.3, 0.3]
-                    # Scene.show(photoneo_depth_backproj, "photoneo_depth_backproj_"+str(b_idx))
-
-
                 #load the dense cloud for this block
                 if loader.loaded_dense_cloud():
                     dense_cloud=block.get_dense_cloud()
@@ -883,14 +927,18 @@ def test_phenorob_cp1():
                     print("dense_cloud", dense_cloud.model_matrix.matrix() )
                     dense_cloud.apply_model_matrix_to_cpu(True)
                     dense_cloud.recalculate_min_max_height()
-                    Scene.show(dense_cloud, "dense_cloud_"+str(b_idx))
+                    Scene.show(dense_cloud, "dense_cloud_"+str(b_idx)+"_"+str(d_idx))
+                    # Scene.show(dense_cloud, "dense_cloud_")
 
 
             print("test_loader showng only one scan")
             break
 
-        print("test_loader showng only one day")
-        break
+        # print("test_loader showng only one day")
+        # break
+        if d_idx==2:
+            print("test_loader showng only two days")
+            # break
 
 
 

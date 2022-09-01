@@ -138,6 +138,9 @@ private:
     void init_intrinsics_and_poses_krt(); //init poses and intrinsics from a krt format and set them for all the nikons
     // void init_intrinsics_kalibr(); //rad the pose json file and sets the intrinsics for the nikon 
     // void init_stereo_pairs();
+    void read_scene_normalization(std::string scene_normalization_file);
+    float get_scene_scale_multiplier(std::string date); //gets it either from m_scene_scale_multiplier or from m_date2normalization (which has priority)
+    Eigen::Vector3f get_scene_translation(std::string date); //gets it either from m_scene_translation or from m_date2normalization (which has priority)
     void read_data(); //a scene (depending on the mode) and all the images contaned in it together with the poses and so on
     void load_images_in_frame(easy_pbr::Frame& frame);
 
@@ -160,11 +163,14 @@ private:
     bool m_shuffle;
     bool m_load_as_shell;
     bool m_do_overfit; // return all the time just the first image
+    std::string m_scene_normalization_file; //this overrides the m_scene_transation and m_scene scale and reads them from a file 
+    std::unordered_map<std::string,  std::tuple< float, Eigen::Vector3f>  > m_date2normalization; //this is filled after reading m_scene_normalization_file
     Eigen::Vector3f m_scene_translation; //moves the scene so that we have it at the origin more or less
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
     boost::filesystem::path m_dataset_path;  //get the path where all the the scans are
     // boost::filesystem::path m_scan_date; //the date of the scan
     // std::string m_dataset_type;
+    std::string m_restrict_to_date;
     PHCP1DatasetType m_dataset_type=PHCP1DatasetType::Raw;
     bool m_load_poses;
     bool m_load_intrinsics;

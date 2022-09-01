@@ -103,6 +103,7 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     m_shuffle=loader_config["shuffle"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_do_overfit=loader_config["do_overfit"];
+    m_scene_normalization_file=(std::string)loader_config["scene_normalization_file"];
     m_scene_translation=loader_config["scene_translation"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
@@ -122,6 +123,8 @@ void DataLoaderPhenorobCP1::init_params(const std::string config_file){
     }else{
         LOG(FATAL) << "Dataset type not known " << dataset_type;
     }
+    m_restrict_to_date=(std::string)loader_config["restrict_to_date"];   
+
     m_load_poses=loader_config["load_poses"];   
     m_load_intrinsics=loader_config["load_intrinsics"];   
     m_load_dense_cloud=loader_config["load_dense_cloud"]; 
@@ -165,6 +168,12 @@ void DataLoaderPhenorobCP1::init_data_reading(){
     // fs::path scan_path= m_dataset_path/m_scan_date/ std::to_string(m_scan_idx);
     // CHECK( fs::is_directory(scan_path) ) << "Scan path does not exist under " << scan_path;
 
+
+    if(fs::is_regular_file(m_scene_normalization_file)) {
+        read_scene_normalization(m_scene_normalization_file);
+    }
+
+
     
     //ITERATE THROUGH ALL THE DAYS
     std::vector<fs::path> days_vec;
@@ -172,13 +181,20 @@ void DataLoaderPhenorobCP1::init_data_reading(){
     std::sort(days_vec.begin(), days_vec.end()); 
     for (const fs::path & day_path : days_vec){
         std::string date_name=day_path.filename().string();
+        if (fs::is_regular_file(day_path)) continue; //skip normal files
 
         //make a day object
         VLOG(1) << "date_name is " << date_name;
         std::shared_ptr<PRCP1Day> day_container= std::make_shared<PRCP1Day>();
         day_container->m_date=date_name;
         day_container->m_path=day_path;
-        
+
+        if(!m_restrict_to_date.empty()){ //we have a restriction so we skip eveything that is not on this date
+            if (date_name!=m_restrict_to_date){
+                continue;
+            }
+        }
+
 
 
 
@@ -240,10 +256,12 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                     if (m_load_dense_cloud){
                         block->m_dense_cloud=easy_pbr::Mesh::create();
                         block->m_dense_cloud->m_disk_path=(block_path/"colmap_data/cloud_dense.ply").string();
+                        block->m_dense_cloud->add_extra_field("date", date_name);
                     }
                     if (m_load_sparse_cloud){
                         block->m_sparse_cloud=easy_pbr::Mesh::create();
                         block->m_sparse_cloud->m_disk_path=(block_path/"colmap_data/cloud_sparse.ply").string();
+                        block->m_sparse_cloud->add_extra_field("date", date_name);
                     }
 
 
@@ -275,6 +293,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                                 CHECK(filename_tokens.size()==2) << "We should have only two tokens here for example nikon_3 but the filename is " << filename;
                                 new_rgb_frame->cam_id= std::stoi(filename_tokens[1]);
                                 new_rgb_frame->frame_idx= std::stoi(filename_tokens[1]);
+                                new_rgb_frame->add_extra_field("date", date_name);
                                 //push
                                 block->m_rgb_frames[new_rgb_frame->cam_id]=new_rgb_frame;
                             }
@@ -317,10 +336,13 @@ void DataLoaderPhenorobCP1::init_data_reading(){
                             std::string frame_name=rgb_img_path.filename().string();
                             new_rgb_frame->m_name=frame_name;
 
+                            new_rgb_frame->add_extra_field("date", date_name);
+
                             //make also a mesh for the visible points
                             if(m_load_visible_points){
                                 auto mesh=easy_pbr::Mesh::create();
                                 mesh->m_disk_path=  (block_path/"colmap_data/visible_clouds"/(std::to_string(cam_id)+".ply")).string();
+                                mesh->add_extra_field("date", date_name);
                                 new_rgb_frame->add_extra_field("visible_points", mesh);
                             }
 
@@ -970,6 +992,54 @@ void DataLoaderPhenorobCP1::init_intrinsics_and_poses_krt(){
 
 // }
 
+
+void DataLoaderPhenorobCP1::read_scene_normalization(std::string scene_normalization_file){
+    VLOG(1) << "reading normalization file at " << scene_normalization_file;
+    Config cfg = configuru::parse_file(scene_normalization_file, CFG);
+
+    //read each entry
+    // for(int i=0; i<cfg.object_size(); i++){
+    //     Config cfg_for_day=cfg[i];
+    // }
+    for (auto&& p : cfg.as_object()) {
+        std::string date=p.key();
+        Config cfg_for_day = p.value();
+        // visit_configs(p.value(), visitor);
+
+        date=radu::utils::erase_substring(date,"date"); //the config has to start with soem string because configuru doesnt like the key to be some integer
+        Eigen::Vector3f scene_translation=cfg_for_day["scene_translation"];
+        float scene_scale_multiplier= cfg_for_day["scene_scale_multiplier"];
+
+        // VLOG(1) << "cfg_for_day " << cfg_for_day;
+        VLOG(1) << "date " << date;
+        VLOG(1) << "scene_translation " << scene_translation;
+        VLOG(1) << "scene_scale_multiplier " << scene_scale_multiplier;
+
+        std::tuple normalization=std::make_tuple(scene_scale_multiplier, scene_translation);
+
+        m_date2normalization[date]=normalization;
+    }
+}
+
+float DataLoaderPhenorobCP1::get_scene_scale_multiplier(std::string date){
+    if (m_date2normalization.find(date) != m_date2normalization.end()) {
+        //found key 
+        auto normalization=m_date2normalization[date];
+        return std::get<0>(normalization);
+    }else{
+        return m_scene_scale_multiplier;
+    }
+}
+Eigen::Vector3f DataLoaderPhenorobCP1::get_scene_translation(std::string date){
+    if (m_date2normalization.find(date) != m_date2normalization.end()) {
+        //found key 
+        auto normalization=m_date2normalization[date];
+        return std::get<1>(normalization);
+    }else{
+        return m_scene_translation;
+    }
+}
+
 void DataLoaderPhenorobCP1::read_data(){
 
     //ITER days
@@ -990,10 +1060,10 @@ void DataLoaderPhenorobCP1::read_data(){
 
 
                     //rescale things if necessary
-                    if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
+                    if(get_scene_scale_multiplier(day_container->date())>0.0 || !get_scene_translation(day_container->date()).isZero() ){
                         Eigen::Affine3f tf_world_cam_rescaled = frame->tf_cam_world.inverse();
-                        tf_world_cam_rescaled.translation()+=m_scene_translation;
-                        tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+                        tf_world_cam_rescaled.translation()+=get_scene_translation(day_container->date());
+                        tf_world_cam_rescaled.translation()*=get_scene_scale_multiplier(day_container->date());
                         frame->tf_cam_world=tf_world_cam_rescaled.inverse();
                     }
 
@@ -1008,13 +1078,7 @@ void DataLoaderPhenorobCP1::read_data(){
 
 
 
-                    //rescale things if necessary
-                    // if(m_scene_scale_multiplier>0.0){
-                    //     Eigen::Affine3f tf_world_cam_rescaled = frame->tf_cam_world.inverse();
-                    //     tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
-                    //     frame->tf_cam_world=tf_world_cam_rescaled.inverse();
-                    // }
-
+                  
                     
                     
 
@@ -1027,10 +1091,10 @@ void DataLoaderPhenorobCP1::read_data(){
                 // Frame &photoneo_frame=block->m_photoneo_frame;
 
                 //rescale things if necessary
-                // if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
+                // if(get_scene_scale_multiplier(day_container->date())>0.0 || !get_scene_translation(day_container->date()).isZero() ){
                 //     Eigen::Affine3f tf_world_cam_rescaled = photoneo_frame.tf_cam_world.inverse();
-                //     tf_world_cam_rescaled.translation()+=m_scene_translation;
-                //     tf_world_cam_rescaled.translation()*=m_scene_scale_multiplier;
+                //     tf_world_cam_rescaled.translation()+=get_scene_translation(day_container->date());
+                //     tf_world_cam_rescaled.translation()*=get_scene_scale_multiplier(day_container->date());
                 //     photoneo_frame.tf_cam_world=tf_world_cam_rescaled.inverse();
                 // }
 
@@ -1106,8 +1170,8 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
         }
 
         //if the scene is rescaled the depth map also needs to be
-        if(m_scene_scale_multiplier>0.0 ){
-            frame.depth*= m_scene_scale_multiplier;
+        if(get_scene_scale_multiplier(frame.get_extra_field<std::string>("date"))>0.0 ){
+            frame.depth*= get_scene_scale_multiplier(frame.get_extra_field<std::string>("date"));
         }
 
         CHECK(frame.height==frame.depth.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
@@ -1154,10 +1218,7 @@ void DataLoaderPhenorobCP1::load_images_in_frame(easy_pbr::Frame& frame){
             // frame.depth*=1.0/1000;
         // }
 
-        //if the scene is rescaled the depth map also needs to be
-        // if(m_scene_scale_multiplier>0.0 ){
-            // frame.depth*= m_scene_scale_multiplier;
-        // }
+      
 
         CHECK(frame.height==frame.depth.rows) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
         CHECK(frame.width==frame.depth.cols) << "We are assuming we have an equal size depth otherwise we should maybe make another frame";
@@ -1171,18 +1232,18 @@ std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorobCP1::load_mesh(const std::shar
 
     new_mesh->load_from_file(mesh->m_disk_path);
 
-    if(m_scene_scale_multiplier>0.0 || !m_scene_translation.isZero() ){
+    if(get_scene_scale_multiplier(mesh->get_extra_field<std::string>("date"))>0.0 || !get_scene_translation(mesh->get_extra_field<std::string>("date")).isZero() ){
         // VLOG(1) <<" wtf----------------------------------";
         Eigen::Affine3f tf_world_obj_rescaled = new_mesh->model_matrix().cast<float>();
         // VLOG(1) << tf_world_obj_rescaled.matrix();
-        tf_world_obj_rescaled.translation()+=m_scene_translation;
+        tf_world_obj_rescaled.translation()+=get_scene_translation(mesh->get_extra_field<std::string>("date"));
         // tf_world_obj_rescaled.translation()*=m_scene_scale_multiplier;
         // VLOG(1) << tf_world_obj_rescaled.matrix();
         new_mesh->set_model_matrix( tf_world_obj_rescaled.cast<double>() );
         new_mesh->apply_model_matrix_to_cpu(true);
 
         //scale the vertices
-        new_mesh->scale_mesh(m_scene_scale_multiplier);
+        new_mesh->scale_mesh( get_scene_scale_multiplier(mesh->get_extra_field<std::string>("date")) );
         new_mesh->apply_model_matrix_to_cpu(true);
     }
 
