@@ -169,7 +169,7 @@ void DataLoaderPhenorobCP1::init_data_reading(){
     // CHECK( fs::is_directory(scan_path) ) << "Scan path does not exist under " << scan_path;
 
 
-    if(fs::is_regular_file(m_scene_normalization_file)) {
+    if(!m_scene_normalization_file.empty()) {
         read_scene_normalization(m_scene_normalization_file);
     }
 
@@ -1232,8 +1232,10 @@ std::shared_ptr<easy_pbr::Mesh> DataLoaderPhenorobCP1::load_mesh(const std::shar
 
     new_mesh->load_from_file(mesh->m_disk_path);
 
+    // VLOG(1) << "date is " << mesh->get_extra_field<std::string>("date");
+    // VLOG(1) << "mesh has scaler multiplier" << get_scene_scale_multiplier(mesh->get_extra_field<std::string>("date"));
+
     if(get_scene_scale_multiplier(mesh->get_extra_field<std::string>("date"))>0.0 || !get_scene_translation(mesh->get_extra_field<std::string>("date")).isZero() ){
-        // VLOG(1) <<" wtf----------------------------------";
         Eigen::Affine3f tf_world_obj_rescaled = new_mesh->model_matrix().cast<float>();
         // VLOG(1) << tf_world_obj_rescaled.matrix();
         tf_world_obj_rescaled.translation()+=get_scene_translation(mesh->get_extra_field<std::string>("date"));
@@ -1354,6 +1356,23 @@ int DataLoaderPhenorobCP1::nr_days(){
 bool DataLoaderPhenorobCP1::has_data(){
     return true; //we always have data since the loader stores all the image in memory and keeps them there
 }
+
+void DataLoaderPhenorobCP1::set_dataset_path(const std::string path){
+    m_dataset_path=path;
+}
+
+void DataLoaderPhenorobCP1::set_restrict_to_date(const std::string date){
+    m_restrict_to_date=date;
+}
+
+void DataLoaderPhenorobCP1::set_scene_normalization_file(const std::string file_path){
+    m_scene_normalization_file=file_path;
+}
+
+void DataLoaderPhenorobCP1::set_rgb_subsample_factor(const int factor){
+    m_rgb_subsample_factor=factor;
+}
+
 
 void DataLoaderPhenorobCP1::set_mode_train(){
     m_mode="train";

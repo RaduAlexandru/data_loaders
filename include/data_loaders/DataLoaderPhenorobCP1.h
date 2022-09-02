@@ -122,6 +122,10 @@ public:
     std::shared_ptr<easy_pbr::Mesh> sparse_cloud();
     std::shared_ptr<easy_pbr::Mesh> load_mesh(const std::shared_ptr<easy_pbr::Mesh> mesh); //loads the mesh and also scales and translates it
     bool is_finished(); //check if we finished reading all the images from the scene
+    void set_dataset_path(const std::string path);
+    void set_restrict_to_date(const std::string date);
+    void set_scene_normalization_file(const std::string file_path);
+    void set_rgb_subsample_factor(const int factor);
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
