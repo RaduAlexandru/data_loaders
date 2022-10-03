@@ -98,6 +98,7 @@ void DataLoaderNerf::init_params(const std::string config_file){
     m_do_overfit=loader_config["do_overfit"];
     m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
+    m_load_mask=loader_config["load_mask"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
     m_restrict_to_scene_name= (std::string)loader_config["restrict_to_scene_name"];
@@ -248,7 +249,9 @@ void DataLoaderNerf::read_data(){
             }
             std::vector<cv::Mat> channels(4);
             cv::split(rgba_8u, channels);
-            cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+            if (m_load_mask){
+                cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+            }
             channels.pop_back();
             cv::merge(channels, rgb_8u);
         }else{
@@ -466,11 +469,19 @@ std::vector<easy_pbr::Frame>  DataLoaderNerf::get_close_frames( const easy_pbr::
 
 }
 
+void DataLoaderNerf::set_load_mask(bool load_mask){
+    m_load_mask=load_mask;
+}
+
 void DataLoaderNerf::set_restrict_to_scene_name(const std::string scene_name){
     m_restrict_to_scene_name=scene_name;
 }
 std::string DataLoaderNerf::get_restrict_to_scene_name(){
     return m_restrict_to_scene_name;
+}
+
+void DataLoaderNerf::set_dataset_path(const std::string dataset_path){
+    m_dataset_path=dataset_path;
 }
 
 // //compute weights
