@@ -48,6 +48,8 @@ public:
     std::vector<easy_pbr::Frame> get_close_frames( const easy_pbr::Frame& frame, const int nr_frames, const bool discard_same_idx ); //return a certain number of frames ordered by proximity,
     // std::vector<float> compute_frame_weights( const easy_pbr::Frame& frame, std::vector<easy_pbr::Frame>& close_frames);
     easy_pbr::Frame get_random_frame();
+    void set_restrict_to_scene_name(const std::string scene_name);
+    std::string get_restrict_to_scene_name();
     bool has_data(); //will reeturn always true because this dataloader preloads all the frames and keeps them in memory all the time. They are not so many
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
@@ -85,6 +87,7 @@ private:
     // std::thread m_loader_thread;
     int m_nr_resets;
     int m_idx_img_to_read; //corresponds to the idx of the frame we will return since we have them all in memory
+    std::string m_restrict_to_scene_name;
 
 
     //internal

@@ -100,6 +100,7 @@ void DataLoaderNerf::init_params(const std::string config_file){
     m_mode=(std::string)loader_config["mode"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
+    m_restrict_to_scene_name= (std::string)loader_config["restrict_to_scene_name"];
 
 
     //data transformer
@@ -122,7 +123,7 @@ void DataLoaderNerf::init_data_reading(){
     }
 
     //go to the folder of train val or test depending on the mode in which we are one
-    for (fs::directory_iterator itr(m_dataset_path/m_mode); itr!=fs::directory_iterator(); ++itr){
+    for (fs::directory_iterator itr(m_dataset_path/m_restrict_to_scene_name/m_mode); itr!=fs::directory_iterator(); ++itr){
         fs::path img_path= itr->path();
         //we disregard the images that contain depth and normals, we load only the rgb
         if (fs::is_regular_file(img_path) &&
@@ -132,7 +133,7 @@ void DataLoaderNerf::init_data_reading(){
             m_imgs_paths.push_back(img_path);
         }
     }
-    CHECK( !m_imgs_paths.empty() ) << "Could not find any images in path " << m_dataset_path/m_mode;
+    CHECK( !m_imgs_paths.empty() ) << "Could not find any images in path " << m_dataset_path/m_restrict_to_scene_name/m_mode;
 
     std::sort(m_imgs_paths.begin(), m_imgs_paths.end(), FileComparatorFunc);
 
@@ -151,7 +152,7 @@ void DataLoaderNerf::init_poses(){
     //read transforms_test.json (or whichever file is corresponding to the mode we are on)
 
     //get the path to this json file
-    fs::path pose_file_json= m_dataset_path/("transforms_"+m_mode+".json");
+    fs::path pose_file_json= m_dataset_path/m_restrict_to_scene_name/("transforms_"+m_mode+".json");
     if(!fs::is_regular_file(pose_file_json) ) {
         LOG(FATAL) << "Json file for the poses could not be found in " << pose_file_json;
     }
@@ -463,6 +464,13 @@ std::vector<easy_pbr::Frame>  DataLoaderNerf::get_close_frames( const easy_pbr::
     return selected_close_frames;
 
 
+}
+
+void DataLoaderNerf::set_restrict_to_scene_name(const std::string scene_name){
+    m_restrict_to_scene_name=scene_name;
+}
+std::string DataLoaderNerf::get_restrict_to_scene_name(){
+    return m_restrict_to_scene_name;
 }
 
 // //compute weights
