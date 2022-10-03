@@ -44,8 +44,16 @@ struct {
         //The files have a format of r_NUMBER so we want to get the number
         std::vector<std::string> a_tokens=split(a_filename,"_");
         std::vector<std::string> b_tokens=split(b_filename,"_");
-        int a_nr=std::stoi(a_tokens[1]);
-        int b_nr=std::stoi(b_tokens[1]);
+        //if we have only one token, we might be loading the instant ngp dataset which is just NR.jpeg
+        int a_nr;
+        int b_nr;
+        if (a_tokens.size()==1){
+            a_nr=std::stoi(a_tokens[0]);
+            b_nr=std::stoi(b_tokens[0]);
+        }else{
+            a_nr=std::stoi(a_tokens[1]);
+            b_nr=std::stoi(b_tokens[1]);
+        }
         return a_nr < b_nr;
     }
 } FileComparatorFunc;
@@ -118,7 +126,7 @@ void DataLoaderNerf::init_data_reading(){
         fs::path img_path= itr->path();
         //we disregard the images that contain depth and normals, we load only the rgb
         if (fs::is_regular_file(img_path) &&
-        img_path.filename().string().find("png") != std::string::npos &&
+        (img_path.filename().string().find("png") != std::string::npos  || img_path.filename().string().find("jpg")!= std::string::npos)   &&
         img_path.stem().string().find("depth")== std::string::npos &&
         img_path.stem().string().find("normal")== std::string::npos   ){
             m_imgs_paths.push_back(img_path);
@@ -161,8 +169,9 @@ void DataLoaderNerf::init_poses(){
 
         std::string file_path=k["file_path"].string_value(); //will be something like ./test/r_0 but we only want the r_0 part
         std::vector<std::string> tokens= radu::utils::split(file_path, "/");
-        std::string file_name= tokens[2];
+        std::string file_name= tokens.back();
         // VLOG(1) << "filename is" << file_name;
+        file_name= fs::path(file_name).stem().string(); //in case we are loading instant ngp,  we have /images/NR.jpg nad we want to remove the jpg
 
 
         //read the psoe as a 4x4 matrix
@@ -197,6 +206,7 @@ void DataLoaderNerf::init_poses(){
 
 
 
+        // VLOG(1) << file_name;
 
         m_filename2pose[file_name]=tf_cam_world; //we want to store here the transrom from world to cam so the tf_cam_world
 
@@ -218,22 +228,31 @@ void DataLoaderNerf::read_data(){
         //get the idx
         std::string filename=img_path.stem().string();
         std::vector<std::string> tokens=radu::utils::split(filename,"_");
-        frame.frame_idx=std::stoi(tokens[1]);
+        if (tokens.size()==1){ //if there is only one token we are loading the instant_ngp data which has images as NR.jpg
+            frame.frame_idx=std::stoi(tokens[0]);
+        }else{
+            frame.frame_idx=std::stoi(tokens[1]);
+        }
 
         //read rgba and split into rgb and alpha mask
         cv::Mat rgba_8u = cv::imread(img_path.string(), cv::IMREAD_UNCHANGED);
+        // VLOG(1) << "typestring is " << radu::utils::type2string(rgba_8u.type());
+        int nr_channels=rgba_8u.channels();
         cv::Mat rgb_8u;
-        if(m_subsample_factor>1){
-            cv::Mat resized;
-            cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
-            rgba_8u=resized;
+        if (nr_channels==4){
+            if(m_subsample_factor>1){
+                cv::Mat resized;
+                cv::resize(rgba_8u, resized, cv::Size(), 1.0/m_subsample_factor, 1.0/m_subsample_factor, cv::INTER_AREA);
+                rgba_8u=resized;
+            }
+            std::vector<cv::Mat> channels(4);
+            cv::split(rgba_8u, channels);
+            cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+            channels.pop_back();
+            cv::merge(channels, rgb_8u);
+        }else{
+            rgb_8u=rgba_8u;
         }
-        std::vector<cv::Mat> channels(4);
-        cv::split(rgba_8u, channels);
-        cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
-        channels.pop_back();
-        cv::merge(channels, rgb_8u);
-
 
         // cv::cvtColor(frame.rgb_8u, frame.gray_8u, cv::COLOR_BGR2GRAY);
         rgb_8u.convertTo(frame.rgb_32f, CV_32FC3, 1.0/255.0);
@@ -315,6 +334,7 @@ void DataLoaderNerf::read_data(){
 
 
         //extrinsics
+        // VLOG(1) << "img_path.stem().string()" << img_path.stem().string();
         frame.tf_cam_world=m_filename2pose[img_path.stem().string()].cast<float>();
 
         //intrinsics got mostly from here https://github.com/bmild/nerf/blob/0247d6e7ede8d918bc1fab2711f845669aee5e03/load_blender.py

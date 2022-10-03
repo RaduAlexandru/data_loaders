@@ -383,11 +383,22 @@ def test_dtu():
     loader.start()
 
 
+    #to check if the meshes fit within the unit sphere
+    sphere=Mesh()
+    sphere.create_sphere([0,0,0],0.5)
+    # sphere_sdf.upsample(4, True)
+    sphere.m_vis.m_show_mesh=False
+    sphere.m_vis.m_show_wireframe=True
+    Scene.show(sphere,"sphere")
+
+
     #get gt mesh from dtu
     # gt_mesh=Mesh("/media/rosu/Data/data/dtu/data_prepared_for_gt/Points/stl/stl024_total.ply")
-    # tf_easypbr_dtu=loader.get_tf_easypbr_dtu()
-    # gt_mesh.transform_model_matrix(tf_easypbr_dtu.to_double())
-    # gt_mesh.apply_model_matrix_to_cpu(True)
+    gt_mesh=Mesh("/media/rosu/Data/data/dtu/data_prepared_for_gt/Points/stl/stl105_total.ply")
+    tf_easypbr_dtu=loader.get_tf_easypbr_dtu()
+    gt_mesh.transform_model_matrix(tf_easypbr_dtu.to_double())
+    gt_mesh.apply_model_matrix_to_cpu(True)
+    Scene.show(gt_mesh, "gt_mesh")
 
     # view.m_camera.from_string(" 107.104 -8.58596   478.92  0.918689 0.0670844  0.178054 -0.346129  96.2678 -34.0564  505.822 60 39.8026 3.98026e+06")
     view.m_camera.from_string("4.61049 3.34609 2.97043 -0.237639  0.443042  0.123049 0.855627  0.548705  0.352442 0.0998282 60 0.00419346 419.346")
@@ -960,7 +971,7 @@ def test_phenorob_cp1():
 # test_scannet()
 # test_stanford3dscene()
 # test_shapenet_img()
-# test_nerf()
+test_nerf()
 # test_pheno4d()
 # test_colmap()
 # test_easypbr()
@@ -971,4 +982,4 @@ def test_phenorob_cp1():
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-test_phenorob_cp1()
+# test_phenorob_cp1()
