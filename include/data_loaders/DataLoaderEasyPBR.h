@@ -54,6 +54,7 @@ public:
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
     bool is_finished(); //check if we finished reading all the images from the scene
+    void set_load_mask(bool load_mask);
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
@@ -82,6 +83,7 @@ private:
     // std::atomic<bool> m_is_running;// if the loop of loading is running, it is used to break the loop when the user ctrl-c
     int m_subsample_factor;
     std::string m_mode; // train or test or val
+    bool m_load_mask;
     bool m_shuffle;
     int m_limit_to_nr_imgs;
     std::string m_img_selector; // "random" or "furthest" 

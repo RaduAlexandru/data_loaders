@@ -232,6 +232,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished", &DataLoaderEasyPBR::is_finished )
     .def("reset", &DataLoaderEasyPBR::reset )
     .def("nr_samples", &DataLoaderEasyPBR::nr_samples )
+    .def("set_load_mask", &DataLoaderEasyPBR::set_load_mask )
     .def("set_mode_train", &DataLoaderEasyPBR::set_mode_train )
     .def("set_mode_test", &DataLoaderEasyPBR::set_mode_test )
     .def("set_mode_validation", &DataLoaderEasyPBR::set_mode_validation )

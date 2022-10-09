@@ -91,6 +91,7 @@ void DataLoaderEasyPBR::init_params(const std::string config_file){
     m_img_selector=(std::string)loader_config["img_selector"];
     m_do_overfit=loader_config["do_overfit"];
     m_mode=(std::string)loader_config["mode"];
+    m_load_mask=loader_config["load_mask"];
     // m_restrict_to_object= (std::string)loader_config["restrict_to_object"]; //makes it load clouds only from a specific object
     m_dataset_path = (std::string)loader_config["dataset_path"];    //get the path where all the off files are
     m_object_name= (std::string)loader_config["object_name"];
@@ -333,7 +334,9 @@ void DataLoaderEasyPBR::read_data(){
         }
         std::vector<cv::Mat> channels(4);
         cv::split(rgba_8u, channels);
-        cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+        if (m_load_mask){
+            cv::threshold( channels[3], frame.mask, 0.0, 1.0, cv::THRESH_BINARY);
+        }
         channels.pop_back();
         cv::merge(channels, rgb_8u);
 
@@ -659,6 +662,10 @@ int DataLoaderEasyPBR::nr_samples(){
 
 bool DataLoaderEasyPBR::has_data(){
     return true; //we always have data since the loader stores all the image in memory and keeps them there
+}
+
+void DataLoaderEasyPBR::set_load_mask(bool load_mask){
+    m_load_mask=load_mask;
 }
 
 void DataLoaderEasyPBR::set_mode_train(){

@@ -307,9 +307,12 @@ def test_easypbr():
 
             # if frame.frame_idx==20:
             Gui.show(frame.rgb_32f, "rgb")
+            Gui.show(frame.mask.to_cv8u(), "mask")
+            # mask_t=mat2tensor(frame.mask, True)
+            # print("mask_t min max", mask_t.min(), mask_t.max())
 
 
-            frustum_mesh=frame.create_frustum_mesh(0.02)
+            frustum_mesh=frame.create_frustum_mesh(0.05)
             # frustum_mesh=frame.create_frustum_mesh(0.2)
             frustum_mesh.m_vis.m_line_width=1
             if frame.frame_idx==1:
@@ -971,7 +974,7 @@ def test_phenorob_cp1():
 # test_scannet()
 # test_stanford3dscene()
 # test_shapenet_img()
-test_nerf()
+# test_nerf()
 # test_pheno4d()
 # test_colmap()
 # test_easypbr()
