@@ -157,6 +157,7 @@ set(MY_SRC
     ${PROJECT_SOURCE_DIR}/src/DataLoaderDTU.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderDeepVoxels.cxx
     ${PROJECT_SOURCE_DIR}/src/DataLoaderLLFF.cxx
+    ${PROJECT_SOURCE_DIR}/src/DataLoaderMultiFace.cxx
     ${PROJECT_SOURCE_DIR}/src/MiscDataFuncs.cxx
     #fb
     ${PROJECT_SOURCE_DIR}/src/fb/DataLoaderBlenderFB.cxx

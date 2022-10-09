@@ -54,6 +54,8 @@ public:
     void reset(); //starts reading from the beggining
     int nr_samples(); //returns the number of scenes for the object that we selected
     bool is_finished(); //check if we finished reading all the images from the scene
+    void set_restrict_to_scene_name(const std::string scene_name);
+    std::string get_restrict_to_scene_name();
     void set_load_mask(bool load_mask);
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();

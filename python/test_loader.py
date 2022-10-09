@@ -963,6 +963,50 @@ def test_phenorob_cp1():
 
         view.update()
 
+def test_multiface():
+    subject_id=0
+    loader=DataLoaderMultiFace(config_path, subject_id)
+    loader.set_mode_train()
+    loader.start()
+    nr_samples=loader.nr_samples()
+
+    # if loader.loaded_scene_mesh():
+        # mesh=loader.get_scene_mesh()
+        # Scene.show(mesh,"mesh")
+    mesh_head=loader.get_mesh_head()
+    Scene.show(mesh_head,"mesh_head")
+
+
+    while True:
+        if(loader.has_data() ):
+
+        #     # print("got frame")
+            frame=loader.get_next_frame()
+            if frame.is_shell:
+                frame.load_images()
+        #     # print("frame width and height is ", frame.width, " ", frame.height)
+
+        #     # if frame.frame_idx==20:
+            Gui.show(frame.rgb_32f, "rgb")
+        #     Gui.show(frame.mask.to_cv8u(), "mask")
+        #     # mask_t=mat2tensor(frame.mask, True)
+        #     # print("mask_t min max", mask_t.min(), mask_t.max())
+
+            print("frame.tf_cam_world", frame.tf_cam_world.matrix())
+
+
+            frustum_mesh=frame.create_frustum_mesh(0.05)
+            frustum_mesh.m_vis.m_line_width=1
+            Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+          
+
+        if loader.is_finished():
+        #     print("resetting")
+            loader.reset()
+        #     print("scene scale is ", Scene.get_scale())
+
+        view.update()
+
 
 
 
@@ -986,3 +1030,4 @@ def test_phenorob_cp1():
 # test_blender_fb()
 # test_usc_hair()
 # test_phenorob_cp1()
+test_multiface()

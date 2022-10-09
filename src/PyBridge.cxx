@@ -27,6 +27,7 @@
 #include "data_loaders/DataLoaderDTU.h"
 #include "data_loaders/DataLoaderDeepVoxels.h"
 #include "data_loaders/DataLoaderLLFF.h"
+#include "data_loaders/DataLoaderMultiFace.h"
 #include "data_loaders/MiscDataFuncs.h"
 //fb
 #include "data_loaders/fb/DataLoaderBlenderFB.h"
@@ -232,12 +233,39 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished", &DataLoaderEasyPBR::is_finished )
     .def("reset", &DataLoaderEasyPBR::reset )
     .def("nr_samples", &DataLoaderEasyPBR::nr_samples )
+    .def("set_restrict_to_scene_name", &DataLoaderEasyPBR::set_restrict_to_scene_name )
+    .def("get_restrict_to_scene_name", &DataLoaderEasyPBR::get_restrict_to_scene_name )
     .def("set_load_mask", &DataLoaderEasyPBR::set_load_mask )
     .def("set_mode_train", &DataLoaderEasyPBR::set_mode_train )
     .def("set_mode_test", &DataLoaderEasyPBR::set_mode_test )
     .def("set_mode_validation", &DataLoaderEasyPBR::set_mode_validation )
     .def("set_shuffle", &DataLoaderEasyPBR::set_shuffle )
     .def("set_limit_to_nr_imgs", &DataLoaderEasyPBR::set_limit_to_nr_imgs )
+    ;
+
+    //DataLoaderEasyPBR
+    py::class_<DataLoaderMultiFace> (m, "DataLoaderMultiFace")
+    .def(py::init<const std::string, const int>())
+    .def("start", &DataLoaderMultiFace::start )
+    .def("has_data", &DataLoaderMultiFace::has_data )
+    .def("get_next_frame", &DataLoaderMultiFace::get_next_frame )
+    .def("get_all_frames", &DataLoaderMultiFace::get_all_frames )
+    .def("get_frame_at_idx", &DataLoaderMultiFace::get_frame_at_idx )
+    .def("get_mesh_head", &DataLoaderMultiFace::get_mesh_head )
+    
+    // .def("loaded_scene_mesh", &DataLoaderEasyPBR::loaded_scene_mesh )
+    // .def("get_scene_mesh", &DataLoaderEasyPBR::get_scene_mesh )
+    .def("is_finished", &DataLoaderMultiFace::is_finished )
+    .def("reset", &DataLoaderMultiFace::reset )
+    .def("nr_samples", &DataLoaderMultiFace::nr_samples )
+    // .def("set_restrict_to_scene_name", &DataLoaderEasyPBR::set_restrict_to_scene_name )
+    // .def("get_restrict_to_scene_name", &DataLoaderEasyPBR::get_restrict_to_scene_name )
+    // .def("set_load_mask", &DataLoaderEasyPBR::set_load_mask )
+    .def("set_mode_train", &DataLoaderMultiFace::set_mode_train )
+    .def("set_mode_test", &DataLoaderMultiFace::set_mode_test )
+    .def("set_mode_validation", &DataLoaderMultiFace::set_mode_validation )
+    // .def("set_shuffle", &DataLoaderEasyPBR::set_shuffle )
+    // .def("set_limit_to_nr_imgs", &DataLoaderEasyPBR::set_limit_to_nr_imgs )
     ;
 
 

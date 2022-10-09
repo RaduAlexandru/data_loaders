@@ -664,6 +664,13 @@ bool DataLoaderEasyPBR::has_data(){
     return true; //we always have data since the loader stores all the image in memory and keeps them there
 }
 
+void DataLoaderEasyPBR::set_restrict_to_scene_name(const std::string scene_name){
+    m_object_name=scene_name;
+}
+std::string DataLoaderEasyPBR::get_restrict_to_scene_name(){
+    return m_object_name;
+}
+
 void DataLoaderEasyPBR::set_load_mask(bool load_mask){
     m_load_mask=load_mask;
 }
