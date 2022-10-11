@@ -964,17 +964,22 @@ def test_phenorob_cp1():
         view.update()
 
 def test_multiface():
-    subject_id=0
+    subject_id=7
     loader=DataLoaderMultiFace(config_path, subject_id)
     loader.set_mode_train()
     loader.start()
     nr_samples=loader.nr_samples()
 
-    # if loader.loaded_scene_mesh():
-        # mesh=loader.get_scene_mesh()
-        # Scene.show(mesh,"mesh")
     mesh_head=loader.get_mesh_head()
     Scene.show(mesh_head,"mesh_head")
+
+
+    #make a sphere of radius 0.5 at origin because this is kinda what we use for instant ngp
+    sphere=Mesh()
+    sphere.create_sphere([0,0,0], 0.5)
+    sphere.m_vis.m_show_mesh=False
+    sphere.m_vis.m_show_wireframe=True
+    Scene.show(sphere,"sphere")
 
 
     while True:
@@ -992,11 +997,12 @@ def test_multiface():
         #     # mask_t=mat2tensor(frame.mask, True)
         #     # print("mask_t min max", mask_t.min(), mask_t.max())
 
-            print("frame.tf_cam_world", frame.tf_cam_world.matrix())
+            # print("frame.tf_cam_world", frame.tf_cam_world.matrix())
 
 
-            frustum_mesh=frame.create_frustum_mesh(0.05)
+            frustum_mesh=frame.create_frustum_mesh(0.3)
             frustum_mesh.m_vis.m_line_width=1
+            # frustum_mesh.apply_model_matrix_to_cpu(True)
             Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
           
 

@@ -124,6 +124,9 @@ void DataLoaderMultiFace::init_params(const std::string config_file, const int s
     // m_frame_nr= subject_config["frame_nr"];
     m_timestep= subject_config["timestep"];
     m_indices_cameras_test=subject_config["test_cameras"];
+    m_scene_rotate_x_angle = subject_config["scene_rotate_x_angle"];
+    m_scene_translation=subject_config["scene_translation"];
+    m_scene_scale_multiplier= subject_config["scene_scale_multiplier"];
 
 
     //rest of params
@@ -132,8 +135,6 @@ void DataLoaderMultiFace::init_params(const std::string config_file, const int s
     m_shuffle=loader_config["shuffle"];
     m_load_as_shell= loader_config["load_as_shell"];
     m_do_overfit=loader_config["do_overfit"];
-    m_scene_translation=loader_config["scene_translation"];
-    m_scene_scale_multiplier= loader_config["scene_scale_multiplier"];
     m_mode=(std::string)loader_config["mode"];
     
    
@@ -143,7 +144,7 @@ void DataLoaderMultiFace::init_params(const std::string config_file, const int s
 void DataLoaderMultiFace::start(){
     init_data_reading();
     init_poses();
-    // m_tf_world_easypbr_world_mugsy=init_transforms(false);
+    // m_tf_world_easypbr_world_mugsy=init_transforms();
     // m_tf_world_easypbr_world_mugsy_for_frames=init_transforms(true);
     // m_tf_frame_to_world_post=init_transforms(true);
     // m_tf_frame_to_world_pre.setIdentity();
@@ -185,7 +186,7 @@ void DataLoaderMultiFace::init_data_reading(){
             //     continue;
             // }
 
-            VLOG(1) << "cam idx " << cam_idx;
+            // VLOG(1) << "cam idx " << cam_idx;
             GenesisCam genesis_cam;
             genesis_cam.cam_idx=cam_idx;
 
@@ -196,7 +197,7 @@ void DataLoaderMultiFace::init_data_reading(){
             int nr_images_read=0;
             for (fs::directory_iterator i_itr(cam_path); i_itr!=fs::directory_iterator(); ++i_itr){
                 fs::path img_path= i_itr->path();
-                VLOG(1) << img_path.string();
+                // VLOG(1) << img_path.string();
                 imgs_paths.push_back( img_path.string() );
             }
 
@@ -318,7 +319,7 @@ void DataLoaderMultiFace::init_poses(){
         pose4x4.block<3,4>(0,0) = pose3x4;
         Eigen::Affine3d pose_affine;
         pose_affine.matrix()=pose4x4;
-        VLOG(1) << "poseaffine is " << pose_affine.matrix();
+        // VLOG(1) << "poseaffine is " << pose_affine.matrix();
 
         // //debug
         // if (cam_idx==400357){
@@ -343,56 +344,54 @@ void DataLoaderMultiFace::init_poses(){
 
 }
 
-Eigen::Affine3f  DataLoaderMultiFace::init_transforms(const bool for_frames){
-   Eigen::Affine3f tf_world_mugsy_world_easypbr;
-   tf_world_mugsy_world_easypbr.setIdentity();
-   Eigen::Affine3f tf_world_easypbr_world_mugsy;
+Eigen::Affine3f  DataLoaderMultiFace::init_transforms(){
 
 
-   if (! for_frames){
-        //flip z
-        // tf_world_mugsy_world_easypbr.matrix().col(2) = -tf_world_mugsy_world_easypbr.matrix().col(2);
-        // //flip y
-        // tf_world_mugsy_world_easypbr.matrix().col(1) = -tf_world_mugsy_world_easypbr.matrix().col(1);
-        // //flip y locally
-        tf_world_easypbr_world_mugsy= tf_world_mugsy_world_easypbr.inverse();
+    Eigen::Affine3f tf_world_easypbr_world_mugsy;
+    tf_world_easypbr_world_mugsy.setIdentity();
 
 
-        // //add scene translation
-        tf_world_easypbr_world_mugsy.translation()+=m_scene_translation;
-        Eigen::Affine3f scaling;
-        scaling.setIdentity();
-        scaling.matrix()(0,0)*=m_scene_scale_multiplier;
-        scaling.matrix()(1,1)*=m_scene_scale_multiplier;
-        scaling.matrix()(2,2)*=m_scene_scale_multiplier;
-        tf_world_easypbr_world_mugsy=scaling*tf_world_easypbr_world_mugsy;
+    //make a matrix that   is T,R,S  so first ti does scaling, then rotation and then translation
+    Eigen::Affine3f scaling;
+    scaling.setIdentity();
+    scaling.matrix()(0,0)*=m_scene_scale_multiplier;
+    scaling.matrix()(1,1)*=m_scene_scale_multiplier;
+    scaling.matrix()(2,2)*=m_scene_scale_multiplier;
+    Eigen::Affine3f rot;
+    rot.setIdentity();
+    Eigen::Affine3f trans;
+    trans.setIdentity();
 
-   }
-
-
-
-    if (for_frames){
-         //flip z
-        // tf_world_mugsy_world_easypbr.matrix().col(2) = -tf_world_mugsy_world_easypbr.matrix().col(2);
-        // //flip y
-        // tf_world_mugsy_world_easypbr.matrix().col(1) = -tf_world_mugsy_world_easypbr.matrix().col(1);
-        // //flip y locally
-        tf_world_easypbr_world_mugsy= tf_world_mugsy_world_easypbr.inverse();
+    //combine the matrices
+    tf_world_easypbr_world_mugsy=trans*rot*scaling;
 
 
-        // //add scene translation
-        tf_world_easypbr_world_mugsy.translation()+=m_scene_translation;
-        // tf_world_easypbr_world_mugsy.translation()*=m_scene_scale_multiplier;
-        Eigen::Affine3f scaling;
-        scaling.setIdentity();
-        scaling.matrix()(0,0)*=m_scene_scale_multiplier;
-        scaling.matrix()(1,1)*=m_scene_scale_multiplier;
-        scaling.matrix()(2,2)*=m_scene_scale_multiplier;
-        tf_world_easypbr_world_mugsy=scaling*tf_world_easypbr_world_mugsy;
-
-    }
-    
     return tf_world_easypbr_world_mugsy;
+}
+
+Eigen::Affine3f DataLoaderMultiFace::transform_from_world_mugsy_to_world_easypbr(const Eigen::Affine3f& tf_world_obj, const bool do_scaling){
+    //we do the transofmrations in this order, first, scaling, then rotating and then translating
+    Eigen::Affine3f new_tf_world_obj=tf_world_obj;
+
+    //Scaling
+    //affects only the translation
+    if (do_scaling){
+        float s=m_scene_scale_multiplier;
+        new_tf_world_obj.translation()*=s;
+    }
+
+    //Rotation
+    Eigen::Affine3f tf_rot;
+    tf_rot.setIdentity();
+    Eigen::Matrix3f mat_rot;
+    mat_rot = Eigen::AngleAxisf(radu::utils::degrees2radians(m_scene_rotate_x_angle), Eigen::Vector3f::UnitX());
+    tf_rot.matrix().block<3,3>(0,0)=mat_rot;
+    new_tf_world_obj=tf_rot*new_tf_world_obj;
+
+    //translation
+    new_tf_world_obj.translation()+=m_scene_translation;
+
+    return new_tf_world_obj;
 }
 
 void DataLoaderMultiFace::read_data(){
@@ -405,28 +404,39 @@ void DataLoaderMultiFace::read_data(){
     
 
 
-    // m_mesh_for_timestep=read_mesh(m_meshes_paths_for_timesteps[m_timestep], true, true, check_filename_matches_frame_nr);
+    // MeshSharedPtr mesh=Mesh::create();
+    // mesh->read_obj(m_meshes_paths_for_timesteps[m_timestep], true, false);
+    // //place in world
+    // Eigen::Affine3f tf_world_obj =mesh->model_matrix().cast<float>();
+    // Eigen::Affine3f tf_obj_world;
+    // {
+    //     Eigen::Affine3f tf_rot;
+    //     tf_rot.setIdentity();
+    //     Eigen::Matrix3f mat_rot;
+    //     mat_rot = Eigen::AngleAxisf(radu::utils::degrees2radians(m_scene_rotate_x_angle), Eigen::Vector3f::UnitX());
+    //     tf_rot.matrix().block<3,3>(0,0)=mat_rot;
+    //     tf_world_obj=tf_rot*tf_world_obj;
+    //     tf_obj_world=tf_world_obj.inverse();
+    //     //apply
+    //     // tf_obj_world.translation()*=m_scene_scale_multiplier;
+    //     // tf_obj_world.translation()+=m_scene_translation;
+    //     mesh->set_model_matrix(tf_obj_world.cast<double>());
+    //     mesh->apply_model_matrix_to_cpu(true);
+    //     mesh->scale_mesh(m_scene_scale_multiplier);
+    //     mesh->translate_model_matrix(m_scene_translation.cast<double>());
+    // }
+    // m_mesh_for_timestep=mesh;
+
+    //attempt 2
     MeshSharedPtr mesh=Mesh::create();
     mesh->read_obj(m_meshes_paths_for_timesteps[m_timestep], true, false);
+    mesh->scale_mesh(m_scene_scale_multiplier);
+    mesh->apply_model_matrix_to_cpu(true);
     //place in world
     Eigen::Affine3f tf_world_obj =mesh->model_matrix().cast<float>();
-    Eigen::Affine3f tf_obj_world;
-    {
-        Eigen::Affine3f tf_rot;
-        tf_rot.setIdentity();
-        Eigen::Matrix3f mat_rot;
-        mat_rot = Eigen::AngleAxisf(-1.0*M_PI, Eigen::Vector3f::UnitX());
-        tf_rot.matrix().block<3,3>(0,0)=mat_rot;
-        tf_world_obj=tf_rot*tf_world_obj;
-        tf_obj_world=tf_world_obj.inverse();
-        //apply
-        // tf_obj_world.translation()*=m_scene_scale_multiplier;
-        // tf_obj_world.translation()+=m_scene_translation;
-        mesh->set_model_matrix(tf_obj_world.cast<double>());
-        mesh->apply_model_matrix_to_cpu(true);
-        mesh->scale_mesh(m_scene_scale_multiplier);
-        mesh->translate_model_matrix(m_scene_translation.cast<double>());
-    }
+    tf_world_obj=transform_from_world_mugsy_to_world_easypbr(tf_world_obj, false); //we don't scale here because the scaling of translation doesn't make a any difference here because we already have a translation of 0,0,0
+    mesh->set_model_matrix(tf_world_obj.cast<double>());
+    mesh->apply_model_matrix_to_cpu(true);
     m_mesh_for_timestep=mesh;
    
 
@@ -436,7 +446,7 @@ void DataLoaderMultiFace::read_data(){
     for (size_t i = 0; i < m_cameras.size(); i++){
 
         int cam_idx=m_cameras[i].cam_idx;
-        VLOG(1) << "readin from cam_idx" << cam_idx;
+        // VLOG(1) << "readin from cam_idx" << cam_idx;
         // VLOG(1) << "this cam has nr of imgs " << m_cameras[i].imgs_paths.size();
         CHECK(m_timestep<m_cameras[i].imgs_paths.size()) << "Timestep should be less that the nr of images. Timestep is " << m_timestep << " nr of images for this cam is "<< m_cameras[i].imgs_paths.size();
 
@@ -502,18 +512,31 @@ void DataLoaderMultiFace::read_data(){
 
         //attempt 5
         //rotate 180 degrees in x because things seem to be upside down
-        Eigen::Affine3f tf_rot;
-        tf_rot.setIdentity();
-        Eigen::Matrix3f mat_rot;
-        mat_rot = Eigen::AngleAxisf(-1.0*M_PI, Eigen::Vector3f::UnitX());
-        tf_rot.matrix().block<3,3>(0,0)=mat_rot;
-        tf_world_cam=tf_rot*tf_world_cam;
-        tf_cam_world=tf_world_cam.inverse();
-        //apply
-        tf_cam_world.translation()*=m_scene_scale_multiplier;
-        // tf_cam_world.translation()+=m_scene_translation;
-        tf_world_cam= tf_cam_world.inverse();
-        tf_world_cam.translation()+=m_scene_translation;
+        // Eigen::Affine3f tf_rot;
+        // tf_rot.setIdentity();
+        // Eigen::Matrix3f mat_rot;
+        // mat_rot = Eigen::AngleAxisf(radu::utils::degrees2radians(m_scene_rotate_x_angle), Eigen::Vector3f::UnitX());
+        // tf_rot.matrix().block<3,3>(0,0)=mat_rot;
+        // tf_world_cam=tf_rot*tf_world_cam;
+        // tf_cam_world=tf_world_cam.inverse();
+        // //apply
+        // tf_cam_world.translation()*=m_scene_scale_multiplier;
+        // // tf_cam_world.translation()+=m_scene_translation;
+        // tf_world_cam= tf_cam_world.inverse();
+        // tf_world_cam.translation()+=m_scene_translation;
+        // tf_cam_world=tf_world_cam.inverse();
+        // frame.tf_cam_world=tf_cam_world;
+
+
+
+        //attempt 6
+        // tf_world_cam=m_tf_world_easypbr_world_mugsy*tf_world_cam;
+        // tf_cam_world=tf_world_cam.inverse();
+        // frame.tf_cam_world=tf_cam_world;
+
+
+        //attempt 7
+        tf_world_cam=transform_from_world_mugsy_to_world_easypbr(tf_world_cam, true);
         tf_cam_world=tf_world_cam.inverse();
         frame.tf_cam_world=tf_cam_world;
 
@@ -1041,14 +1064,14 @@ Frame DataLoaderMultiFace::get_frame_at_idx( const int idx){
     return frame;
 }
 
-// Frame DataLoaderMultiFace::get_random_frame(){
-//     CHECK(m_frames.size()>0 ) << "m_frames has size 0";
+Frame DataLoaderMultiFace::get_random_frame(){
+    CHECK(m_frames.size()>0 ) << "m_frames has size 0";
 
-//     int random_idx=m_rand_gen->rand_int(0, m_frames.size()-1);
-//     Frame  frame= m_frames[random_idx];
+    int random_idx=m_rand_gen->rand_int(0, m_frames.size()-1);
+    Frame  frame= m_frames[random_idx];
 
-//     return frame;
-// }
+    return frame;
+}
 // Frame DataLoaderMultiFace::get_closest_frame( const easy_pbr::Frame& frame){
 
 //     float closest_distance=std::numeric_limits<float>::max();

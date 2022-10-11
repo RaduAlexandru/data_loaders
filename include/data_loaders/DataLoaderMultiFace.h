@@ -92,7 +92,9 @@ private:
     void init_params(const std::string config_file, const int subject_id);
     void init_data_reading(); //after the parameters this uses the params to initiate all the structures needed for the susequent read_data
     void init_poses(); //rad the pose json file and fills m_filename2pose
-    Eigen::Affine3f  init_transforms(const bool flip_y_local); //initialize the transforms that transform from the Mugsy frame to my easypbr frame so that it looks good
+    // Eigen::Affine3f  init_transforms(); //initialize the transforms that transform from the Mugsy frame to my easypbr frame so that it looks good
+    Eigen::Affine3f  init_transforms(); 
+    Eigen::Affine3f transform_from_world_mugsy_to_world_easypbr(const Eigen::Affine3f& tf_world_obj, const bool do_scaling);
     void read_data(); //a scene (depending on the mode) and all the images contaned in it together with the poses and so on
     void load_images_in_frame(easy_pbr::Frame& frame);
     std::shared_ptr<easy_pbr::Mesh>  read_mesh(const std::string path, bool load_texture, bool transform, bool check_frame_nr);
@@ -121,6 +123,7 @@ private:
     bool m_shuffle;
     bool m_load_as_shell;
     bool m_do_overfit; // return all the time just the first image
+    float m_scene_rotate_x_angle;
     Eigen::Vector3f m_scene_translation; //moves the scene so that we have it at the origin more or less
     float m_scene_scale_multiplier; //multiplier the scene scale with this value so that we keep it in a range that we can expect
 

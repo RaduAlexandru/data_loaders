@@ -251,6 +251,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("get_next_frame", &DataLoaderMultiFace::get_next_frame )
     .def("get_all_frames", &DataLoaderMultiFace::get_all_frames )
     .def("get_frame_at_idx", &DataLoaderMultiFace::get_frame_at_idx )
+    .def("get_random_frame", &DataLoaderMultiFace::get_random_frame )
     .def("get_mesh_head", &DataLoaderMultiFace::get_mesh_head )
     
     // .def("loaded_scene_mesh", &DataLoaderEasyPBR::loaded_scene_mesh )
