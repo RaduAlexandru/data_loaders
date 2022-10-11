@@ -69,6 +69,7 @@ public:
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();
+    void set_mode_all();
     std::string sequence();
     std::string dataset_path();
     std::string mesh_name_for_cur_timestep(); //return the mesh string like 017867 for this sequence and this timestep

@@ -1255,6 +1255,9 @@ void DataLoaderMultiFace::set_mode_test(){
 void DataLoaderMultiFace::set_mode_validation(){
     m_mode="val";
 }
+void DataLoaderMultiFace::set_mode_all(){
+    m_mode="all";
+}
 // std::string DataLoaderMultiFace::sequence(){
 //     return m_sequence;
 // }

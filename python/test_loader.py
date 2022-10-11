@@ -964,9 +964,9 @@ def test_phenorob_cp1():
         view.update()
 
 def test_multiface():
-    subject_id=7
+    subject_id=2
     loader=DataLoaderMultiFace(config_path, subject_id)
-    loader.set_mode_train()
+    loader.set_mode_all()
     loader.start()
     nr_samples=loader.nr_samples()
 
@@ -1003,7 +1003,7 @@ def test_multiface():
             frustum_mesh=frame.create_frustum_mesh(0.3)
             frustum_mesh.m_vis.m_line_width=1
             # frustum_mesh.apply_model_matrix_to_cpu(True)
-            Scene.show(frustum_mesh, "frustum_"+str(frame.frame_idx) )
+            Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
           
 
         if loader.is_finished():

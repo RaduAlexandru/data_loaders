@@ -265,6 +265,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_train", &DataLoaderMultiFace::set_mode_train )
     .def("set_mode_test", &DataLoaderMultiFace::set_mode_test )
     .def("set_mode_validation", &DataLoaderMultiFace::set_mode_validation )
+    .def("set_mode_all", &DataLoaderMultiFace::set_mode_all )
     // .def("set_shuffle", &DataLoaderEasyPBR::set_shuffle )
     // .def("set_limit_to_nr_imgs", &DataLoaderEasyPBR::set_limit_to_nr_imgs )
     ;
