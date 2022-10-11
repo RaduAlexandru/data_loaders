@@ -1258,6 +1258,10 @@ void DataLoaderMultiFace::set_mode_validation(){
 void DataLoaderMultiFace::set_mode_all(){
     m_mode="all";
 }
+
+void DataLoaderMultiFace::set_subsample_factor(const int val){
+    m_subsample_factor=val;
+}
 // std::string DataLoaderMultiFace::sequence(){
 //     return m_sequence;
 // }

@@ -688,3 +688,6 @@ void DataLoaderEasyPBR::set_mode_validation(){
 void DataLoaderEasyPBR::set_shuffle(bool val){
     m_shuffle=val;
 }
+void DataLoaderEasyPBR::set_subsample_factor(const int val){
+    m_subsample_factor=val;
+}

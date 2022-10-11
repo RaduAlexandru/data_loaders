@@ -126,6 +126,7 @@ public:
     void set_restrict_to_date(const std::string date);
     void set_scene_normalization_file(const std::string file_path);
     void set_rgb_subsample_factor(const int factor);
+    void set_subsample_factor(const int factor); //convenience function for set_rgb_subsample_factor
     void set_mode_train(); //set the loader so that it starts reading form the training set
     void set_mode_test();
     void set_mode_validation();

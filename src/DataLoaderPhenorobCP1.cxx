@@ -1372,6 +1372,9 @@ void DataLoaderPhenorobCP1::set_scene_normalization_file(const std::string file_
 void DataLoaderPhenorobCP1::set_rgb_subsample_factor(const int factor){
     m_rgb_subsample_factor=factor;
 }
+void DataLoaderPhenorobCP1::set_subsample_factor(const int factor){
+    set_rgb_subsample_factor(factor);
+}
 
 
 void DataLoaderPhenorobCP1::set_mode_train(){

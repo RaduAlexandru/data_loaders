@@ -74,6 +74,7 @@ public:
     std::string dataset_path();
     std::string mesh_name_for_cur_timestep(); //return the mesh string like 017867 for this sequence and this timestep
     int subsample_factor();
+    void set_subsample_factor(const int val);
     // std::shared_ptr<GenesisHair> get_random_roots(const int nr_strands);
     // Eigen::MatrixXd compute_uv_wrt_mesh( std::shared_ptr<easy_pbr::Mesh> mesh, Eigen::MatrixXd& points );
     std::shared_ptr<easy_pbr::Mesh> transform_mesh_from_mugsy_to_easypbr(std::shared_ptr<easy_pbr::Mesh> mesh);
