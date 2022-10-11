@@ -65,7 +65,9 @@ DataLoaderDeepVoxels::DataLoaderDeepVoxels(const std::string config_file):
 DataLoaderDeepVoxels::~DataLoaderDeepVoxels(){
 
     // m_is_running=false;
-    // m_loader_thread.join();
+    // if (m_loader_thread.joinable()){
+    //     m_loader_thread.join();
+    // }
 }
 
 void DataLoaderDeepVoxels::init_params(const std::string config_file){

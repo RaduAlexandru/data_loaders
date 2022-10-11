@@ -55,7 +55,9 @@ DataLoaderShapeNetPartSeg::DataLoaderShapeNetPartSeg(const std::string config_fi
 DataLoaderShapeNetPartSeg::~DataLoaderShapeNetPartSeg(){
 
     m_is_running=false;
-    m_loader_thread.join();
+    if (m_loader_thread.joinable()){
+        m_loader_thread.join();
+    }
 }
 
 void DataLoaderShapeNetPartSeg::init_params(const std::string config_file){

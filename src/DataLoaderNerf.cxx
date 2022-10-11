@@ -76,7 +76,9 @@ DataLoaderNerf::DataLoaderNerf(const std::string config_file):
 DataLoaderNerf::~DataLoaderNerf(){
 
     // m_is_running=false;
-    // m_loader_thread.join();
+    // if (m_loader_thread.joinable()){
+    //     m_loader_thread.join();
+    // }
 }
 
 void DataLoaderNerf::init_params(const std::string config_file){

@@ -77,7 +77,9 @@ DataLoaderImg::~DataLoaderImg(){
 
     m_is_running=false;
     for (size_t i = 0; i < m_nr_cams; i++) {
-        m_loader_threads[i].join();
+        if (m_loader_threads[i].joinable()){
+            m_loader_threads[i].join();
+        }
     }
 }
 

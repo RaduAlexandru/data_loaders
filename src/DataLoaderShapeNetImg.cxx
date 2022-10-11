@@ -55,7 +55,9 @@ DataLoaderShapeNetImg::DataLoaderShapeNetImg(const std::string config_file):
 DataLoaderShapeNetImg::~DataLoaderShapeNetImg(){
 
     m_is_running=false;
-    m_loader_thread.join();
+    if (m_loader_thread.joinable()){
+        m_loader_thread.join();
+    }
 }
 
 void DataLoaderShapeNetImg::init_params(const std::string config_file){

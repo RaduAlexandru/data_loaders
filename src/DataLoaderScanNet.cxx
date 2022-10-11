@@ -62,7 +62,9 @@ DataLoaderScanNet::~DataLoaderScanNet(){
     // std::cout << "finishing" << std::endl;
     m_is_running=false;
 
-    m_loader_thread.join();
+    if (m_loader_thread.joinable()){
+        m_loader_thread.join();
+    }
 }
 
 void DataLoaderScanNet::init_params(const std::string config_file){

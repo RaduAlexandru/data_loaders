@@ -62,7 +62,9 @@ DataLoaderCloudRos::DataLoaderCloudRos(const std::string config_file):
 DataLoaderCloudRos::~DataLoaderCloudRos(){
     ros::shutdown();
 
-    m_loader_thread.join();
+    if (m_loader_thread.joinable()){
+        m_loader_thread.join();
+    }
 }
 
 void DataLoaderCloudRos::init_params(const std::string config_file){

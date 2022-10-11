@@ -37,7 +37,9 @@ DataLoaderModelNet40::DataLoaderModelNet40(const std::string config_file):
 DataLoaderModelNet40::~DataLoaderModelNet40(){
 
     m_is_running=false;
-    m_loader_thread.join();
+    if (m_loader_thread.joinable()){
+        m_loader_thread.join();
+    }
 }
 
 void DataLoaderModelNet40::init_params(const std::string config_file){

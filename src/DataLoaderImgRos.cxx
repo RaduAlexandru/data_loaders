@@ -41,7 +41,9 @@ DataLoaderImgRos::~DataLoaderImgRos(){
 
     ros::shutdown();
     std::cout << "trying to kill the loader thread" << std::endl;
-    m_loader_thread.join();
+    if (m_loader_thread.joinable()){
+        m_loader_thread.join();
+    }
 }
 
 void DataLoaderImgRos::init_params(const std::string config_file){

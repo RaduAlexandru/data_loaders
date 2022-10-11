@@ -98,7 +98,9 @@ DataLoaderMultiFace::DataLoaderMultiFace(const std::string config_file, const in
 DataLoaderMultiFace::~DataLoaderMultiFace(){
 
     // m_is_running=false;
-    // m_loader_thread.join();
+    // if (m_loader_thread.joinable()){
+    //     m_loader_thread.join();
+    // }
 }
 
 void DataLoaderMultiFace::init_params(const std::string config_file, const int subject_id){

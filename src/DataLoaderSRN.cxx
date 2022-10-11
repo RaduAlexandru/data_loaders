@@ -56,7 +56,9 @@ DataLoaderSRN::DataLoaderSRN(const std::string config_file):
 DataLoaderSRN::~DataLoaderSRN(){
 
     m_is_running=false;
-    m_loader_thread.join();
+    if (m_loader_thread.joinable()){
+        m_loader_thread.join();
+    }
 }
 
 void DataLoaderSRN::init_params(const std::string config_file){
