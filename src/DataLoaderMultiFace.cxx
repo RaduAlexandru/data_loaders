@@ -1260,6 +1260,9 @@ void DataLoaderMultiFace::set_mode_validation(){
 void DataLoaderMultiFace::set_mode_all(){
     m_mode="all";
 }
+void DataLoaderMultiFace::set_dataset_path(const std::string dataset_path){
+    m_dataset_path=dataset_path;
+}
 
 void DataLoaderMultiFace::set_subsample_factor(const int val){
     m_subsample_factor=val;
