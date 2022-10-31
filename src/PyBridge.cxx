@@ -233,6 +233,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("is_finished", &DataLoaderEasyPBR::is_finished )
     .def("reset", &DataLoaderEasyPBR::reset )
     .def("nr_samples", &DataLoaderEasyPBR::nr_samples )
+    .def("set_dataset_path", &DataLoaderEasyPBR::set_dataset_path )
     .def("set_restrict_to_scene_name", &DataLoaderEasyPBR::set_restrict_to_scene_name )
     .def("get_restrict_to_scene_name", &DataLoaderEasyPBR::get_restrict_to_scene_name )
     .def("set_load_mask", &DataLoaderEasyPBR::set_load_mask )

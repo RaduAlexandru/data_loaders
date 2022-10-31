@@ -437,11 +437,15 @@ def test_dtu():
             if frame.is_shell:
                 frame.load_images()
 
+            print("frame.tf_cam_world", frame.tf_cam_world.matrix())
+
             # print("frame.frame_idx", frame.frame_idx)
             # if frame.frame_idx==0:
                 # print("frame.K is ", frame.K)
 
-            Gui.show(frame.rgb_32f, "rgb")
+            if first_time:
+                frame_subsampled=frame.subsample(32.0, True)
+                Gui.show(frame_subsampled.rgb_32f, "rgb", interpolation="nearest")
             Gui.show(frame.mask, "mask")
             frustum=frame.create_frustum_mesh(20)
             # frustum.apply_model_matrix_to_cpu(True)
@@ -467,7 +471,7 @@ def test_dtu():
             #     print("tf_world_cam ", tf_world_cam.matrix())
 
 
-            
+            first_time=False 
 
             i+=1
 
@@ -964,7 +968,32 @@ def test_phenorob_cp1():
         view.update()
 
 def test_multiface():
-    subject_id=2
+
+    def linear2color_corr(img, dim: int = -1):
+        """Applies ad-hoc 'color correction' to a linear RGB Mugsy image along
+        color channel `dim` and returns the gamma-corrected result."""
+
+        if dim == -1:
+            dim = len(img.shape) - 1
+
+        gamma = 2.0
+        black = 3.0 / 255.0
+        color_scale = [1.4, 1.1, 1.6]
+
+        assert img.shape[dim] == 3
+        if dim == -1:
+            dim = len(img.shape) - 1
+        scale = np.array(color_scale).reshape([3 if i == dim else 1 for i in range(img.ndim)])
+        img = img * scale / 1.1
+        return np.clip(
+            (((1.0 / (1 - black)) * 0.95 * np.clip(img - black, 0, 2)) ** (1.0 / gamma))
+            - 15.0 / 255.0,
+            0,
+            2,
+        )
+
+
+    subject_id=7
     loader=DataLoaderMultiFace(config_path, subject_id)
     loader.set_mode_all()
     loader.start()
@@ -991,6 +1020,13 @@ def test_multiface():
                 frame.load_images()
         #     # print("frame width and height is ", frame.width, " ", frame.height)
 
+
+            #change the image to the corrected one
+            rgb_32f=frame.rgb_32f
+            rgb_t=mat2tensor(rgb_32f,True)
+            rgb_t=linear2color_corr(rgb_t, dim=1).clamp(0, 1).float()
+            frame.rgb_32f=tensor2mat(rgb_t).rgb2bgr()
+
         #     # if frame.frame_idx==20:
             Gui.show(frame.rgb_32f, "rgb")
         #     Gui.show(frame.mask.to_cv8u(), "mask")
@@ -1000,8 +1036,9 @@ def test_multiface():
             # print("frame.tf_cam_world", frame.tf_cam_world.matrix())
 
 
-            frustum_mesh=frame.create_frustum_mesh(0.3)
+            frustum_mesh=frame.create_frustum_mesh(scale_multiplier=0.35, near_multiplier=0.001, far_multiplier=2.5)
             frustum_mesh.m_vis.m_line_width=1
+            # frustum_mesh.m_vis.m_show_lines=False
             # frustum_mesh.apply_model_matrix_to_cpu(True)
             Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
           
@@ -1029,11 +1066,11 @@ def test_multiface():
 # test_colmap()
 # test_easypbr()
 # test_srn()
-test_dtu()
+# test_dtu()
 # test_blended_mvs()
 # test_deep_voxels()
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
 # test_phenorob_cp1()
-# test_multiface()
+test_multiface()
