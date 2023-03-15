@@ -149,10 +149,10 @@ void DataLoaderDTU::init_data_reading(){
         }
     }else{
         //LOADING ALL SCENES because we are loading from the neus dataset
-        LOG(WARNING) << "Loading all scenes because we could not find a new_train.lst file";
+        // LOG(WARNING) << "Loading all scenes because we could not find a new_train.lst file";
         for (fs::directory_iterator itr(m_dataset_path); itr!=fs::directory_iterator(); ++itr){
             fs::path scene_path= itr->path();
-            VLOG(1) << "scene_path" << scene_path;
+            // VLOG(1) << "scene_path" << scene_path;
             //get scene_name
             // int scan_idx=std::stoi(radu::utils::erase_substring(scene_path.filename().string(), "dtu_scan"));
             std::string scene_name=scene_path.filename().string();

@@ -696,7 +696,7 @@ def test_phenorob_cp1():
 
     #make a sphere of radius 0.7 at origin because this is kinda what we use for instant ngp
     sphere=Mesh()
-    sphere.create_sphere([0,0,0], 0.7)
+    sphere.create_sphere([0,0,0], 0.49)
     sphere.m_vis.m_show_mesh=False
     sphere.m_vis.m_show_wireframe=True
     Scene.show(sphere,"sphere")
@@ -773,6 +773,7 @@ def test_phenorob_cp1():
         input_clamped=torch.clamp(input_val, input_start, input_end)
         return output_start + ((output_end - output_start) / (input_end - input_start)) * (input_clamped - input_start)
 
+    print("nr days ", loader.nr_days())
     #ITER days
     for d_idx in range(loader.nr_days()):
         day=loader.get_day_with_idx(d_idx)
@@ -1036,9 +1037,24 @@ def test_multiface():
             # print("frame.tf_cam_world", frame.tf_cam_world.matrix())
 
 
-            frustum_mesh=frame.create_frustum_mesh(scale_multiplier=0.35, near_multiplier=0.001, far_multiplier=2.5)
-            frustum_mesh.m_vis.m_line_width=1
+            # frustum_mesh=frame.create_frustum_mesh(scale_multiplier=0.35, near_multiplier=0.001, far_multiplier=2.5)
+            frustum_mesh=frame.create_frustum_mesh(scale_multiplier=0.3, near_multiplier=0.001, far_multiplier=2.5)
+
+            #squish the frame in the z direction
+            tf_world_obj=frustum_mesh.model_matrix.clone()
+            tf_obj_world=tf_world_obj.inverse()
+            frustum_mesh.transform_model_matrix(tf_obj_world)
+            frustum_mesh.apply_model_matrix_to_cpu(True)
+            V=frustum_mesh.V.copy()
+            V[:,2:3]=V[:,2:3]*0.3
+            frustum_mesh.V=V
+            frustum_mesh.transform_model_matrix(tf_world_obj)
+            
+
+            frustum_mesh.m_vis.m_show_mesh=False
+            frustum_mesh.m_vis.m_line_width=2
             # frustum_mesh.m_vis.m_show_lines=False
+            frustum_mesh.m_vis.m_line_color=[0.2,0.2,0.2]
             # frustum_mesh.apply_model_matrix_to_cpu(True)
             Scene.show(frustum_mesh, "frustum_"+str(frame.cam_id) )
           
@@ -1072,5 +1088,5 @@ def test_multiface():
 # test_llff()
 # test_blender_fb()
 # test_usc_hair()
-# test_phenorob_cp1()
-test_multiface()
+test_phenorob_cp1()
+# test_multiface()

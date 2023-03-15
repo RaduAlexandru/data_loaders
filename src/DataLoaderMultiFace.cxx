@@ -196,7 +196,7 @@ void DataLoaderMultiFace::init_data_reading(){
             //get all the images from this camera
             std::vector< std::string > imgs_paths;
             //iterate through the images of this camera and get the images for the specific timestep
-            int nr_images_read=0;
+            // int nr_images_read=0;
             for (fs::directory_iterator i_itr(cam_path); i_itr!=fs::directory_iterator(); ++i_itr){
                 fs::path img_path= i_itr->path();
                 // VLOG(1) << img_path.string();
@@ -269,7 +269,7 @@ void DataLoaderMultiFace::init_poses(){
 
         tokens=split(line," ");
         int cam_idx=std::stoi(tokens[0]);
-        int width, height;
+        // int width, height;
         // if(m_capture_type!="synthetic"){ //the synthetic one doesnt have height and width
         //     width=std::stoi(tokens[1]);
         //     height=std::stoi(tokens[2]);
@@ -402,7 +402,7 @@ void DataLoaderMultiFace::read_data(){
 
 
     //read mesh
-    CHECK(m_timestep<m_meshes_paths_for_timesteps.size()) << "Timestep should be less that the nr of meshes. Timestep is " << m_timestep << " nr of meshes for all timesteps is "<< m_meshes_paths_for_timesteps.size();
+    CHECK(m_timestep<(int)m_meshes_paths_for_timesteps.size()) << "Timestep should be less that the nr of meshes. Timestep is " << m_timestep << " nr of meshes for all timesteps is "<< m_meshes_paths_for_timesteps.size();
     
 
 
@@ -450,7 +450,7 @@ void DataLoaderMultiFace::read_data(){
         int cam_idx=m_cameras[i].cam_idx;
         // VLOG(1) << "readin from cam_idx" << cam_idx;
         // VLOG(1) << "this cam has nr of imgs " << m_cameras[i].imgs_paths.size();
-        CHECK(m_timestep<m_cameras[i].imgs_paths.size()) << "Timestep should be less that the nr of images. Timestep is " << m_timestep << " nr of images for this cam is "<< m_cameras[i].imgs_paths.size();
+        CHECK(m_timestep<(int)m_cameras[i].imgs_paths.size()) << "Timestep should be less that the nr of images. Timestep is " << m_timestep << " nr of images for this cam is "<< m_cameras[i].imgs_paths.size();
 
 
         //see if we add this camera based on the mode that we are in
@@ -1037,7 +1037,7 @@ std::shared_ptr<easy_pbr::Mesh>  DataLoaderMultiFace::get_mesh_head(){
 
 
 Frame DataLoaderMultiFace::get_next_frame(){
-    CHECK(m_idx_img_to_read<m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
+    CHECK(m_idx_img_to_read<(int)m_frames.size()) << "m_idx_img_to_read is out of bounds. It is " << m_idx_img_to_read << " while m_frames has size " << m_frames.size();
     Frame  frame= m_frames[m_idx_img_to_read];
 
     if(!m_do_overfit){
@@ -1059,7 +1059,7 @@ std::vector<easy_pbr::Frame> DataLoaderMultiFace::get_all_frames(){
 
 // }
 Frame DataLoaderMultiFace::get_frame_at_idx( const int idx){
-    CHECK(idx<m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
+    CHECK(idx<(int)m_frames.size()) << "idx is out of bounds. It is " << idx << " while m_frames has size " << m_frames.size();
 
     Frame  frame= m_frames[idx];
 
@@ -1212,7 +1212,7 @@ Frame DataLoaderMultiFace::get_random_frame(){
 
 bool DataLoaderMultiFace::is_finished(){
     //check if this loader has returned all the images it has
-    if(m_idx_img_to_read<m_frames.size()){
+    if(m_idx_img_to_read<(int)m_frames.size()){
         return false; //there is still more files to read
     }
 
