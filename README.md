@@ -30,7 +30,7 @@ $ make
 ```
 
 ### Usage:
-There are examples on how to use each data loader in `./python/test_loader.py` and the file `./config/test_loader.cfg` described the parameters to configure each dataset.
+There are examples on how to use each data loader in `./python/test_loader.py` and the file `./config/test_loader.cfg` describes the parameters to configure each dataset.
 
 
 ### Links:
