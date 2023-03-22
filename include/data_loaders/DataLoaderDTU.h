@@ -56,6 +56,7 @@ public:
     void set_dataset_path(const std::string dataset_path);
     void set_object_name(const std::string object_name);
     void set_restrict_to_scene_name(const std::string scene_name);
+    std::string get_dataset_path();
     std::string get_restrict_to_scene_name();
     std::string get_current_scene_name(); //the scene we have currently active
     void set_subsample_factor(const int val);

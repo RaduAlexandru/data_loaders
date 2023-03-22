@@ -339,6 +339,7 @@ PYBIND11_MODULE(dataloaders, m) {
     .def("set_mode_all", &DataLoaderDTU::set_mode_all )
     .def("set_preload_to_gpu_tensors", &DataLoaderDTU::set_preload_to_gpu_tensors )
     .def("get_tf_easypbr_dtu", &DataLoaderDTU::get_tf_easypbr_dtu )
+    .def("get_dataset_path", &DataLoaderDTU::get_dataset_path )
     ;
 
     //DataLoaderDeepVoxels

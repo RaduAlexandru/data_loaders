@@ -690,6 +690,9 @@ void DataLoaderDTU::set_dataset_path(const std::string dataset_path){
 void DataLoaderDTU::set_restrict_to_scene_name(const std::string scene_name){
     m_restrict_to_scene_name=scene_name;
 }
+std::string DataLoaderDTU::get_dataset_path(){
+    return m_dataset_path.string();
+}
 std::string DataLoaderDTU::get_restrict_to_scene_name(){
     return m_restrict_to_scene_name;
 }
