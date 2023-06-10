@@ -3,6 +3,9 @@
 #include <fstream>
 #include <limits>
 
+#include <opencv2/imgcodecs.hpp>  //for imread
+#include "opencv2/imgproc/imgproc.hpp" //for cv::resize
+
 //loguru
 #define LOGURU_REPLACE_GLOG 1
 #include <loguru.hpp>
